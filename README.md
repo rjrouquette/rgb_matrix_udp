@@ -1,2 +1,2 @@
-# rgb_matrix_udp
-udp based rgb panel driver using raspberry pi
+# RGB Matrix Panel Driver using Raspberry Pi
+Uses UDP protocol and a Raspberry Pi with Adafruit RGB Matrix Hat to drive RGB Panel

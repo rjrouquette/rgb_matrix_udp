@@ -73,13 +73,15 @@ int main(int argc, char **argv) {
     socketUdp = socket(AF_INET, SOCK_DGRAM, 0);
 
     // get eth0 address
-    char ethAddr[64];
+    char ethAddr[32];
+    char ethAddrHex[16];
     struct ifreq ifr = {};
     bzero(&ifr, sizeof(ifr));
     ifr.ifr_addr.sa_family = AF_INET;
     strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);
     ioctl(socketUdp, SIOCGIFADDR, &ifr);
     strcpy(ethAddr, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+    sprintf(ethAddrHex, "%08x", ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr));
     log("eth0 ip: %s\n", ethAddr);
 
     if (bind(socketUdp, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
@@ -116,7 +118,7 @@ int main(int argc, char **argv) {
     Color color(255, 255, 0);
     rgb_matrix::Font font;
     font.LoadFont("5x7.bdf");
-    rgb_matrix::DrawText(offscreen, font, 0, 8, color, nullptr, ethAddr, 0);
+    rgb_matrix::DrawText(offscreen, font, 0, 8, color, nullptr, ethAddrHex, 0);
     offscreen = matrix->SwapOnVSync(offscreen);
 
     log("waiting for frames");

@@ -90,6 +90,12 @@ int main(int argc, char **argv) {
     log("start udp tx thread");
     pthread_create(&threadUdpTx, nullptr, doUdpTx, nullptr);
 
+    // wait three seconds before processing frame data
+    sleep(3);
+
+    bzero(pixBuffNext, frameSize);
+    flipBuffer();
+
     const int sockListen = socket(PF_UNIX, SOCK_STREAM, 0);
     struct sockaddr_un addr = {};
     memset(&addr, 0, sizeof(addr));

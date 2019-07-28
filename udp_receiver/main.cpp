@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
     // display ip address on panel
     Color color(255, 255, 0);
     rgb_matrix::Font font;
-    font.LoadFont("5x7.bdf");
+    font.LoadFont("5x8.bdf");
     rgb_matrix::DrawText(offscreen, font, 0, 8, color, nullptr, ethAddrHex, 0);
     offscreen = matrix->SwapOnVSync(offscreen);
 

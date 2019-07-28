@@ -148,15 +148,16 @@ int main(int argc, char **argv) {
             if(fid == 0) continue;
             inActive = false;
 
-            pthread_rwlock_unlock(&rwlock);
-
             // process frame
             int64_t diff = now - frame->targetEpochUs;
             if(diff > 0) {
                 log("drop frame %d", fid);
                 frame[0].frameId = 0;
                 startOffset = (f + startOffset + 1) & 0xfu;
+                break;
             }
+
+            pthread_rwlock_unlock(&rwlock);
             log("processing frame %d", fid);
 
             // concatenate packets

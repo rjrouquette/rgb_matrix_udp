@@ -158,9 +158,6 @@ int main(int argc, char **argv) {
             }
 
             pthread_rwlock_unlock(&rwlock);
-            //log("processing frame %d", fid);
-            frame[0].frameId = 0;
-
             // concatenate packets
             uint8_t *buff = pixelBuffer;
             size_t rem = fsize;
@@ -172,6 +169,7 @@ int main(int argc, char **argv) {
                 rem -= dlen;
                 sf++;
             }
+            frame[0].frameId = 0;
 
             // set pixels
             buff = pixelBuffer;

@@ -109,11 +109,11 @@ void sendFrame(int socketUdp, uint32_t frameId, uint64_t frameEpoch, const remot
     packet.targetEpochUs = frameEpoch;
     packet.subFrameId = 0;
 
-    uint8_t pixOff = (rp.yoff * width + rp.xoff) * 3;
+    uint8_t *buff = &pixBuffAct[(rp.yoff * width + rp.xoff) * 3];
     for(int y = 0; y < rp.height; y++) {
         for(int x = 0; x < rp.width; x++) {
             for(int c = 0; c < 3; c++) {
-                packet.pixelData[packOff++] = pixBuffAct[pixOff++];
+                packet.pixelData[packOff++] = *(buff++);
 
                 if (packOff == sizeof(packet.pixelData)) {
                     sendto(socketUdp, &packet, sizeof(packet), 0, (sockaddr *) &rp.addr, sizeof(rp.addr));
@@ -122,7 +122,7 @@ void sendFrame(int socketUdp, uint32_t frameId, uint64_t frameEpoch, const remot
                 }
             }
         }
-        pixOff += rowAdvance;
+        buff += rowAdvance;
     }
 
     if(packOff != 0) {

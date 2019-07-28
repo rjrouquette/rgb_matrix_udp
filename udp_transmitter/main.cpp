@@ -51,7 +51,7 @@ void * doUdpTx(void *obj);
 void sendFrame(int socketUdp, uint32_t frameId, uint64_t frameEpoch, const remote_panel &rp);
 
 long microtime();
-void sig_ignore(UNUSED int sig) { }
+void sig_quit(UNUSED int sig) { isRunning = false; }
 
 bool loadConfiguration(const char *fileName);
 void labelPanels();
@@ -63,8 +63,9 @@ void flipBuffer();
 int main(int argc, char **argv) {
     struct sigaction act = {};
     memset(&act, 0, sizeof(act));
-    act.sa_handler = sig_ignore;
-    sigaction(SIGUSR1, &act, nullptr);
+    act.sa_handler = sig_quit;
+    sigaction(SIGINT, &act, nullptr);
+    sigaction(SIGTERM, &act, nullptr);
 
     bzero(panels, sizeof(panels));
 
@@ -126,7 +127,7 @@ int main(int argc, char **argv) {
         log("new data stream");
 
         int moff = 0;
-        for(;;) {
+        while(isRunning) {
             // check for frame magic number
             if(moff < sizeof(uint64_t)) {
                 auto r = read(connFd, rbuff, 1);
@@ -158,6 +159,9 @@ int main(int argc, char **argv) {
     }
     close(sockListen);
 
+    pthread_join(threadUdpTx, nullptr);
+    munmap(pixelBuffer, frameSize * 2);
+    log("shutdown");
     return 0;
 }
 

@@ -121,6 +121,11 @@ int main(int argc, char **argv) {
     rgb_matrix::DrawText(offscreen, font, 0, 8, color, nullptr, ethAddrHex, 0);
     offscreen = matrix->SwapOnVSync(offscreen);
 
+    size_t plen;
+    char *pixelData;
+    offscreen->Serialize((const char **)&pixelData, &plen);
+    log("frame size: %ld bytes", plen);
+
     log("waiting for frames");
     uint32_t startOffset = 0;
     // main processing loop
@@ -153,8 +158,6 @@ int main(int argc, char **argv) {
             }
             log("processing frame %d", fid);
 
-            size_t plen;
-            char *pixelData;
             offscreen->Serialize((const char **)&pixelData, &plen);
             if(plen != fsize) {
                 log("framebuffer size mismatch");

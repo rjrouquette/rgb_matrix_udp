@@ -17,11 +17,15 @@ using namespace rgb_matrix;
 
 #define UNUSED __attribute__((unused))
 
+#define MATRIX_WIDTH (64)
+#define MATRIX_HEIGHT (32)
+
+#define UDP_PORT (1234)
 #define UDP_BUFFER_SIZE (2048)
 #define RECVMMSG_CNT (64)
 
-#define FRAME_MASK (0x3fu)
-#define SUBFRAME_MASK (0xfu)
+#define FRAME_MASK (0x3fu)      // 64 frame circular buffer
+#define SUBFRAME_MASK (0x7u)    // 8 sub-frames per frame
 
 bool isRunning = true;
 int socketUdp = -1;
@@ -53,9 +57,8 @@ int main(int argc, char **argv) {
     act.sa_handler = sig_ignore;
     sigaction(SIGUSR1, &act, nullptr);
 
-    udpPort = 1234;
-    height = 32;
-    width = 64;
+    height = MATRIX_HEIGHT;
+    width = MATRIX_WIDTH;
 
     const int fsize = height * width * 3;
     const int fmax = (fsize + 1023) / 1024;
@@ -68,7 +71,7 @@ int main(int argc, char **argv) {
     bzero((char *) &serv_addr, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = INADDR_ANY;
-    serv_addr.sin_port = htons((uint16_t)udpPort);
+    serv_addr.sin_port = htons(UDP_PORT);
 
     socketUdp = socket(AF_INET, SOCK_DGRAM, 0);
 

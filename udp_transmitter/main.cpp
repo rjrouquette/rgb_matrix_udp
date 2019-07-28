@@ -9,6 +9,8 @@
 #include <csignal>
 #include <cstring>
 #include <sys/time.h>
+#include <json-c/json.h>
+#include <sys/mman.h>
 
 #include "logging.h"
 
@@ -27,11 +29,17 @@ struct remote_panel {
     int width, height;
 };
 
-bool isRunning = true;
-int width = 64;
-int height = 32;
+remote_panel panels[256];
 
-uint8_t pixBuffAct[16384];
+bool isRunning = true;
+int width = 0;
+int height = 0;
+int propagationDelay = 250000;
+int updateInterval = 50000;
+
+void *pixelBuffer;
+uint8_t *pixBuffAct, *pixBuffNext;
+pthread_mutex_t mutexBuff = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_t threadUdpTx;
 void * doUdpTx(void *obj);
@@ -39,6 +47,8 @@ void sendFrame(int socketUdp, uint32_t frameId, uint64_t frameEpoch, const remot
 
 long microtime();
 void sig_ignore(UNUSED int sig) { }
+
+bool loadConfiguration(const char *fileName);
 
 void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     uint8_t *pixel = &(pixBuffAct[(y * width + x) * 3]);
@@ -53,19 +63,27 @@ int main(int argc, char **argv) {
     act.sa_handler = sig_ignore;
     sigaction(SIGUSR1, &act, nullptr);
 
-    if(argc != 1) {
-        log("Usage: udp-rgb-matrix");
+    bzero(panels, sizeof(panels));
+
+    if(argc != 2) {
+        log("Usage: udp-rgb-matrix <config.json>");
         return EX_USAGE;
     }
+
+    if(!loadConfiguration(argv[1])) {
+        log("failed to load configuration file: %s", argv[1]);
+        return EX_CONFIG;
+    }
+
+    size_t frameSize = width * height * 3;
+    pixelBuffer = mmap(nullptr, frameSize * 2, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if(madvise(pixelBuffer, frameSize * 2, MADV_HUGEPAGE) != 0) ::abort();
+    pixBuffAct = (uint8_t *) pixelBuffer;
+    pixBuffNext = pixBuffAct + frameSize;
 
     // start udp rx thread
     log("start udp tx thread");
     pthread_create(&threadUdpTx, nullptr, doUdpTx, nullptr);
-
-    setPixel(0, 0, 255, 0, 0);
-    setPixel(63, 0, 0, 255, 0);
-    setPixel(0, 31, 0, 0, 255);
-    setPixel(63, 31, 255, 255, 255);
 
     pause();
 
@@ -82,18 +100,17 @@ void * doUdpTx(UNUSED void *obj) {
     int socketUdp = socket(AF_INET, SOCK_DGRAM, 0);
     uint32_t frameId = 1;
 
-    remote_panel test = {};
-    bzero(&test, sizeof(test));
-    test.addr.sin_port = htons(1234);
-    test.addr.sin_addr.s_addr = htonl(0xc0a80319); // 192.168.3.25
-    test.addr.sin_family = AF_INET;
-    test.width = 64;
-    test.height = 32;
-
     while(isRunning) {
-        sendFrame(socketUdp, frameId++, microtime() + 100000, test);
+        // transmit frame data
+        for(const auto &panel : panels) {
+            if(panel.width == 0) continue;
+            sendFrame(socketUdp, frameId++, microtime() + propagationDelay, panel);
+        }
         if(frameId == 0) frameId = 1;
-        usleep(20000);
+
+        // sleep until next update
+        uint32_t now = microtime();
+        usleep(updateInterval - (now % updateInterval));
     }
 
     close(socketUdp);
@@ -128,4 +145,82 @@ void sendFrame(int socketUdp, uint32_t frameId, uint64_t frameEpoch, const remot
     if(packOff != 0) {
         sendto(socketUdp, &packet, sizeof(packet), 0, (sockaddr *) &rp.addr, sizeof(rp.addr));
     }
+}
+
+bool loadConfiguration(const char *fileName) {
+    json_object *jtmp, *jpanels;
+    auto config = json_object_from_file(fileName);
+    if(config == nullptr) {
+        log("failed to parse configuration file");
+        return false;
+    }
+
+    if(json_object_object_get_ex(config, "width", &jtmp)) {
+        width = json_object_get_int(jtmp);
+    }
+    else {
+        log("configuration file is missing `width`");
+        return false;
+    }
+
+    if(json_object_object_get_ex(config, "height", &jtmp)) {
+        height = json_object_get_int(jtmp);
+    }
+    else {
+        log("configuration file is missing `height`");
+        return false;
+    }
+
+    if(json_object_object_get_ex(config, "propagationDelay", &jtmp)) {
+        propagationDelay = json_object_get_int(jtmp);
+    }
+    else {
+        log("configuration file is missing `propagationDelay`");
+        return false;
+    }
+
+    if(json_object_object_get_ex(config, "updateInterval", &jtmp)) {
+        updateInterval = json_object_get_int(jtmp);
+    }
+    else {
+        log("configuration file is missing `updateInterval`");
+        return false;
+    }
+
+    if(!json_object_object_get_ex(config, "panels", &jpanels)) {
+        log("configuration file is missing `panels`");
+        return false;
+    }
+
+    int len = json_object_array_length(jpanels);
+    for(int i = 0; i < len; i++) {
+        auto jpanel = json_object_array_get_idx(jpanels, i);
+
+        if(!json_object_object_get_ex(jpanel, "address", &jtmp)) {
+            log("panels is missing `address`");
+            return false;
+        }
+        inet_aton(json_object_get_string(jtmp), &panels[i].addr.sin_addr);
+
+        if(!json_object_object_get_ex(jpanel, "port", &jtmp)) {
+            log("panels is missing `port`");
+            return false;
+        }
+        panels[i].addr.sin_port = htons(json_object_get_int(jtmp));
+        panels[i].addr.sin_family = AF_INET;
+
+        json_object_object_get_ex(jpanel, "horizontalOffset", &jtmp);
+        panels[i].xoff = json_object_get_int(jtmp);
+
+        json_object_object_get_ex(jpanel, "verticalOffset", &jtmp);
+        panels[i].yoff = json_object_get_int(jtmp);
+
+        json_object_object_get_ex(jpanel, "width", &jtmp);
+        panels[i].width = json_object_get_int(jtmp);
+
+        json_object_object_get_ex(jpanel, "height", &jtmp);
+        panels[i].height = json_object_get_int(jtmp);
+    }
+
+    return true;
 }

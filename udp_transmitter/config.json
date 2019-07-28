@@ -1,0 +1,16 @@
+{
+  "width": 256,
+  "height": 64,
+  "propagationDelay": 100000,
+  "updateInterval": 10000,
+  "panels": [
+    {
+      "address": "192.168.3.25",
+      "port": 1234,
+      "horizontalOffset": 0,
+      "verticalOffset": 0,
+      "width": 64,
+      "height": 32
+    }
+  ]
+}

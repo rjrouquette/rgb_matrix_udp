@@ -12,4 +12,4 @@ add_executable(
         logging.h
 )
 
-target_link_libraries(udp_transmitter -pthread)
+target_link_libraries(udp_transmitter -pthread -ljson-c)

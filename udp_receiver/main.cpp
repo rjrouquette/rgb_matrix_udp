@@ -130,6 +130,7 @@ int main(int argc, char **argv) {
     while(isRunning) {
         bool inActive = true;
         uint64_t now = microtime();
+        pthread_rwlock_wrlock(&rwlock);
         for(uint32_t f = 0; f < 16; f++) {
             auto frame = packetBuffer[(f + startOffset) & 0xfu];
 
@@ -146,6 +147,8 @@ int main(int argc, char **argv) {
             }
             if(fid == 0) continue;
             inActive = false;
+
+            pthread_rwlock_unlock(&rwlock);
 
             // process frame
             int64_t diff = now - frame->targetEpochUs;
@@ -181,8 +184,10 @@ int main(int argc, char **argv) {
             offscreen = matrix->SwapOnVSync(offscreen);
 
             startOffset = (f + startOffset + 1) & 0xfu;
+            pthread_rwlock_wrlock(&rwlock);
             break;
         }
+        pthread_rwlock_unlock(&rwlock);
 
         if(inActive) usleep(1000);
     }

@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
     Color color(255, 255, 0);
     rgb_matrix::Font font;
     font.LoadFont("5x7.bdf");
-    rgb_matrix::DrawText(matrix, font, 0, 8, color, nullptr, ethAddr, 0);
+    rgb_matrix::DrawText(offscreen, font, 0, 8, color, nullptr, ethAddr, 0);
     offscreen = matrix->SwapOnVSync(offscreen);
 
     log("waiting for frames");

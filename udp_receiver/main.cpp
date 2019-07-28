@@ -1,6 +1,9 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <netinet/in.h>
+#include <net/if.h>
+#include <arpa/inet.h>
+#include <sys/ioctl.h>
 #include <sysexits.h>
 #include <pthread.h>
 #include <csignal>
@@ -9,6 +12,7 @@
 
 #include "logging.h"
 #include "../rpi-rgb-led-matrix/include/led-matrix.h"
+#include "../rpi-rgb-led-matrix/include/graphics.h"
 
 using namespace rgb_matrix;
 
@@ -67,6 +71,17 @@ int main(int argc, char **argv) {
     serv_addr.sin_port = htons((uint16_t)udpPort);
 
     socketUdp = socket(AF_INET, SOCK_DGRAM, 0);
+
+    // get eth0 address
+    char ethAddr[64];
+    struct ifreq ifr = {};
+    bzero(&ifr, sizeof(ifr));
+    ifr.ifr_addr.sa_family = AF_INET;
+    strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);
+    ioctl(socketUdp, SIOCGIFADDR, &ifr);
+    strcpy(ethAddr, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+    log("eth0 ip: %s\n", ethAddr);
+
     if (bind(socketUdp, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         log("failed to bind to port %d", udpPort);
         return EX_OSERR;
@@ -94,10 +109,15 @@ int main(int argc, char **argv) {
             runtime_opt
     );
     matrix->SetBrightness(100);
-
     FrameCanvas *offscreen = matrix->CreateFrameCanvas();
     log("initialized rgb matrix panel driver");
 
+    // display ip address on panel
+    Color color(255, 255, 0);
+    rgb_matrix::Font font;
+    font.LoadFont("5x7.bdf");
+    rgb_matrix::DrawText(matrix, font, 0, 8, color, nullptr, ethAddr, 0);
+    offscreen = matrix->SwapOnVSync(offscreen);
 
     log("waiting for frames");
     uint32_t startOffset = 0;

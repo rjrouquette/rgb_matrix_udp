@@ -34,8 +34,11 @@ struct frame_packet {
     uint8_t pixelData[1024];
 };
 
+uint8_t pixelBuffer[16384];
 frame_packet packetBuffer[16][16];
 pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
+
+RGBMatrix *matrix;
 
 pthread_t threadUdpRx;
 void * doUdpRx(void *obj);
@@ -106,7 +109,7 @@ int main(int argc, char **argv) {
     matrix_options.pwm_bits = 11;
     matrix_options.hardware_mapping = "adafruit-hat-pwm";
 
-    RGBMatrix *matrix = rgb_matrix::CreateMatrixFromOptions(
+    matrix = rgb_matrix::CreateMatrixFromOptions(
             matrix_options,
             runtime_opt
     );
@@ -120,11 +123,6 @@ int main(int argc, char **argv) {
     font.LoadFont("5x8.bdf");
     rgb_matrix::DrawText(offscreen, font, 0, 8, color, nullptr, ethAddrHex, 0);
     offscreen = matrix->SwapOnVSync(offscreen);
-
-    size_t plen;
-    char *pixelData;
-    offscreen->Serialize((const char **)&pixelData, &plen);
-    log("frame size: %ld bytes", plen);
 
     log("waiting for frames");
     uint32_t startOffset = 0;
@@ -158,19 +156,25 @@ int main(int argc, char **argv) {
             }
             log("processing frame %d", fid);
 
-            offscreen->Serialize((const char **)&pixelData, &plen);
-            if(plen != fsize) {
-                log("framebuffer size mismatch");
-                abort();
+            // concatenate packets
+            uint8_t *buff = pixelBuffer;
+            size_t rem = fsize;
+            int sf = 0;
+            while(rem > 0 && sf < 16) {
+                size_t dlen = std::min(rem, sizeof(frame_packet::pixelData));
+                memcpy(buff, frame[sf].pixelData, dlen);
+                buff += dlen;
+                rem -= dlen;
+                sf++;
             }
 
-            int sf = 0;
-            while(plen > 0 && sf < 16) {
-                size_t dlen = std::min(plen, sizeof(frame_packet::pixelData));
-                memcpy(pixelData, frame[sf].pixelData, dlen);
-                pixelData += dlen;
-                plen -= dlen;
-                sf++;
+            // set pixels
+            buff = pixelBuffer;
+            for(int y = 0; y < rows; y++) {
+                for (int x = 0; x < cols; x++) {
+                    offscreen->SetPixel(x, y, buff[0], buff[1], buff[2]);
+                    buff += 3;
+                }
             }
 
             // display frame
@@ -192,7 +196,6 @@ int main(int argc, char **argv) {
 
 void * doUdpRx(UNUSED void *obj) {
     pthread_setname_np(pthread_self(), "udp_rx");
-
 
     // buffer structures
     struct sockaddr_in addr[RECVMMSG_CNT];
@@ -223,6 +226,11 @@ void * doUdpRx(UNUSED void *obj) {
             const auto dlen = msgs[i].msg_len;
             const auto data = bufs[i];
 
+            // brightness packet
+            if(dlen == sizeof(uint8_t)) {
+                matrix->SetBrightness(*(uint8_t*)data);
+                continue;
+            }
             // ignore packet if size is incorrect
             if(dlen != sizeof(frame_packet)) continue;
 

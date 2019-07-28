@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
     strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);
     ioctl(socketUdp, SIOCGIFADDR, &ifr);
     strcpy(ethAddr, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
-    sprintf(ethAddrHex, "%08x", ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr));
+    sprintf(ethAddrHex, "%08X", ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr));
     log("eth0 ip: %s\n", ethAddr);
 
     if (bind(socketUdp, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
             matrix_options,
             runtime_opt
     );
-    matrix->SetBrightness(100);
+    matrix->SetBrightness(20);
     FrameCanvas *offscreen = matrix->CreateFrameCanvas();
     log("initialized rgb matrix panel driver");
 

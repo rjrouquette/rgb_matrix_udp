@@ -40,6 +40,13 @@ void sendFrame(int socketUdp, uint32_t frameId, uint64_t frameEpoch, const remot
 long microtime();
 void sig_ignore(UNUSED int sig) { }
 
+void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
+    uint8_t *pixel = &(pixBuffAct[(y * width + x) * 3]);
+    pixel[0] = r;
+    pixel[1] = g;
+    pixel[2] = b;
+}
+
 int main(int argc, char **argv) {
     struct sigaction act = {};
     memset(&act, 0, sizeof(act));
@@ -54,6 +61,11 @@ int main(int argc, char **argv) {
     // start udp rx thread
     log("start udp tx thread");
     pthread_create(&threadUdpTx, nullptr, doUdpTx, nullptr);
+
+    setPixel(0, 0, 255, 0, 0);
+    setPixel(31, 0, 0, 255, 0);
+    setPixel(0, 31, 0, 0, 255);
+    setPixel(31, 31, 255, 255, 255);
 
     pause();
 
@@ -79,7 +91,7 @@ void * doUdpTx(UNUSED void *obj) {
     test.height = 32;
 
     while(isRunning) {
-        sendFrame(socketUdp, frameId++, microtime() + 10000, test);
+        sendFrame(socketUdp, frameId++, microtime() + 20000, test);
         if(frameId == 0) frameId = 1;
         usleep(10000);
     }

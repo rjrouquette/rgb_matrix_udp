@@ -1,5 +1,4 @@
 #include <unistd.h>
-#include <cstdlib>
 #include <netinet/in.h>
 #include <net/if.h>
 #include <arpa/inet.h>
@@ -21,11 +20,14 @@ using namespace rgb_matrix;
 #define UDP_BUFFER_SIZE (2048)
 #define RECVMMSG_CNT (64)
 
+#define FRAME_MASK (0x3fu)
+#define SUBFRAME_MASK (0xfu)
+
 bool isRunning = true;
 int socketUdp = -1;
 int udpPort = 0;
-int rows = 0;
-int cols = 0;
+int height = 0;
+int width = 0;
 
 struct frame_packet {
     uint32_t frameId;
@@ -34,8 +36,8 @@ struct frame_packet {
     uint8_t pixelData[1024];
 };
 
-uint8_t pixelBuffer[16384];
-frame_packet packetBuffer[16][16];
+uint8_t pixelBuffer[(SUBFRAME_MASK + 1) * sizeof(frame_packet::pixelData)];
+frame_packet packetBuffer[FRAME_MASK + 1][SUBFRAME_MASK + 1];
 pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
 RGBMatrix *matrix;
@@ -51,19 +53,14 @@ int main(int argc, char **argv) {
     act.sa_handler = sig_ignore;
     sigaction(SIGUSR1, &act, nullptr);
 
-    if(argc != 4) {
-        log("Usage: udp-rgb-matrix <udpPort> <rows> <cols> <bitsPerChannel>");
-        return EX_USAGE;
-    }
+    udpPort = 1234;
+    height = 32;
+    width = 64;
 
-    udpPort = atoi(argv[1]);
-    rows = atoi(argv[2]);
-    cols = atoi(argv[3]);
-
-    const int fsize = rows * cols * 3;
+    const int fsize = height * width * 3;
     const int fmax = (fsize + 1023) / 1024;
-    if(fmax > 16) {
-        log("panel dimensions requires too many sub frames: %d x %d -> %d sub frames", rows, cols, fmax);
+    if(fmax > (SUBFRAME_MASK + 1)) {
+        log("panel dimensions requires too many sub frames: %d x %d -> %d sub frames", height, width, fmax);
         return EX_CONFIG;
     }
 
@@ -104,8 +101,8 @@ int main(int argc, char **argv) {
     RGBMatrix::Options matrix_options;
     rgb_matrix::RuntimeOptions runtime_opt;
 
-    matrix_options.rows = rows;
-    matrix_options.cols = cols;
+    matrix_options.rows = height;
+    matrix_options.cols = width;
     matrix_options.pwm_bits = 11;
     matrix_options.hardware_mapping = "adafruit-hat-pwm";
 
@@ -131,8 +128,8 @@ int main(int argc, char **argv) {
         bool inActive = true;
         uint64_t now = microtime();
         pthread_rwlock_wrlock(&rwlock);
-        for(uint32_t f = 0; f < 16; f++) {
-            auto frame = packetBuffer[(f + startOffset) & 0xfu];
+        for(uint32_t f = 0; f <= FRAME_MASK; f++) {
+            auto frame = packetBuffer[(f + startOffset) & FRAME_MASK];
 
             // look for pending frames
             if(frame[0].frameId == 0) continue;
@@ -153,7 +150,7 @@ int main(int argc, char **argv) {
             if(diff > 0) {
                 log("drop frame %d", fid);
                 frame[0].frameId = 0;
-                startOffset = (f + startOffset + 1) & 0xfu;
+                startOffset = (f + startOffset + 1) & FRAME_MASK;
                 break;
             }
 
@@ -162,8 +159,8 @@ int main(int argc, char **argv) {
             // concatenate packets
             uint8_t *buff = pixelBuffer;
             size_t rem = fsize;
-            int sf = 0;
-            while(rem > 0 && sf < 16) {
+            uint32_t sf = 0;
+            while(rem > 0 && sf <= SUBFRAME_MASK) {
                 size_t dlen = std::min(rem, sizeof(frame_packet::pixelData));
                 memcpy(buff, frame[sf++].pixelData, dlen);
                 buff += dlen;
@@ -173,8 +170,8 @@ int main(int argc, char **argv) {
 
             // set pixels
             buff = pixelBuffer;
-            for(int y = 0; y < rows; y++) {
-                for (int x = 0; x < cols; x++) {
+            for(int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
                     offscreen->SetPixel(x, y, buff[0], buff[1], buff[2]);
                     buff += 3;
                 }
@@ -183,7 +180,7 @@ int main(int argc, char **argv) {
             // display frame
             offscreen = matrix->SwapOnVSync(offscreen);
 
-            startOffset = (f + startOffset + 1) & 0xfu;
+            startOffset = (f + startOffset + 1) & FRAME_MASK;
             pthread_rwlock_wrlock(&rwlock);
             break;
         }
@@ -240,7 +237,7 @@ void * doUdpRx(UNUSED void *obj) {
             if(dlen != sizeof(frame_packet)) continue;
 
             auto packet = (frame_packet*) data;
-            memcpy(&(packetBuffer[packet->frameId & 0xfu][packet->subFrameId & 0xfu]), data, sizeof(frame_packet));
+            memcpy(&(packetBuffer[packet->frameId & FRAME_MASK][packet->subFrameId & SUBFRAME_MASK]), data, sizeof(frame_packet));
         }
         pthread_rwlock_unlock(&rwlock);
     }

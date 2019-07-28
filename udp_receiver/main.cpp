@@ -172,7 +172,6 @@ int main(int argc, char **argv) {
             frame[0].frameId = 0;
 
             // set pixels
-            offscreen->Clear();
             buff = pixelBuffer;
             for(int y = 0; y < rows; y++) {
                 for (int x = 0; x < cols; x++) {

@@ -158,20 +158,21 @@ int main(int argc, char **argv) {
             }
 
             pthread_rwlock_unlock(&rwlock);
+
             // concatenate packets
             uint8_t *buff = pixelBuffer;
             size_t rem = fsize;
             int sf = 0;
             while(rem > 0 && sf < 16) {
                 size_t dlen = std::min(rem, sizeof(frame_packet::pixelData));
-                memcpy(buff, frame[sf].pixelData, dlen);
+                memcpy(buff, frame[sf++].pixelData, dlen);
                 buff += dlen;
                 rem -= dlen;
-                sf++;
             }
             frame[0].frameId = 0;
 
             // set pixels
+            offscreen->Clear();
             buff = pixelBuffer;
             for(int y = 0; y < rows; y++) {
                 for (int x = 0; x < cols; x++) {

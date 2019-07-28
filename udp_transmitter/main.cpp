@@ -63,9 +63,9 @@ int main(int argc, char **argv) {
     pthread_create(&threadUdpTx, nullptr, doUdpTx, nullptr);
 
     setPixel(0, 0, 255, 0, 0);
-    setPixel(31, 0, 0, 255, 0);
+    setPixel(63, 0, 0, 255, 0);
     setPixel(0, 31, 0, 0, 255);
-    setPixel(31, 31, 255, 255, 255);
+    setPixel(63, 31, 255, 255, 255);
 
     pause();
 
@@ -91,9 +91,9 @@ void * doUdpTx(UNUSED void *obj) {
     test.height = 32;
 
     while(isRunning) {
-        sendFrame(socketUdp, frameId++, microtime() + 20000, test);
+        sendFrame(socketUdp, frameId++, microtime() + 100000, test);
         if(frameId == 0) frameId = 1;
-        usleep(10000);
+        usleep(20000);
     }
 
     close(socketUdp);
@@ -109,8 +109,7 @@ void sendFrame(int socketUdp, uint32_t frameId, uint64_t frameEpoch, const remot
     packet.targetEpochUs = frameEpoch;
     packet.subFrameId = 0;
 
-    uint8_t pixOff = rp.yoff * width + rp.xoff;
-    pixOff *= 3;
+    uint8_t pixOff = (rp.yoff * width + rp.xoff) * 3;
     for(int y = 0; y < rp.height; y++) {
         for(int x = 0; x < rp.width; x++) {
             for(int c = 0; c < 3; c++) {

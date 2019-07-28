@@ -22,7 +22,6 @@ int socketUdp = -1;
 int udpPort = 0;
 int rows = 0;
 int cols = 0;
-int depth = 0;
 
 struct frame_packet {
     uint32_t frameId;
@@ -45,7 +44,7 @@ int main(int argc, char **argv) {
     act.sa_handler = sig_ignore;
     sigaction(SIGUSR1, &act, nullptr);
 
-    if(argc != 5) {
+    if(argc != 4) {
         log("Usage: udp-rgb-matrix <udpPort> <rows> <cols> <bitsPerChannel>");
         return EX_USAGE;
     }
@@ -53,7 +52,6 @@ int main(int argc, char **argv) {
     udpPort = atoi(argv[1]);
     rows = atoi(argv[2]);
     cols = atoi(argv[3]);
-    depth = atoi(argv[4]);
 
     const int fsize = rows * cols * 3;
     const int fmax = (fsize + 1023) / 1024;
@@ -88,7 +86,7 @@ int main(int argc, char **argv) {
 
     matrix_options.rows = rows;
     matrix_options.cols = cols;
-    matrix_options.pwm_bits = 12;
+    matrix_options.pwm_bits = 11;
     matrix_options.hardware_mapping = "adafruit-hat";
 
     RGBMatrix *matrix = rgb_matrix::CreateMatrixFromOptions(

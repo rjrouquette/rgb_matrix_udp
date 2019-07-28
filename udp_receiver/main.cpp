@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
     ioctl(socketUdp, SIOCGIFADDR, &ifr);
     strcpy(ethAddr, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
     sprintf(ethAddrHex, "%08X", ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr));
-    log("eth0 ip: %s\n", ethAddr);
+    log("eth0 ip: %s", ethAddr);
 
     if (bind(socketUdp, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
         log("failed to bind to port %d", udpPort);

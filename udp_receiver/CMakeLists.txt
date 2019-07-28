@@ -12,4 +12,4 @@ add_executable(
         logging.h
 )
 
-target_link_libraries(udp_receiver -pthread)
+target_link_libraries(udp_receiver -lrgbmatrix -pthread)

@@ -8,6 +8,9 @@
 #include <sys/time.h>
 
 #include "logging.h"
+#include "../rpi-rgb-led-matrix/include/led-matrix.h"
+
+using namespace rgb_matrix;
 
 #define UNUSED __attribute__((unused))
 
@@ -25,7 +28,7 @@ struct frame_packet {
     uint32_t frameId;
     uint32_t subFrameId;
     uint64_t targetEpochUs;
-    uint8_t pixels[1024];
+    uint8_t pixelData[1024];
 };
 
 frame_packet packetBuffer[16][16];
@@ -52,7 +55,8 @@ int main(int argc, char **argv) {
     cols = atoi(argv[3]);
     depth = atoi(argv[4]);
 
-    int fmax = (rows * cols * 3 + 1023) / 1024;
+    const int fsize = rows * cols * 3;
+    const int fmax = (fsize + 1023) / 1024;
     if(fmax > 16) {
         log("panel dimensions requires too many sub frames: %d x %d -> %d sub frames", rows, cols, fmax);
         return EX_CONFIG;
@@ -75,14 +79,36 @@ int main(int argc, char **argv) {
     bzero(packetBuffer, sizeof(packetBuffer));
 
     // start udp rx thread
+    log("start udp rx thread");
     pthread_create(&threadUdpRx, nullptr, doUdpRx, nullptr);
 
-    uint32_t lastOffset = 0;
+    // configure rgb matrix panel driver
+    RGBMatrix::Options matrix_options;
+    rgb_matrix::RuntimeOptions runtime_opt;
+
+    matrix_options.rows = rows;
+    matrix_options.cols = cols;
+    matrix_options.pwm_bits = 12;
+    matrix_options.hardware_mapping = "adafruit-hat";
+
+    RGBMatrix *matrix = rgb_matrix::CreateMatrixFromOptions(
+            matrix_options,
+            runtime_opt
+    );
+    matrix->SetBrightness(100);
+
+    FrameCanvas *offscreen = matrix->CreateFrameCanvas();
+    log("initialized rgb matrix panel driver");
+
+
+    log("waiting for frames");
+    uint32_t startOffset = 0;
     // main processing loop
     while(isRunning) {
+        bool inActive = true;
         uint64_t now = microtime();
         for(uint32_t f = 0; f < 16; f++) {
-            auto frame = packetBuffer[(f + lastOffset) & 0xfu];
+            auto frame = packetBuffer[(f + startOffset) & 0xfu];
 
             // look for pending frames
             if(frame[0].frameId == 0) continue;
@@ -96,14 +122,47 @@ int main(int argc, char **argv) {
                 }
             }
             if(fid == 0) continue;
+            inActive = false;
 
             // process frame
+            int64_t diff = now - frame->targetEpochUs;
+            if(diff > 0) {
+                log("drop frame %d", fid);
+                frame[0].frameId = 0;
+                startOffset = (f + startOffset + 1) & 0xfu;
+            }
             log("processing frame %d", fid);
 
-            lastOffset = (f + lastOffset) & 0xfu;
+            size_t plen;
+            char *pixelData;
+            offscreen->Serialize((const char **)&pixelData, &plen);
+            if(plen != fsize) {
+                log("framebuffer size mismatch");
+                abort();
+            }
+
+            int sf = 0;
+            while(plen > 0 && sf < 16) {
+                size_t dlen = std::min(plen, sizeof(frame_packet::pixelData));
+                memcpy(pixelData, frame[sf].pixelData, dlen);
+                pixelData += dlen;
+                plen -= dlen;
+                sf++;
+            }
+
+            // display frame
+            offscreen = matrix->SwapOnVSync(offscreen);
+
+            startOffset = (f + startOffset + 1) & 0xfu;
             break;
         }
+
+        if(inActive) usleep(1000);
     }
+
+    // Finished. Shut down the RGB matrix.
+    matrix->Clear();
+    delete matrix;
 
     return 0;
 }

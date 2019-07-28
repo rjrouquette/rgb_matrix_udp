@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
     matrix_options.rows = rows;
     matrix_options.cols = cols;
     matrix_options.pwm_bits = 11;
-    matrix_options.hardware_mapping = "adafruit-hat";
+    matrix_options.hardware_mapping = "adafruit-hat-pwm";
 
     RGBMatrix *matrix = rgb_matrix::CreateMatrixFromOptions(
             matrix_options,

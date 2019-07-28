@@ -14,12 +14,13 @@
 #include <json-c/json.h>
 #include <sys/mman.h>
 #include <cerrno>
+#include <algorithm>
 
 #include "logging.h"
 
 #define UNUSED __attribute__((unused))
 
-uint64_t frameMagic = 0xebb29724dd5126acUL;
+const uint64_t frameMagic = 0xebb29724dd5126acUL;
 
 struct frame_packet {
     uint32_t frameId;
@@ -37,6 +38,7 @@ struct remote_panel {
 remote_panel panels[256];
 
 bool isRunning = true;
+uint8_t brightness = 100;
 int width = 0;
 int height = 0;
 int propagationDelay = 250000;
@@ -58,7 +60,9 @@ void labelPanels();
 void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b);
 void drawHex(int xoff, int yoff, uint8_t value);
 void drawHex2(int xoff, int yoff, uint8_t value);
-void flipBuffer();
+void flipBuffer(uint8_t newBrightness = brightness);
+
+ssize_t readFully(int sockfd, void* buffer, size_t len, size_t block = 65536);
 
 int main(int argc, char **argv) {
     struct sigaction act = {};
@@ -114,16 +118,17 @@ int main(int argc, char **argv) {
         log("exiting");
         return EX_CANTCREAT;
     }
+    listen(sockListen, 1);
     log("unix socket opened");
 
     sockaddr clientAddr = {};
     socklen_t addrLen;
-    const char *magic = (char*)&frameMagic;
-    char rbuff[16];
+    const uint8_t *magic = (uint8_t *)&frameMagic;
+    uint8_t rbuff[16];
     while(isRunning) {
         addrLen = sizeof(clientAddr);
         int connFd = accept(sockListen, &clientAddr, &addrLen);
-        if(connFd == -1) continue;
+        if(connFd < 0) continue;
         log("new data stream");
 
         int moff = 0;
@@ -144,18 +149,29 @@ int main(int argc, char **argv) {
                 }
                 continue;
             }
+            moff = 0;
+
+            auto r = read(connFd, rbuff, 1);
+            if(r <= 0) {
+                log("end of data stream");
+                break;
+            }
 
             // read frame data
-            auto r = read(connFd, pixBuffNext, frameSize);
+            r = readFully(connFd, pixBuffNext, frameSize);
             if(r != (ssize_t) frameSize) {
                 log("end of data stream");
                 break;
             }
 
-            flipBuffer();
+            flipBuffer(rbuff[0]);
         }
-
+        // close client connection
         close(connFd);
+
+        // clear display
+        bzero(pixBuffNext, frameSize);
+        flipBuffer();
     }
     close(sockListen);
 
@@ -198,6 +214,8 @@ void sendFrame(int socketUdp, uint32_t frameId, uint64_t frameEpoch, const remot
     int rowAdvance = (width - rp.width) * 3;
     int packOff = 0;
 
+    sendto(socketUdp, &brightness, sizeof(brightness), 0, (sockaddr *) &rp.addr, sizeof(rp.addr));
+
     frame_packet packet = {};
     packet.frameId = frameId;
     packet.targetEpochUs = frameEpoch;
@@ -230,6 +248,10 @@ bool loadConfiguration(const char *fileName) {
     if(config == nullptr) {
         log("failed to parse configuration file");
         return false;
+    }
+
+    if(json_object_object_get_ex(config, "brightness", &jtmp)) {
+        brightness = (uint8_t) json_object_get_int(jtmp);
     }
 
     if(json_object_object_get_ex(config, "width", &jtmp)) {
@@ -302,12 +324,13 @@ bool loadConfiguration(const char *fileName) {
     return true;
 }
 
-void flipBuffer() {
+void flipBuffer(uint8_t newBrightness) {
     // atomically flip pixel buffer
     pthread_mutex_lock(&mutexBuff);
     auto temp = pixBuffAct;
     pixBuffAct = pixBuffNext;
     pixBuffNext = temp;
+    brightness = newBrightness;
     pthread_mutex_unlock(&mutexBuff);
 }
 
@@ -624,4 +647,28 @@ void drawHex(int xoff, int yoff, uint8_t value) {
                 setPixel(x + xoff, y + yoff, 0, 0, 0);
         }
     }
+}
+
+ssize_t readFully(int sockfd, void* buffer, size_t len, size_t block) {
+    ssize_t n, l;
+    l = 0;
+    while(l < (ssize_t)len) {
+        n = ::recv(sockfd, ((char*)buffer)+l, std::min(len-l, block), 0);
+        if(n < 0) {
+            if(errno == EAGAIN) {
+                usleep(1000);
+            }
+            else {
+                return n;
+            }
+        }
+        else if(n == 0) {
+            return l;
+        }
+        else {
+            l += n;
+        }
+    }
+
+    return l;
 }

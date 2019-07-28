@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
             }
 
             pthread_rwlock_unlock(&rwlock);
-            log("processing frame %d", fid);
+            //log("processing frame %d", fid);
             frame[0].frameId = 0;
 
             // concatenate packets

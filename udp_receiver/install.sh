@@ -5,5 +5,6 @@ cp --remove-destination -v ../rpi-rgb-led-matrix/lib/librgbmatrix.so.1 /usr/loca
 cp --remove-destination -v rgb-matrix-udp-receiver.service /etc/systemd/system/
 
 systemctl daemon-reload
+systemctl enable rgb-matrix-udp-receiver.service
 systemctl restart rgb-matrix-udp-receiver.service
 systemctl status rgb-matrix-udp-receiver.service

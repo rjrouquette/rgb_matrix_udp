@@ -29,7 +29,6 @@ using namespace rgb_matrix;
 
 bool isRunning = true;
 int socketUdp = -1;
-int udpPort = 0;
 int height = 0;
 int width = 0;
 
@@ -88,10 +87,10 @@ int main(int argc, char **argv) {
     log("eth0 ip: %s", ethAddr);
 
     if (bind(socketUdp, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-        log("failed to bind to port %d", udpPort);
+        log("failed to bind to port %d", UDP_PORT);
         return EX_OSERR;
     }
-    log("listening on port %d", udpPort);
+    log("listening on port %d", UDP_PORT);
 
     // clear packet buffer
     bzero(packetBuffer, sizeof(packetBuffer));

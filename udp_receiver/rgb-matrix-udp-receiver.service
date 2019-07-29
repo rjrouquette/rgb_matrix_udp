@@ -6,6 +6,7 @@ After=network-online.target
 [Service]
 Type=simple
 User=root
+Nice=-10
 ExecStart=/usr/local/bin/rgb_matrix_udp_receiver
 Restart=on-failure
 RestartSec=10

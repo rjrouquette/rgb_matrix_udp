@@ -6,17 +6,31 @@
   "updateInterval": 10000,
   "panels": [
     {
-      "address": "192.168.3.26",
+      "address": "192.168.3.27",
       "port": 1234,
       "horizontalOffset": 0,
       "verticalOffset": 0,
       "width": 128,
       "height": 32
     },{
-      "address": "192.168.3.27",
+      "address": "192.168.3.26",
       "port": 1234,
       "horizontalOffset": 128,
       "verticalOffset": 0,
+      "width": 128,
+      "height": 32
+    },{
+      "address": "192.168.3.30",
+      "port": 1234,
+      "horizontalOffset": 0,
+      "verticalOffset": 32,
+      "width": 128,
+      "height": 32
+    },{
+      "address": "192.168.3.31",
+      "port": 1234,
+      "horizontalOffset": 128,
+      "verticalOffset": 32,
       "width": 128,
       "height": 32
     }

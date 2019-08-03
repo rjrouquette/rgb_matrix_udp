@@ -60,6 +60,12 @@ int main(int argc, char **argv) {
     act.sa_handler = sig_ignore;
     sigaction(SIGUSR1, &act, nullptr);
 
+    // set cpu affinity
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(1, &cpuset);
+    pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
+
     height = MATRIX_HEIGHT;
     width = MATRIX_WIDTH;
 
@@ -205,6 +211,12 @@ int main(int argc, char **argv) {
 
 void * doUdpRx(UNUSED void *obj) {
     pthread_setname_np(pthread_self(), "udp_rx");
+
+    // set cpu affinity
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(2, &cpuset);
+    pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
 
     // buffer structures
     struct sockaddr_in addr[RECVMMSG_CNT];

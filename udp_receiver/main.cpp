@@ -17,15 +17,19 @@ using namespace rgb_matrix;
 
 #define UNUSED __attribute__((unused))
 
-#define MATRIX_WIDTH (64)
+#define MATRIX_WIDTH (128)
 #define MATRIX_HEIGHT (32)
+
+#define PANEL_WIDTH (64)
+#define PANEL_HEIGHT (32)
+#define PANEL_CHAIN (2)
 
 #define UDP_PORT (1234)
 #define UDP_BUFFER_SIZE (2048)
 #define RECVMMSG_CNT (64)
 
 #define FRAME_MASK (0x3fu)      // 64 frame circular buffer
-#define SUBFRAME_MASK (0x7u)    // 8 sub-frames per frame
+#define SUBFRAME_MASK (0xfu)    // 16 sub-frames per frame
 
 bool isRunning = true;
 int socketUdp = -1;
@@ -103,8 +107,9 @@ int main(int argc, char **argv) {
     RGBMatrix::Options matrix_options;
     rgb_matrix::RuntimeOptions runtime_opt;
 
-    matrix_options.rows = height;
-    matrix_options.cols = width;
+    matrix_options.rows = PANEL_HEIGHT;
+    matrix_options.cols = PANEL_WIDTH;
+    matrix_options.chain_length = PANEL_CHAIN;
     matrix_options.pwm_bits = 11;
     matrix_options.hardware_mapping = "adafruit-hat-pwm";
 

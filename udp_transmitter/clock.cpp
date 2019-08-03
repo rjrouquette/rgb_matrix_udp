@@ -45,7 +45,7 @@ int main(int argc, char **argv) {
 
     for(;;) {
         drawTime();
-        sendFrame(sockOutput, 100, frame, frameSize);
+        sendFrame(sockOutput, 20, frame, frameSize);
         usleep(100000);
     }
 

@@ -26,7 +26,7 @@ long microtime();
 void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b);
 void drawHex(int xoff, int yoff, uint8_t value);
 void drawColon(int xoff, int yoff);
-void drawTime();
+void drawTime(int xoff, int yoff);
 void sendFrame(int sockOutput, uint8_t brightness, uint8_t *frame, size_t fsize);
 
 ssize_t writeFully(int sockfd, const void* buffer, size_t len, size_t block = 65536);
@@ -43,10 +43,16 @@ int main(int argc, char **argv) {
         return EX_IOERR;
     }
 
+    int cnt = 0, xoff = 0, yoff = 0;
     for(;;) {
-        drawTime();
+        if(cnt % 100 == 0) {
+            xoff = rand() % (width - 71);
+            yoff = rand() % 16;
+        }
+        drawTime(xoff, yoff);
         sendFrame(sockOutput, 20, frame, frameSize);
         usleep(100000);
+        cnt++;
     }
 
     close(sockOutput);
@@ -65,7 +71,7 @@ void sendFrame(int sockOutput, uint8_t brightness, uint8_t *frame, size_t fsize)
     writeFully(sockOutput, frame, fsize);
 }
 
-void drawTime() {
+void drawTime(int xoff, int yoff) {
     bzero(frame, frameSize);
 
     time_t epoch = time(nullptr);
@@ -74,18 +80,18 @@ void drawTime() {
 
     bool colon = (microtime() % 1000000) >= 500000;
 
-    drawHex(0, 0, now.tm_hour / 10);
-    drawHex(11, 0, now.tm_hour % 10);
+    drawHex(xoff + 0, yoff + 0, now.tm_hour / 10);
+    drawHex(xoff + 11, yoff + 0, now.tm_hour % 10);
 
-    if(colon) drawColon(22, 0);
+    if(colon) drawColon(xoff + 22, yoff + 0);
 
-    drawHex(25, 0, now.tm_min / 10);
-    drawHex(36, 0, now.tm_min % 10);
+    drawHex(xoff + 25, yoff + 0, now.tm_min / 10);
+    drawHex(xoff + 36, yoff + 0, now.tm_min % 10);
 
-    if(colon) drawColon(47, 0);
+    if(colon) drawColon(xoff + 47, yoff + 0);
 
-    drawHex(50, 0, now.tm_sec / 10);
-    drawHex(61, 0, now.tm_sec % 10);
+    drawHex(xoff + 50, yoff + 0, now.tm_sec / 10);
+    drawHex(xoff + 61, yoff + 0, now.tm_sec % 10);
 }
 
 void drawColon(int xoff, int yoff) {

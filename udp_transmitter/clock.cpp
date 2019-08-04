@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
             yoff = rand() % (height - 16);
         }
         drawTime(xoff, yoff);
-        sendFrame(sockOutput, 1, frame, frameSize);
+        sendFrame(sockOutput, 100, frame, frameSize);
         usleep(100000);
         cnt++;
     }

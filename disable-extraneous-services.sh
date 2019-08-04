@@ -7,8 +7,8 @@ sudo systemctl disable apt-daily-upgrade.timer
 sudo systemctl disable apt-daily-upgrade.service
 
 # disable irqbalance
-sudo systemcl stop irqbalance
-sudo systemcl disable irqbalance
+sudo systemctl stop irqbalance
+sudo systemctl disable irqbalance
 
 # disable wpa supplicant
 sudo systemctl stop wpa_supplicant

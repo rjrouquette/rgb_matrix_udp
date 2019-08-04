@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
     matrix_options.cols = PANEL_WIDTH;
     matrix_options.chain_length = PANEL_CHAIN;
     matrix_options.pwm_bits = 11;
-    matrix_options.pwm_lsb_nanoseconds = 150;
+    matrix_options.pwm_lsb_nanoseconds = 130;
     matrix_options.hardware_mapping = "adafruit-hat-pwm";
 
     runtime_opt.gpio_slowdown = 2;

@@ -119,6 +119,8 @@ int main(int argc, char **argv) {
     matrix_options.pwm_bits = 11;
     matrix_options.hardware_mapping = "adafruit-hat-pwm";
 
+    runtime_opt.gpio_slowdown = 1;
+
     matrix = rgb_matrix::CreateMatrixFromOptions(
             matrix_options,
             runtime_opt

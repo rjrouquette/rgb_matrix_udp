@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
             yoff = rand() % (height - 16);
         }
         drawTime(xoff, yoff);
-        sendFrame(sockOutput, 20, frame, frameSize);
+        sendFrame(sockOutput, 100, frame, frameSize);
         usleep(100000);
         cnt++;
     }
@@ -72,7 +72,7 @@ void sendFrame(int sockOutput, uint8_t brightness, uint8_t *frame, size_t fsize)
 }
 
 void drawTime(int xoff, int yoff) {
-    bzero(frame, frameSize);
+    memset(frame, 255, frameSize);
 
     time_t epoch = time(nullptr);
     struct tm now = {};
@@ -97,8 +97,8 @@ void drawTime(int xoff, int yoff) {
 void drawColon(int xoff, int yoff) {
     for(int y = 0; y < 2; y++) {
         for(int x = 0; x < 2; x++) {
-            setPixel(x + xoff, y + yoff + 3, 255, 255, 255);
-            setPixel(x + xoff, y + yoff + 11, 255, 255, 255);
+            setPixel(x + xoff, y + yoff + 3, 0, 0, 0);
+            setPixel(x + xoff, y + yoff + 11, 0, 0, 0);
         }
     }
 }
@@ -393,9 +393,9 @@ void drawHex(int xoff, int yoff, uint8_t value) {
     for(int y = 0; y < 16; y++) {
         for(x = 0; x < 11; x++) {
             if (pattern[y][x] == '#')
-                setPixel(x + xoff, y + yoff, 255, 255, 255);
-            else
                 setPixel(x + xoff, y + yoff, 0, 0, 0);
+            else
+                setPixel(x + xoff, y + yoff, 255, 255, 255);
         }
     }
 }

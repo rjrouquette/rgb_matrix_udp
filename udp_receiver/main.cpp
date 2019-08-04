@@ -190,6 +190,11 @@ int main(int argc, char **argv) {
                 }
             }
 
+            diff = frame->targetEpochUs - microtime();
+            if(diff > 0) {
+                usleep(diff);
+            }
+
             // display frame
             offscreen = matrix->SwapOnVSync(offscreen);
 

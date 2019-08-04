@@ -17,6 +17,7 @@ sudo apt -y install chrony cmake build-essential
 # build and install receiver
 git clone --recursive https://github.com/rjrouquette/rgb_matrix_udp.git
 cd rgb_matrix_udp/rpi-rgb-led-matrix
+export USER_DEFINES="-include $(pwd)/../nanosleep.h"
 make
 cd ../udp_receiver
 ./build.sh

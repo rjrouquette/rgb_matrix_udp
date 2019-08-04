@@ -2,7 +2,7 @@
   "brightness": 25,
   "width": 256,
   "height": 64,
-  "propagationDelay": 200000,
+  "propagationDelay": 250000,
   "updateInterval": 50000,
   "panels": [
     {

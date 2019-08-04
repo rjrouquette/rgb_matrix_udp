@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
     matrix_options.pwm_lsb_nanoseconds = 200;
     matrix_options.hardware_mapping = "adafruit-hat-pwm";
 
-    runtime_opt.gpio_slowdown = 5;
+    runtime_opt.gpio_slowdown = 2;
 
     matrix = rgb_matrix::CreateMatrixFromOptions(
             matrix_options,

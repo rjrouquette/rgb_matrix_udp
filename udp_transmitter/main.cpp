@@ -15,6 +15,7 @@
 #include <sys/mman.h>
 #include <cerrno>
 #include <algorithm>
+#include <sys/stat.h>
 
 #include "logging.h"
 
@@ -43,6 +44,7 @@ int width = 0;
 int height = 0;
 int propagationDelay = 250000;
 int updateInterval = 50000;
+char socketPath[4096];
 
 void *pixelBuffer;
 uint8_t *pixBuffAct, *pixBuffNext;
@@ -72,6 +74,7 @@ int main(int argc, char **argv) {
     sigaction(SIGTERM, &act, nullptr);
 
     bzero(panels, sizeof(panels));
+    strcpy(socketPath, "rgb-matrix.sock");
 
     if(argc != 2) {
         log("Usage: udp-rgb-matrix <config.json>");
@@ -105,9 +108,9 @@ int main(int argc, char **argv) {
     struct sockaddr_un addr = {};
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, "rgb-matrix.sock", sizeof(addr.sun_path)-1);
+    strncpy(addr.sun_path, socketPath, sizeof(addr.sun_path)-1);
 
-    unlink("rgb-matrix.sock");
+    unlink(socketPath);
     if(bind(sockListen, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
         log("ERROR on socket binding! %s (%d)", strerror(errno), errno);
         log("failed to bind listening socket");
@@ -118,6 +121,7 @@ int main(int argc, char **argv) {
         log("exiting");
         return EX_CANTCREAT;
     }
+    chmod(socketPath, 0666);
     listen(sockListen, 1);
     log("unix socket opened");
 
@@ -248,6 +252,10 @@ bool loadConfiguration(const char *fileName) {
     if(config == nullptr) {
         log("failed to parse configuration file");
         return false;
+    }
+
+    if(json_object_object_get_ex(config, "socket", &jtmp)) {
+        strcpy(socketPath, json_object_get_string(jtmp));
     }
 
     if(json_object_object_get_ex(config, "brightness", &jtmp)) {

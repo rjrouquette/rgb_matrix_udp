@@ -1,0 +1,23 @@
+[Unit]
+Description=RGB Matrix UDP Transmitter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=root
+Nice=-10
+WorkingDirectory=/usr/local/share
+ExecStart=/usr/local/bin/rgb_matrix /etc/rgb-matrix.json
+Restart=on-failure
+RestartSec=10
+StartLimitInterval=5
+StartLimitBurst=3
+BlockIOAccounting=yes
+CPUAccounting=yes
+MemoryAccounting=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -250,7 +250,7 @@ void * doUdpRx(UNUSED void *obj) {
 
             // brightness packet
             if(dlen == sizeof(uint8_t)) {
-                matrix->SetBrightness(*(uint8_t*)data);
+                if(matrix) matrix->SetBrightness(*(uint8_t*)data);
                 continue;
             }
             // ignore packet if size is incorrect

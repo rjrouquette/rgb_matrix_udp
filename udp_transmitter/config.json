@@ -2,32 +2,32 @@
   "brightness": 25,
   "width": 256,
   "height": 64,
-  "propagationDelay": 250000,
-  "updateInterval": 50000,
+  "propagationDelay": 100000,
+  "updateInterval": 20000,
   "panels": [
     {
-      "address": "192.168.3.27",
+      "address": "10.1.0.253",
       "port": 1234,
       "horizontalOffset": 0,
       "verticalOffset": 0,
       "width": 128,
       "height": 32
     },{
-      "address": "192.168.3.26",
+      "address": "10.1.0.217",
       "port": 1234,
       "horizontalOffset": 128,
       "verticalOffset": 0,
       "width": 128,
       "height": 32
     },{
-      "address": "192.168.3.30",
+      "address": "10.1.0.170",
       "port": 1234,
       "horizontalOffset": 0,
       "verticalOffset": 32,
       "width": 128,
       "height": 32
     },{
-      "address": "192.168.3.31",
+      "address": "10.1.0.250",
       "port": 1234,
       "horizontalOffset": 128,
       "verticalOffset": 32,

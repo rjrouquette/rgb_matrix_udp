@@ -40,10 +40,9 @@ struct frame_packet {
     uint32_t frameId;
     uint32_t subFrameId;
     uint64_t targetEpochUs;
-    uint8_t pixelData[1024];
+    uint8_t pixelData[1200];    // 400 RGB pixels
 };
 
-uint8_t pixelBuffer[(SUBFRAME_MASK + 1) * sizeof(frame_packet::pixelData)];
 frame_packet packetBuffer[FRAME_MASK + 1][SUBFRAME_MASK + 1];
 pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
@@ -173,25 +172,19 @@ int main(int argc, char **argv) {
             pthread_rwlock_unlock(&rwlock);
 
             // concatenate packets
-            uint8_t *buff = pixelBuffer;
-            size_t rem = fsize;
             uint32_t sf = 0;
-            while(rem > 0 && sf <= SUBFRAME_MASK) {
-                size_t dlen = std::min(rem, sizeof(frame_packet::pixelData));
-                memcpy(buff, frame[sf++].pixelData, dlen);
-                buff += dlen;
-                rem -= dlen;
-            }
-            frame[0].frameId = 0;
-
-            // set pixels
-            buff = pixelBuffer;
-            for(int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    offscreen->SetPixel(x, y, buff[0], buff[1], buff[2]);
-                    buff += 3;
+            int x = 0, y = 0;
+            while(y < height && sf <= SUBFRAME_MASK) {
+                auto data = frame[sf++].pixelData;
+                for(size_t off = 0; off < sizeof(frame_packet::pixelData); off += 3) {
+                    offscreen->SetPixel(x, y, data[off + 0], data[off + 1], data[off + 2]);
+                    if(++x >= width) {
+                        x = 0;
+                        if(++y >= height) break;
+                    }
                 }
             }
+            frame[0].frameId = 0;
 
             diff = frame->targetEpochUs - microtime();
             if(diff > 0) {

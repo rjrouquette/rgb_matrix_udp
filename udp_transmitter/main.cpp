@@ -26,7 +26,7 @@ struct frame_packet {
     uint32_t frameId;
     uint32_t subFrameId;
     uint64_t targetEpochUs;
-    uint8_t pixelData[1024];
+    uint8_t pixelData[1200]; // 400 RGB pixels
 };
 
 struct remote_panel {

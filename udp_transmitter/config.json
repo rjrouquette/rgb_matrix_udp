@@ -7,28 +7,28 @@
   "updateInterval": 20000,
   "panels": [
     {
-      "address": "10.1.0.253",
+      "address": "10.1.8.100",
       "port": 1234,
       "horizontalOffset": 0,
       "verticalOffset": 0,
       "width": 128,
       "height": 32
     },{
-      "address": "10.1.0.217",
+      "address": "10.1.8.101",
       "port": 1234,
       "horizontalOffset": 128,
       "verticalOffset": 0,
       "width": 128,
       "height": 32
     },{
-      "address": "10.1.0.170",
+      "address": "10.1.8.102",
       "port": 1234,
       "horizontalOffset": 0,
       "verticalOffset": 32,
       "width": 128,
       "height": 32
     },{
-      "address": "10.1.0.250",
+      "address": "10.1.8.103",
       "port": 1234,
       "horizontalOffset": 128,
       "verticalOffset": 32,

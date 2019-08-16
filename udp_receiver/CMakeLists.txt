@@ -10,6 +10,8 @@ add_executable(
         main.cpp
         logging.cpp
         logging.h
+        MatrixDriver.cpp
+        MatrixDriver.h
 )
 
 target_link_libraries(udp_receiver -lrgbmatrix -pthread)

@@ -24,7 +24,8 @@ enum class gpio_pin : uint8_t {
     ctr0 = 12,
     ctr1 = 25,
     clk = 24,
-    ready = 23
+    write = 23,
+    ready = 18,
 };
 
 inline uint32_t gpio_mask(gpio_pin pin) noexcept {
@@ -50,7 +51,7 @@ frameBuffer{}, threadGpio{}
 
     brightness = 100;
 
-    sizeFrameBuffer = pwmBits * pixelsPerRow * rowsPerScan * 2 + 2;
+    sizeFrameBuffer = pwmBits * pixelsPerRow * rowsPerScan * 2 + 4;
     frameRaw = new uint32_t[sizeFrameBuffer * 2];
     bzero(frameRaw, sizeFrameBuffer * 2 * sizeof(uint32_t));
 
@@ -71,6 +72,11 @@ MatrixDriver::~MatrixDriver() {
 void MatrixDriver::initFrameBuffer(uint32_t *fb) {
     uint32_t stepSize;
 
+    // set write enable bits
+    for(uint32_t i = 0; i < sizeFrameBuffer; i++) {
+        fb[i] |= gpio_mask(gpio_pin::write);
+    }
+
     // set clk bits
     for(uint32_t i = 1; i < sizeFrameBuffer; i += 2) {
         fb[i] |= gpio_mask(gpio_pin::clk);
@@ -81,16 +87,18 @@ void MatrixDriver::initFrameBuffer(uint32_t *fb) {
         fb[i] |= gpio_mask(gpio_pin::ctr0);
     }
 
-    // set row advance bits
+    // set end-of-row advance bits
     stepSize = pixelsPerRow * pwmBits;
     for(uint32_t i = stepSize - 1; i < sizeFrameBuffer; i += stepSize) {
         fb[i] |= gpio_mask(gpio_pin::ctr1);
         fb[i] &= ~gpio_mask(gpio_pin::ctr1);
     }
 
-    // set end-of-frame bit
+    // set end-of-frame bits
     stepSize = pixelsPerRow * pwmBits * rowsPerScan;
-    fb[stepSize - 1] |= gpio_mask(gpio_pin::ctr0);
+    for(uint32_t i = stepSize - 1; i < sizeFrameBuffer; i++) {
+        fb[i] |= gpio_mask(gpio_pin::ctr0) | gpio_mask(gpio_pin::ctr1);
+    }
 }
 
 void MatrixDriver::clearFrame() {

@@ -43,13 +43,11 @@ frameBuffer{}, threadGpio{}
     if(rowsPerScan < 1) abort();
     if(rowsPerScan > 32) abort();
     if(pwmBits < 1) abort();
-    if(pwmBits > 11) abort();
+    if(pwmBits > 16) abort();
 
     this->pixelsPerRow = pixelsPerRow;
     this->rowsPerScan = rowsPerScan;
     this->pwmBits = pwmBits;
-
-    brightness = 100;
 
     sizeFrameBuffer = pwmBits * pixelsPerRow * rowsPerScan * 2 + 4;
     frameRaw = new uint32_t[sizeFrameBuffer * 2];
@@ -62,7 +60,6 @@ frameBuffer{}, threadGpio{}
     initFrameBuffer(frameBuffer[1]);
 
     nextBuffer = 0;
-    pwmMapping = pwmMappingCie1931;
 }
 
 MatrixDriver::~MatrixDriver() {
@@ -108,13 +105,6 @@ void MatrixDriver::clearFrame() {
     }
 }
 
-void MatrixDriver::setBrightness(uint8_t level) {
-    if(level > 100)
-        brightness = 100;
-    else
-        brightness = level;
-}
-
 void MatrixDriver::setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     if(x < 0 || y < 0) return;
     if(x >= pixelsPerRow || y >= (rowsPerScan << 4u)) return;
@@ -122,88 +112,51 @@ void MatrixDriver::setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     uint32_t rcnt = y / rowsPerScan;
     uint32_t poff = x + (roff * pwmBits * pixelsPerRow);
 
-    uint16_t R = (*pwmMapping)(pwmBits, r, brightness);
-    uint16_t G = (*pwmMapping)(pwmBits, g, brightness);
-    uint16_t B = (*pwmMapping)(pwmBits, b, brightness);
+    // map pwm values
+    uint16_t R = pwmMapping[r];
+    uint16_t G = pwmMapping[g];
+    uint16_t B = pwmMapping[b];
 
-    if(rcnt == 0)
-        setR0(&frameBuffer[nextBuffer][poff], pwmBits * pixelsPerRow, R, G, B);
-    else if(rcnt == 1)
-        setR1(&frameBuffer[nextBuffer][poff], pwmBits * pixelsPerRow, R, G, B);
-    else if(rcnt == 2)
-        setR2(&frameBuffer[nextBuffer][poff], pwmBits * pixelsPerRow, R, G, B);
-    else if(rcnt == 3)
-        setR3(&frameBuffer[nextBuffer][poff], pwmBits * pixelsPerRow, R, G, B);
-}
-
-void MatrixDriver::setR0(uint32_t* pixel, uint32_t stride, uint16_t r, uint16_t g, uint16_t b) {
-    for(uint8_t i = 0; i < pwmBits; i++) {
-        if(r & 1u) *pixel |= gpio_mask(gpio_pin::r0);
-        else       *pixel &= ~gpio_mask(gpio_pin::r0);
-
-        if(g & 1u) *pixel |= gpio_mask(gpio_pin::g0);
-        else       *pixel &= ~gpio_mask(gpio_pin::g0);
-
-        if(b & 1u) *pixel |= gpio_mask(gpio_pin::b0);
-        else       *pixel &= ~gpio_mask(gpio_pin::b0);
-
-        r >>= 1u;
-        g >>= 1u;
-        b >>= 1u;
-        pixel += stride;
+    // set gpio masks
+    uint32_t maskR = 0, maskG = 0, maskB = 0;
+    if(rcnt == 0) {
+        maskR = gpio_mask(gpio_pin::r0);
+        maskG = gpio_mask(gpio_pin::g0);
+        maskB = gpio_mask(gpio_pin::b0);
     }
-}
-
-void MatrixDriver::setR1(uint32_t* pixel, uint32_t stride, uint16_t r, uint16_t g, uint16_t b) {
-    for(uint8_t i = 0; i < pwmBits; i++) {
-        if(r & 1u) *pixel |= gpio_mask(gpio_pin::r1);
-        else       *pixel &= ~gpio_mask(gpio_pin::r1);
-
-        if(g & 1u) *pixel |= gpio_mask(gpio_pin::g1);
-        else       *pixel &= ~gpio_mask(gpio_pin::g1);
-
-        if(b & 1u) *pixel |= gpio_mask(gpio_pin::b1);
-        else       *pixel &= ~gpio_mask(gpio_pin::b1);
-
-        r >>= 1u;
-        g >>= 1u;
-        b >>= 1u;
-        pixel += stride;
+    else if(rcnt == 1) {
+        maskR = gpio_mask(gpio_pin::r1);
+        maskG = gpio_mask(gpio_pin::g1);
+        maskB = gpio_mask(gpio_pin::b1);
     }
-}
-
-void MatrixDriver::setR2(uint32_t* pixel, uint32_t stride, uint16_t r, uint16_t g, uint16_t b) {
-    for(uint8_t i = 0; i < pwmBits; i++) {
-        if(r & 1u) *pixel |= gpio_mask(gpio_pin::r2);
-        else       *pixel &= ~gpio_mask(gpio_pin::r2);
-
-        if(g & 1u) *pixel |= gpio_mask(gpio_pin::g2);
-        else       *pixel &= ~gpio_mask(gpio_pin::g2);
-
-        if(b & 1u) *pixel |= gpio_mask(gpio_pin::b2);
-        else       *pixel &= ~gpio_mask(gpio_pin::b2);
-
-        r >>= 1u;
-        g >>= 1u;
-        b >>= 1u;
-        pixel += stride;
+    else if(rcnt == 2) {
+        maskR = gpio_mask(gpio_pin::r2);
+        maskG = gpio_mask(gpio_pin::g2);
+        maskB = gpio_mask(gpio_pin::b2);
     }
-}
+    else if(rcnt == 3) {
+        maskR = gpio_mask(gpio_pin::r3);
+        maskG = gpio_mask(gpio_pin::g3);
+        maskB = gpio_mask(gpio_pin::b3);
+    }
 
-void MatrixDriver::setR3(uint32_t* pixel, uint32_t stride, uint16_t r, uint16_t g, uint16_t b) {
+    // set pixel gpio bits
+    const auto stride = pwmBits * pixelsPerRow;
+    auto pixel = &frameBuffer[nextBuffer][poff];
+
     for(uint8_t i = 0; i < pwmBits; i++) {
-        if(r & 1u) *pixel |= gpio_mask(gpio_pin::r3);
-        else       *pixel &= ~gpio_mask(gpio_pin::r3);
+        if(R & 1u) *pixel |= maskR;
+        else       *pixel &= ~maskR;
 
-        if(g & 1u) *pixel |= gpio_mask(gpio_pin::g3);
-        else       *pixel &= ~gpio_mask(gpio_pin::g3);
+        if(G & 1u) *pixel |= maskG;
+        else       *pixel &= ~maskG;
 
-        if(b & 1u) *pixel |= gpio_mask(gpio_pin::b3);
-        else       *pixel &= ~gpio_mask(gpio_pin::b3);
+        if(B & 1u) *pixel |= maskB;
+        else       *pixel &= ~maskB;
 
-        r >>= 1u;
-        g >>= 1u;
-        b >>= 1u;
+        R >>= 1u;
+        G >>= 1u;
+        B >>= 1u;
         pixel += stride;
     }
 }
@@ -212,4 +165,10 @@ uint16_t pwmMappingCie1931(uint8_t bits, uint8_t level, uint8_t intensity) {
     auto out_factor = (float) ((1u << bits) - 1);
     auto v = (float) (level * intensity) / 255.0f;
     return out_factor * ((v <= 8.0f) ? v / 902.3f : powf((v + 16.0f) / 116.0f, 3.0f));
+}
+
+void createPwmLutCie1931(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut) {
+    for(int i = 0; i < 256; i++) {
+        pwmLut[i] = pwmMappingCie1931(bits, (uint8_t)i, (uint8_t)brightness);
+    }
 }

@@ -7,6 +7,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cmath>
+#include <zconf.h>
 
 enum class gpio_pin : uint8_t {
     r0 = 4,
@@ -32,12 +33,37 @@ inline uint32_t gpio_mask(gpio_pin pin) noexcept {
     return 1u << static_cast<uint8_t>(pin);
 }
 
-const uint32_t maskControlPins = gpio_mask(gpio_pin::ctr0) |
-                                 gpio_mask(gpio_pin::ctr1) |
-                                 gpio_mask(gpio_pin::clk);
+// mask for control pins
+const uint32_t maskControlPins = gpio_mask(gpio_pin::ctr0)  |
+                                 gpio_mask(gpio_pin::ctr1)  |
+                                 gpio_mask(gpio_pin::clk)   |
+                                 gpio_mask(gpio_pin::write);
+
+// mask for output pins
+const uint32_t maskOut = gpio_mask(gpio_pin::ctr0)  |
+                         gpio_mask(gpio_pin::ctr1)  |
+                         gpio_mask(gpio_pin::clk)   |
+                         gpio_mask(gpio_pin::write) |
+
+                         gpio_mask(gpio_pin::r0) |
+                         gpio_mask(gpio_pin::g0) |
+                         gpio_mask(gpio_pin::b0) |
+
+                         gpio_mask(gpio_pin::r1) |
+                         gpio_mask(gpio_pin::g1) |
+                         gpio_mask(gpio_pin::b1) |
+
+                         gpio_mask(gpio_pin::r2) |
+                         gpio_mask(gpio_pin::g2) |
+                         gpio_mask(gpio_pin::b2) |
+
+                         gpio_mask(gpio_pin::r3) |
+                         gpio_mask(gpio_pin::g3) |
+                         gpio_mask(gpio_pin::b3);
 
 MatrixDriver::MatrixDriver(int pixelsPerRow, int rowsPerScan, int pwmBits) :
-frameBuffer{}, threadGpio{}
+frameBuffer{}, threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
+pwmMapping{}
 {
     if(pixelsPerRow < 1) abort();
     if(rowsPerScan < 1) abort();
@@ -60,10 +86,19 @@ frameBuffer{}, threadGpio{}
     initFrameBuffer(frameBuffer[1]);
 
     nextBuffer = 0;
+
+    // display off by default
+    bzero(pwmMapping, sizeof(pwmMapping));
+
+    initGpio();
 }
 
 MatrixDriver::~MatrixDriver() {
     delete frameRaw;
+}
+
+void MatrixDriver::initGpio() {
+
 }
 
 void MatrixDriver::initFrameBuffer(uint32_t *fb) {
@@ -161,7 +196,33 @@ void MatrixDriver::setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     }
 }
 
-uint16_t pwmMappingCie1931(uint8_t bits, uint8_t level, uint8_t intensity) {
+void MatrixDriver::setPixel(int x, int y, uint8_t *rgb) {
+    setPixel(x, y, rgb[0], rgb[1], rgb[2]);
+}
+
+void MatrixDriver::setPixels(int &x, int &y, uint8_t *rgb, int pixelCount) {
+    for(int i = 0; i < pixelCount; i++) {
+        setPixel(x, y, rgb);
+        rgb += 3;
+        if(++x >= pixelsPerRow) {
+            x = 0;
+            ++y;
+        }
+    }
+}
+
+void MatrixDriver::sendFrame(const uint32_t *fb) {
+    for(size_t i = 0; i < sizeFrameBuffer; i++) {
+        *gpioSet = fb[i];
+        *gpioClr = ~fb[i] & maskOut;
+
+        usleep(1);
+    }
+}
+
+
+
+static uint16_t pwmMappingCie1931(uint8_t bits, uint8_t level, uint8_t intensity) {
     auto out_factor = (float) ((1u << bits) - 1);
     auto v = (float) (level * intensity) / 255.0f;
     return out_factor * ((v <= 8.0f) ? v / 902.3f : powf((v + 16.0f) / 116.0f, 3.0f));

@@ -141,35 +141,35 @@ void MatrixDriver::initGpio(PeripheralBase peripheralBase) {
     gpioInp = gpioReg + (0x34u / sizeof(uint32_t));
 
     // control pins
-    setGpioOutput(gpio_pin::ctr0);
-    setGpioOutput(gpio_pin::ctr1);
-    setGpioOutput(gpio_pin::clk);
-    setGpioOutput(gpio_pin::enable);
+    initGpioOutput(gpio_pin::ctr0);
+    initGpioOutput(gpio_pin::ctr1);
+    initGpioOutput(gpio_pin::clk);
+    initGpioOutput(gpio_pin::enable);
 
     // pixel data pins
-    setGpioOutput(gpio_pin::r0);
-    setGpioOutput(gpio_pin::g0);
-    setGpioOutput(gpio_pin::b0);
-    setGpioOutput(gpio_pin::r1);
-    setGpioOutput(gpio_pin::g1);
-    setGpioOutput(gpio_pin::b1);
-    setGpioOutput(gpio_pin::r2);
-    setGpioOutput(gpio_pin::g2);
-    setGpioOutput(gpio_pin::b2);
-    setGpioOutput(gpio_pin::r3);
-    setGpioOutput(gpio_pin::g3);
-    setGpioOutput(gpio_pin::b3);
+    initGpioOutput(gpio_pin::r0);
+    initGpioOutput(gpio_pin::g0);
+    initGpioOutput(gpio_pin::b0);
+    initGpioOutput(gpio_pin::r1);
+    initGpioOutput(gpio_pin::g1);
+    initGpioOutput(gpio_pin::b1);
+    initGpioOutput(gpio_pin::r2);
+    initGpioOutput(gpio_pin::g2);
+    initGpioOutput(gpio_pin::b2);
+    initGpioOutput(gpio_pin::r3);
+    initGpioOutput(gpio_pin::g3);
+    initGpioOutput(gpio_pin::b3);
 
     // feed back pins
-    setGpioInput(gpio_pin::ready);
+    initGpioInput(gpio_pin::ready);
 }
 
-void MatrixDriver::setGpioInput(uint8_t pin) {
+void MatrixDriver::initGpioInput(uint8_t pin) {
     *(gpioReg + (pin / 10u)) &= ~(7u << ((pin % 10u) * 3u));
 }
 
-void MatrixDriver::setGpioOutput(uint8_t pin) {
-    setGpioInput(pin);
+void MatrixDriver::initGpioOutput(uint8_t pin) {
+    initGpioInput(pin);
     *(gpioReg + (pin / 10u)) |= 1u << ((pin % 10u) * 3u);
 }
 
@@ -291,16 +291,15 @@ void MatrixDriver::setPixels(int &x, int &y, uint8_t *rgb, int pixelCount) {
 }
 
 void MatrixDriver::sendFrame(const uint32_t *fb) {
-    for(size_t i = 0; i < sizeFrameBuffer; i++) {
-        // set gpio
-        for(int j = 0; j < 2; j++) {
-            *gpioClr = ~fb[i] & maskOut;
-            *gpioSet = fb[i];
-        }
-
-        // pause
+    for(uint32_t i = 0; i < sizeFrameBuffer; i++) {
+        setGpioOut(fb[i]);
         waitCycles(150);
     }
+}
+
+void MatrixDriver::setGpioOut(uint32_t value) {
+    *gpioClr = ~value & maskOut;
+    *gpioSet = value & maskOut;
 }
 
 void MatrixDriver::waitCycles(uint32_t cycles) {

@@ -53,9 +53,10 @@ private:
 
     void initFrameBuffer(uint32_t *fb);
     void initGpio(PeripheralBase peripheralBase);
-    void setGpioInput(uint8_t pin);
-    void setGpioOutput(uint8_t pin);
+    void initGpioInput(uint8_t pin);
+    void initGpioOutput(uint8_t pin);
     void sendFrame(const uint32_t *fb);
+    void setGpioOut(uint32_t value);
 
     static void waitCycles(uint32_t cycles);
 

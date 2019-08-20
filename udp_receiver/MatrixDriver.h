@@ -57,6 +57,8 @@ private:
     void setGpioOutput(uint8_t pin);
     void sendFrame(const uint32_t *fb);
 
+    static void waitCycles(uint32_t cycles);
+
     static void* doGpio(void *obj);
 };
 

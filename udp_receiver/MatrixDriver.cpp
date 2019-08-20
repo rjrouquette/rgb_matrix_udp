@@ -291,13 +291,19 @@ void MatrixDriver::setPixels(int &x, int &y, uint8_t *rgb, int pixelCount) {
 }
 
 void MatrixDriver::sendFrame(const uint32_t *fb) {
-    const timespec a = {0, 100};
-
     for(size_t i = 0; i < sizeFrameBuffer; i++) {
+        // set gpio
         *gpioSet = fb[i];
         *gpioClr = ~fb[i] & maskOut;
 
-        clock_nanosleep(CLOCK_MONOTONIC_RAW, 0, &a, nullptr);
+        // pause
+        waitCycles(150);
+    }
+}
+
+void MatrixDriver::waitCycles(uint32_t cycles) {
+    for(; cycles != 0; cycles--) {
+        asm("");
     }
 }
 

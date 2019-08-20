@@ -110,6 +110,7 @@ void MatrixDriver::initGpio(PeripheralBase peripheralBase) {
     auto memfd = open("/dev/mem", O_RDWR | O_SYNC);
     if(memfd < 0) {
         std::cerr << "failed to open /dev/mem" << std::endl;
+        sleep(1);
         abort();
     }
 
@@ -123,6 +124,7 @@ void MatrixDriver::initGpio(PeripheralBase peripheralBase) {
     );
     if(gpioReg == MAP_FAILED) {
         std::cerr << "failed to mmap gpio registers" << std::endl;
+        sleep(1);
         abort();
     }
 

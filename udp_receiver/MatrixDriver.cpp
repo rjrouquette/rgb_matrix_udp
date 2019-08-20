@@ -291,16 +291,13 @@ void MatrixDriver::setPixels(int &x, int &y, uint8_t *rgb, int pixelCount) {
 }
 
 void MatrixDriver::sendFrame(const uint32_t *fb) {
+    const timespec a = {0, 100};
+
     for(size_t i = 0; i < sizeFrameBuffer; i++) {
         *gpioSet = fb[i];
         *gpioClr = ~fb[i] & maskOut;
 
-        timespec a = {0, 100};
-        timespec b = {};
-        auto ret = clock_nanosleep(CLOCK_MONOTONIC_RAW, 0, &a, &b);
-        if(ret == 0) continue;
-        if(ret == EINTR) continue;
-        abort();
+        clock_nanosleep(CLOCK_MONOTONIC_RAW, 0, &a, nullptr);
     }
 }
 

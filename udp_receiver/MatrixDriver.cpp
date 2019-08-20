@@ -7,7 +7,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cmath>
-#include <zconf.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <iostream>
 #include <sys/mman.h>

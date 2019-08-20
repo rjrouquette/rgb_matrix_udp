@@ -11,7 +11,14 @@
 
 class MatrixDriver {
 public:
-    MatrixDriver(int rowLength, int rowsPerPanel, int pwmBits);
+    enum PeripheralBase : uint32_t {
+        gpio_rpi1 = 0x20000000, // BCM2708
+        gpio_rpi2 = 0x3F000000, // BCM2709
+        gpio_rpi3 = 0x3F000000, // BCM2709
+        gpio_rpi4 = 0xFE000000, // BCM2711
+    };
+
+    MatrixDriver(PeripheralBase peripheralBase, int rowLength, int rowsPerPanel, int pwmBits);
     ~MatrixDriver();
 
     void flipBuffer();
@@ -34,15 +41,19 @@ private:
     uint32_t sizeFrameBuffer;
     uint32_t *frameRaw;
     uint32_t *frameBuffer[2];
-    uint32_t *gpioRegister, *gpioSet, *gpioClr;
     pthread_t threadGpio;
     pthread_mutex_t mutexBuffer;
     pthread_cond_t condBuffer;
 
     pwm_lut pwmMapping;
 
+    // gpio mappings
+    volatile uint32_t *gpioReg, *gpioSet, *gpioClr, *gpioInp;
+
     void initFrameBuffer(uint32_t *fb);
-    void initGpio();
+    void initGpio(PeripheralBase peripheralBase);
+    void setGpioInput(uint8_t pin);
+    void setGpioOutput(uint8_t pin);
     void sendFrame(const uint32_t *fb);
 
 };

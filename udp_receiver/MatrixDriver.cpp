@@ -98,9 +98,19 @@ pwmMapping{}, gpioReg(nullptr), gpioSet(nullptr), gpioClr(nullptr), gpioInp(null
 
     // setup gpio pins
     initGpio(peripheralBase);
+
+    // start output thread
+    isRunning = true;
+    pthread_create(&threadGpio, nullptr, doGpio, this);
 }
 
 MatrixDriver::~MatrixDriver() {
+    // stop gpio thread
+    isRunning = false;
+    clearFrame();
+    flipBuffer();
+    pthread_join(threadGpio, nullptr);
+
     delete frameRaw;
     munmap((void*)gpioReg, REGISTER_BLOCK_SIZE);
 }
@@ -196,8 +206,10 @@ void MatrixDriver::initFrameBuffer(uint32_t *fb) {
 }
 
 void MatrixDriver::flipBuffer() {
-    sendFrame(frameBuffer[nextBuffer]);
+    pthread_mutex_lock(&mutexBuffer);
     nextBuffer ^= 1u;
+    pthread_cond_signal(&condBuffer);
+    pthread_mutex_unlock(&mutexBuffer);
 }
 
 void MatrixDriver::clearFrame() {
@@ -289,6 +301,27 @@ void MatrixDriver::sendFrame(const uint32_t *fb) {
     }
 }
 
+void* MatrixDriver::doGpio(void *obj) {
+    // set thread name
+    pthread_setname_np(pthread_self(), "gpio_out");
+
+    // set cpu affinity
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(3, &cpuset);
+    pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
+
+    // do gpio output
+    auto &ctx = *(MatrixDriver *)obj;
+    pthread_mutex_lock(&ctx.mutexBuffer);
+    while(ctx.isRunning) {
+        pthread_cond_wait(&ctx.condBuffer, &ctx.mutexBuffer);
+        ctx.sendFrame(ctx.frameBuffer[ctx.nextBuffer ^ 1u]);
+    }
+    pthread_mutex_unlock(&ctx.mutexBuffer);
+
+    return nullptr;
+}
 
 
 static uint16_t pwmMappingCie1931(uint8_t bits, uint8_t level, uint8_t intensity) {

@@ -37,6 +37,7 @@ private:
     uint32_t rowsPerScan;
     uint8_t pwmBits;
     uint8_t nextBuffer;
+    bool isRunning;
 
     uint32_t sizeFrameBuffer;
     uint32_t *frameRaw;
@@ -56,6 +57,7 @@ private:
     void setGpioOutput(uint8_t pin);
     void sendFrame(const uint32_t *fb);
 
+    static void* doGpio(void *obj);
 };
 
 void createPwmLutCie1931(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);

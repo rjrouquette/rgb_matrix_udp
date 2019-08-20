@@ -18,7 +18,7 @@ public:
         gpio_rpi4 = 0xFE000000, // BCM2711
     };
 
-    MatrixDriver(PeripheralBase peripheralBase, int rowLength, int rowsPerPanel, int pwmBits);
+    MatrixDriver(PeripheralBase peripheralBase, int pixelsPerRow, int rowsPerScan, int pwmBits);
     ~MatrixDriver();
 
     void flipBuffer();

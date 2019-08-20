@@ -311,6 +311,10 @@ void* MatrixDriver::doGpio(void *obj) {
     CPU_SET(3, &cpuset);
     pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
 
+    // set scheduling priority
+    sched_param p = { 99 };
+    pthread_setschedparam(pthread_self(), SCHED_FIFO, &p);
+
     // do gpio output
     auto &ctx = *(MatrixDriver *)obj;
     pthread_mutex_lock(&ctx.mutexBuffer);

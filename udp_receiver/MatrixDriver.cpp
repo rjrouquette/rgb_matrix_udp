@@ -283,7 +283,9 @@ void MatrixDriver::sendFrame(const uint32_t *fb) {
         *gpioSet = fb[i];
         *gpioClr = ~fb[i] & maskOut;
 
-        for(int s = 0; s < 100; s++);
+        for(int s = 0; s < 1000; s++) {
+            asm("nop");
+        }
     }
 }
 

@@ -11,6 +11,8 @@
 #include <fcntl.h>
 #include <iostream>
 #include <sys/mman.h>
+#include <syscall.h>
+#include <sched.h>
 
 #define GPIO_REGISTER_OFFSET    0x200000    // start of gpio registers
 #define REGISTER_BLOCK_SIZE     4096        // 4 kiB block size
@@ -319,7 +321,7 @@ void* MatrixDriver::doGpio(void *obj) {
     pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
 
     // set scheduling priority
-    sched_param p = { 99 };
+    sched_param p = { sched_get_priority_max(SCHED_FIFO) };
     pthread_setschedparam(pthread_self(), SCHED_FIFO, &p);
 
     // do gpio output

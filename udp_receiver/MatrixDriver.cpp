@@ -177,7 +177,7 @@ void MatrixDriver::initFrameBuffer(uint32_t *fb) {
     uint32_t stepSize;
 
     // set write enable bits
-    for(uint32_t i = 0; i < sizeFrameBuffer; i++) {
+    for(uint32_t i = 0; i < sizeFrameBuffer - 4; i++) {
         fb[i] |= gpio_mask(gpio_pin::enable);
     }
 

@@ -14,10 +14,10 @@ int main(int argc, char **argv) {
     std::cout << "initialize pwm mapping" << std::endl;
     createPwmLutCie1931(11, 20, matrixDriver.getPwmMapping());
 
-    for(int i = 0; i < 60; i++) {
+    for(int i = 0; i < 1000; i++) {
         std::cout << "sending frame" << std::endl;
         matrixDriver.flipBuffer();
-        sleep(1);
+        //sleep(1);
     }
 
     return 0;

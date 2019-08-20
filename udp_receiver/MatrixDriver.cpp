@@ -299,7 +299,7 @@ void MatrixDriver::sendFrame(const uint32_t *fb) {
         timespec b = {};
         auto ret = clock_nanosleep(CLOCK_MONOTONIC_RAW, 0, &a, &b);
         if(ret == 0) continue;
-        if(ret == EINTR) a = b;
+        if(ret == EINTR) continue;
         abort();
     }
 }

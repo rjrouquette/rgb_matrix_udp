@@ -293,7 +293,7 @@ void MatrixDriver::setPixels(int &x, int &y, uint8_t *rgb, int pixelCount) {
 void MatrixDriver::sendFrame(const uint32_t *fb) {
     for(uint32_t i = 0; i < sizeFrameBuffer; i++) {
         setGpioOut(fb[i]);
-        waitCycles(150);
+        waitCycles(1000);
     }
 }
 

@@ -295,9 +295,12 @@ void MatrixDriver::sendFrame(const uint32_t *fb) {
         *gpioSet = fb[i];
         *gpioClr = ~fb[i] & maskOut;
 
-        for(int s = 0; s < 1000; s++) {
-            asm("nop");
-        }
+        timespec a = {0, 4};
+        timespec b = {};
+        auto ret = clock_nanosleep(CLOCK_MONOTONIC_RAW, 0, &a, &b);
+        if(ret == 0) continue;
+        if(ret == EINTR) a = b;
+        abort();
     }
 }
 

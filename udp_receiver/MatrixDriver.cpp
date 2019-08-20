@@ -295,7 +295,7 @@ void MatrixDriver::sendFrame(const uint32_t *fb) {
         *gpioSet = fb[i];
         *gpioClr = ~fb[i] & maskOut;
 
-        timespec a = {0, 4};
+        timespec a = {0, 100};
         timespec b = {};
         auto ret = clock_nanosleep(CLOCK_MONOTONIC_RAW, 0, &a, &b);
         if(ret == 0) continue;

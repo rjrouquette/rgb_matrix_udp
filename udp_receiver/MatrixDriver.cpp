@@ -37,12 +37,14 @@ MatrixDriver::MatrixDriver(const char *fbDev, int pixelsPerRow, int rowsPerScan,
 frameBuffer{}, threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
 pwmMapping{}
 {
-    fbfd = open("/dev/fb0", O_RDWR);
+    fbfd = open(fbDev, O_RDWR);
     assert(fbfd >= 0);
     assert(0 == ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo));
     assert(0 == ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo));
 
-    std::cout << "pixels: " << vinfo.width << " x " << vinfo.height << std::endl;
+    std::cout << "dim: " << vinfo.width << " x " << vinfo.height << std::endl;
+    std::cout << "res: " << vinfo.xres << " x " << vinfo.yres << std::endl;
+    std::cout << "virt: " << vinfo.xres_virtual << " x " << vinfo.yres_virtual << std::endl;
     std::cout << "color depth: " << vinfo.bits_per_pixel << std::endl;
 
     abort();

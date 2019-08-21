@@ -11,14 +11,7 @@
 
 class MatrixDriver {
 public:
-    enum PeripheralBase : uint32_t {
-        gpio_rpi1 = 0x20000000, // BCM2708
-        gpio_rpi2 = 0x3F000000, // BCM2709
-        gpio_rpi3 = 0x3F000000, // BCM2709
-        gpio_rpi4 = 0xFE000000, // BCM2711
-    };
-
-    MatrixDriver(PeripheralBase peripheralBase, int pixelsPerRow, int rowsPerScan, int pwmBits);
+    MatrixDriver(const char *fbDev, int pixelsPerRow, int rowsPerScan, int pwmBits);
     ~MatrixDriver();
 
     void flipBuffer();
@@ -51,15 +44,9 @@ private:
     // gpio mappings
     volatile uint32_t *gpioReg, *gpioSet, *gpioClr, *gpioInp;
 
-    void initFrameBuffer(uint32_t *fb);
-    void initGpio(PeripheralBase peripheralBase);
-    void initGpioInput(uint8_t pin);
-    void initGpioOutput(uint8_t pin);
     void sendFrame(const uint32_t *fb);
-    void setGpioOut(uint32_t value);
-    void raiseClk();
 
-    static void* doGpio(void *obj);
+    static void* doRefresh(void *obj);
 };
 
 void createPwmLutCie1931(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);

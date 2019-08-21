@@ -13,6 +13,8 @@
 #include <sys/mman.h>
 #include <syscall.h>
 #include <sched.h>
+#include <cassert>
+#include <sys/ioctl.h>
 
 struct output_bits {
     uint8_t red;
@@ -33,8 +35,18 @@ output_bits output_map[8] = {
 
 MatrixDriver::MatrixDriver(const char *fbDev, int pixelsPerRow, int rowsPerScan, int pwmBits) :
 frameBuffer{}, threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
-pwmMapping{}, gpioReg(nullptr), gpioSet(nullptr), gpioClr(nullptr), gpioInp(nullptr)
+pwmMapping{}
 {
+    fbfd = open("/dev/fb0", O_RDWR);
+    assert(fbfd >= 0);
+    assert(0 == ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo));
+    assert(0 == ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo));
+
+    std::cout << "pixels: " << vinfo.width << " x " << vinfo.height << std::endl;
+    std::cout << "color depth: " << vinfo.bits_per_pixel << std::endl;
+
+    abort();
+
     if(pixelsPerRow < 1) abort();
     if(rowsPerScan < 1) abort();
     if(rowsPerScan > 32) abort();

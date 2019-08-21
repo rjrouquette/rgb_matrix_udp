@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <pthread.h>
+#include <linux/fb.h>
 
 class MatrixDriver {
 public:
@@ -41,8 +42,10 @@ private:
 
     pwm_lut pwmMapping;
 
-    // gpio mappings
-    volatile uint32_t *gpioReg, *gpioSet, *gpioClr, *gpioInp;
+    // frame buffer
+    int fbfd;
+    fb_fix_screeninfo finfo;
+    fb_var_screeninfo vinfo;
 
     void sendFrame(const uint32_t *fb);
 

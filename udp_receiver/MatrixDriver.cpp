@@ -299,15 +299,17 @@ void MatrixDriver::sendFrame(const uint32_t *fb) {
 void MatrixDriver::setGpioOut(uint32_t value) {
     *gpioClr = ~value & maskOut;
     *gpioSet = value & maskOut;
-    *gpioSet = value & maskOut;
-    *gpioClr = ~value & maskOut;
+    // delay
+    *gpioSet = 0u;
+    *gpioSet = 0u;
 }
 
 void MatrixDriver::raiseClk() {
     *gpioSet = gpio_mask(gpio_pin::clk);
-    *gpioSet = gpio_mask(gpio_pin::clk);
-    *gpioSet = gpio_mask(gpio_pin::clk);
-    *gpioSet = gpio_mask(gpio_pin::clk);
+    // delay
+    *gpioSet = 0u;
+    *gpioSet = 0u;
+    *gpioSet = 0u;
 }
 
 void* MatrixDriver::doGpio(void *obj) {

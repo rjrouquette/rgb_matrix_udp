@@ -83,8 +83,9 @@ pwmMapping{}, gpioReg(nullptr), gpioSet(nullptr), gpioClr(nullptr), gpioInp(null
     this->rowsPerScan = rowsPerScan;
     this->pwmBits = pwmBits;
 
-    sizeFrameBuffer = pwmBits * pixelsPerRow * rowsPerScan * 2 + 4;
+    sizeFrameBuffer = pwmBits * pixelsPerRow * rowsPerScan + 2;
     frameRaw = new uint32_t[sizeFrameBuffer * 2];
+    mlock(frameRaw, sizeFrameBuffer * 2 * sizeof(uint32_t));
     bzero(frameRaw, sizeFrameBuffer * 2 * sizeof(uint32_t));
 
     frameBuffer[0] = frameRaw;
@@ -137,6 +138,7 @@ void MatrixDriver::initGpio(PeripheralBase peripheralBase) {
         std::cerr << "failed to mmap gpio registers" << std::endl;
         abort();
     }
+    mlock((void*)gpioReg, REGISTER_BLOCK_SIZE);
 
     gpioSet = gpioReg + (0x1cu / sizeof(uint32_t));
     gpioClr = gpioReg + (0x28u / sizeof(uint32_t));
@@ -179,13 +181,8 @@ void MatrixDriver::initFrameBuffer(uint32_t *fb) {
     uint32_t stepSize;
 
     // set write enable bits
-    for(uint32_t i = 0; i < sizeFrameBuffer - 4; i++) {
+    for(uint32_t i = 0; i < sizeFrameBuffer - 2; i++) {
         fb[i] |= gpio_mask(gpio_pin::enable);
-    }
-
-    // set clk bits
-    for(uint32_t i = 1; i < sizeFrameBuffer; i += 2) {
-        fb[i] |= gpio_mask(gpio_pin::clk);
     }
 
     // set pwm stop bits
@@ -295,19 +292,22 @@ void MatrixDriver::setPixels(int &x, int &y, uint8_t *rgb, int pixelCount) {
 void MatrixDriver::sendFrame(const uint32_t *fb) {
     for(uint32_t i = 0; i < sizeFrameBuffer; i++) {
         setGpioOut(fb[i]);
-        waitCycles(1000);
+        raiseClk();
     }
 }
 
 void MatrixDriver::setGpioOut(uint32_t value) {
     *gpioClr = ~value & maskOut;
     *gpioSet = value & maskOut;
+    *gpioSet = value & maskOut;
+    *gpioClr = ~value & maskOut;
 }
 
-void MatrixDriver::waitCycles(uint32_t cycles) {
-    for(; cycles != 0; cycles--) {
-        asm("");
-    }
+void MatrixDriver::raiseClk() {
+    *gpioSet = gpio_mask(gpio_pin::clk);
+    *gpioSet = gpio_mask(gpio_pin::clk);
+    *gpioSet = gpio_mask(gpio_pin::clk);
+    *gpioSet = gpio_mask(gpio_pin::clk);
 }
 
 void* MatrixDriver::doGpio(void *obj) {

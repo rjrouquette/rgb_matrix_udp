@@ -35,12 +35,17 @@ output_bits output_map[8] = {
 
 MatrixDriver::MatrixDriver(const char *fbDev, int pixelsPerRow, int rowsPerScan, int pwmBits) :
 frameBuffer{}, threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
-pwmMapping{}
+pwmMapping{}, finfo{}, vinfo{}
 {
     fbfd = open(fbDev, O_RDWR);
     assert(fbfd >= 0);
     assert(0 == ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo));
     assert(0 == ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo));
+
+    std::cout << "id: " << finfo.id << std::endl;
+    std::cout << "line: " << finfo.line_length << std::endl;
+    std::cout << "smem: " << finfo.smem_len << std::endl;
+    std::cout << "mmio: " << finfo.mmio_len << std::endl;
 
     std::cout << "dim: " << vinfo.width << " x " << vinfo.height << std::endl;
     std::cout << "res: " << vinfo.xres << " x " << vinfo.yres << std::endl;

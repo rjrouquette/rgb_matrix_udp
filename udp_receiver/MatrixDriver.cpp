@@ -178,7 +178,7 @@ void MatrixDriver::sendFrame(const uint32_t *fb) {
     // write out to frame buffer
     vinfo.yoffset = (nextBuffer ^ 1u) * vinfo.yres;
     if(ioctl(fbfd, FBIOPAN_DISPLAY, &vinfo) != 0)
-        die("failed to pan frame buffer");
+        die("failed to pan frame buffer: %s", strerror(errno));
 }
 
 void* MatrixDriver::doRefresh(void *obj) {

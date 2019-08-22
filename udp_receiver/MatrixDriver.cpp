@@ -80,7 +80,9 @@ pwmMapping{}, finfo{}, vinfo{}
         die("failed to get fixed screen info: %s",strerror(errno));
 
     // get pointer to raw frame buffer data
-    frameRaw = (uint32_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, 0, fbfd, 0);
+    frameRaw = (uint32_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
+    if(frameRaw == MAP_FAILED)
+        die("failed to map raw screen buffer data: %s",strerror(errno));
     mlock(frameRaw, finfo.smem_len);
     bzero(frameRaw, finfo.smem_len);
 

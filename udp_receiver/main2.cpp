@@ -27,8 +27,8 @@ int main(int argc, char **argv) {
 }
 
 long nanotime() {
-    timespec ts;
+    timespec ts = {};
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
 
-    return ts.tv_sec + ts.tv_nsec * 1000000000l;
+    return ts.tv_sec * 1000000000l + ts.tv_nsec;
 }

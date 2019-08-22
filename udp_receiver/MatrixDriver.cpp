@@ -52,8 +52,6 @@ pwmMapping{}, finfo{}, vinfo{}
     std::cout << "virt: " << vinfo.xres_virtual << " x " << vinfo.yres_virtual << std::endl;
     std::cout << "color depth: " << vinfo.bits_per_pixel << std::endl;
 
-    abort();
-
     if(pixelsPerRow < 1) abort();
     if(rowsPerScan < 1) abort();
     if(rowsPerScan > 32) abort();
@@ -156,6 +154,9 @@ void MatrixDriver::setPixels(int &x, int &y, uint8_t *rgb, int pixelCount) {
 }
 
 void MatrixDriver::sendFrame(const uint32_t *fb) {
+    // wait for vsync
+    assert(0 == ioctl(fbfd, FBIO_WAITFORVSYNC, nullptr));
+
     // write out to frame buffer
 }
 

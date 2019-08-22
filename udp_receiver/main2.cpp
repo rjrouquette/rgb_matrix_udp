@@ -16,11 +16,12 @@ int main(int argc, char **argv) {
     createPwmLutCie1931(11, 20, matrixDriver.getPwmMapping());
 
     long a, b;
+    a = nanotime();
     for(int i = 0; i < 1000; i++) {
-        a = nanotime();
         matrixDriver.flipBuffer();
         b = nanotime();
         std::cout << (b-a) << " ns" << std::endl;
+        a = b;
     }
 
     return 0;

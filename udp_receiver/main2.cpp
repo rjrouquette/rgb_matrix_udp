@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
     for(int i = 0; i < 1000; i++) {
         matrixDriver.flipBuffer();
         b = nanotime();
-        fprintf(stdout, "%9ld ns (%3.2lf Hz)", (b-a), 1000000000.0 / (double)(b-a));
+        fprintf(stdout, "%9ld ns (%5.2lf Hz)\n", (b-a), 1000000000.0 / (double)(b-a));
         fflush(stdout);
         a = b;
     }

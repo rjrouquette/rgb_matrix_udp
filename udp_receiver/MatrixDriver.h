@@ -33,7 +33,6 @@ private:
     uint8_t nextBuffer;
     bool isRunning;
 
-    uint32_t sizeFrameBuffer;
     uint32_t *frameRaw;
     uint32_t *frameBuffer[2];
     pthread_t threadGpio;

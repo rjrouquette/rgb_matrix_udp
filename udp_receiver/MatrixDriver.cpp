@@ -88,7 +88,7 @@ pwmMapping{}, finfo{}, vinfo{}
     bzero(frameRaw, finfo.smem_len);
 
     frameBuffer[0] = frameRaw;
-    frameBuffer[1] = frameRaw + finfo.smem_len;
+    frameBuffer[1] = frameRaw + (finfo.smem_len / 2);
     nextBuffer = 0;
 
     // display off by default
@@ -118,7 +118,7 @@ void MatrixDriver::flipBuffer() {
 }
 
 void MatrixDriver::clearFrame() {
-    bzero(frameBuffer[nextBuffer], sizeFrameBuffer);
+    bzero(frameBuffer[nextBuffer], finfo.smem_len / 2);
 }
 
 void MatrixDriver::setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {

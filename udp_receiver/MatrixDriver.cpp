@@ -176,7 +176,9 @@ void MatrixDriver::setPixels(int &x, int &y, uint8_t *rgb, int pixelCount) {
 
 void MatrixDriver::sendFrame(const uint32_t *fb) {
     // write out to frame buffer
+    vinfo.xoffset = 0;
     vinfo.yoffset = (nextBuffer ^ 1u) * vinfo.yres;
+    vinfo.activate = FB_ACTIVATE_VBL;
     if(ioctl(fbfd, FBIOPAN_DISPLAY, &vinfo) != 0)
         die("failed to pan frame buffer: %s", strerror(errno));
 }

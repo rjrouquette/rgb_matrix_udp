@@ -11,7 +11,7 @@ dtparam=spi=off
 dtparam=i2c_arm=off
 enable_uart=0
 enable_dpi_lcd=1
-display_default_lcd=0
+display_default_lcd=1
 
 # use DPI 24-bit RGB output
 # standard polarity on timing signals
@@ -24,5 +24,10 @@ dpi_group=2
 dpi_mode=87
 dpi_timings=483 0 0 4 0 271 0 0 1 0 0 0 0 72 0 9600000 3
 
-# memory trimming
-gpu_mem=64
+# linux framebuffer
+framebuffer_width=483
+framebuffer_height=271
+overscan_left=0
+overscan_right=0
+overscan_top=0
+overscan_bottom=0

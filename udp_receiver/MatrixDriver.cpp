@@ -15,7 +15,11 @@
 #include <sched.h>
 #include <cassert>
 #include <sys/ioctl.h>
+#include <cstdarg>
 
+#define FB_WIDTH (483)
+#define FB_HEIGHT (271)
+#define FB_DEPTH (32)
 #define MAX_PIXELS (483*271)
 
 struct output_bits {
@@ -46,41 +50,42 @@ pwmMapping{}, finfo{}, vinfo{}
     if(pwmBits > 16) abort();
     if(pixelsPerRow * rowsPerScan > MAX_PIXELS) abort();
 
-    fbfd = open(fbDev, O_RDWR);
-    if(fbfd < 0) {
-        std::cerr << "failed to open fb device: " << fbDev << std::endl;
-        abort();
-    }
-
-    if(ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) != 0) {
-        std::cerr << "failed to get fixed screen info: " << strerror(errno) << std::endl;
-        abort();
-    }
-
-    if(ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) != 0) {
-        std::cerr << "failed to get variable screen info: " << strerror(errno) << std::endl;
-        abort();
-    }
-
-    // configure virtual framebuffer for flipping
-    vinfo.xres_virtual = vinfo.xres;
-    vinfo.yres_virtual = vinfo.yres * 2;
-    if(ioctl(fbfd, FBIOPUT_VSCREENINFO, &vinfo) != 0) {
-        std::cerr << "failed to set variable screen info: " << strerror(errno) << std::endl;
-        abort();
-    }
-
     this->pixelsPerRow = pixelsPerRow;
     this->rowsPerScan = rowsPerScan;
     this->pwmBits = pwmBits;
 
-    sizeFrameBuffer = pwmBits * pixelsPerRow * rowsPerScan;
-    frameRaw = new uint32_t[sizeFrameBuffer * 2];
-    mlock(frameRaw, sizeFrameBuffer * 2 * sizeof(uint32_t));
-    bzero(frameRaw, sizeFrameBuffer * 2 * sizeof(uint32_t));
+    fbfd = open(fbDev, O_RDWR);
+    if(fbfd < 0) die("failed to open fb device: %s", fbDev);
+
+    if(ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) != 0)
+        die("failed to get variable screen info: %s",strerror(errno));
+
+    // abort if framebuffer is not configured correctly
+    if(vinfo.xres != FB_WIDTH)
+        die("framebuffer width is unexpected: %d != %d", vinfo.xres, FB_WIDTH);
+    if(vinfo.yres != FB_HEIGHT)
+        die("framebuffer height is unexpected: %d != %d", vinfo.yres, FB_HEIGHT);
+    if(vinfo.bits_per_pixel != FB_DEPTH)
+        die("framebuffer depth is unexpected: %d != %d", vinfo.bits_per_pixel, FB_DEPTH);
+
+    // configure virtual framebuffer for flipping
+    vinfo.xoffset = 0;
+    vinfo.yoffset = 0;
+    vinfo.xres_virtual = vinfo.xres;
+    vinfo.yres_virtual = vinfo.yres * 2;
+    if(ioctl(fbfd, FBIOPUT_VSCREENINFO, &vinfo) != 0)
+        die("failed to set variable screen info: %s",strerror(errno));
+
+    if(ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) != 0)
+        die("failed to get fixed screen info: %s",strerror(errno));
+
+    // get pointer to raw frame buffer data
+    frameRaw = (uint32_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, 0, fbfd, 0);
+    mlock(frameRaw, finfo.smem_len);
+    bzero(frameRaw, finfo.smem_len);
 
     frameBuffer[0] = frameRaw;
-    frameBuffer[1] = frameRaw + sizeFrameBuffer;
+    frameBuffer[1] = frameRaw + finfo.smem_len;
     nextBuffer = 0;
 
     // display off by default
@@ -98,14 +103,11 @@ MatrixDriver::~MatrixDriver() {
     flipBuffer();
     pthread_join(threadGpio, nullptr);
 
-    delete frameRaw;
+    munmap(frameRaw, finfo.smem_len);
     close(fbfd);
 }
 
 void MatrixDriver::flipBuffer() {
-    assert(0 == ioctl(fbfd, FBIO_WAITFORVSYNC, nullptr));
-    return;
-
     pthread_mutex_lock(&mutexBuffer);
     nextBuffer ^= 1u;
     pthread_cond_signal(&condBuffer);
@@ -170,10 +172,10 @@ void MatrixDriver::setPixels(int &x, int &y, uint8_t *rgb, int pixelCount) {
 }
 
 void MatrixDriver::sendFrame(const uint32_t *fb) {
-    // wait for vsync
-    assert(0 == ioctl(fbfd, FBIO_WAITFORVSYNC, nullptr));
-
     // write out to frame buffer
+    vinfo.yoffset = (nextBuffer ^ 1u) * vinfo.yres;
+    if(ioctl(fbfd, FBIOPAN_DISPLAY, &vinfo) != 0)
+        die("failed to pan frame buffer");
 }
 
 void* MatrixDriver::doRefresh(void *obj) {
@@ -201,6 +203,17 @@ void* MatrixDriver::doRefresh(void *obj) {
 
     return nullptr;
 }
+
+void MatrixDriver::die(const char *format, ...) {
+    va_list argptr;
+    va_start(argptr, format);
+    vfprintf(stderr, format, argptr);
+    fwrite("\n", 1, 1, stderr);
+    fflush(stderr);
+    va_end(argptr);
+    abort();
+}
+
 
 
 static uint16_t pwmMappingCie1931(uint8_t bits, uint8_t level, uint8_t intensity) {

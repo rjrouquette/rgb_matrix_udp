@@ -50,6 +50,8 @@ private:
     void sendFrame(const uint32_t *fb);
 
     static void* doRefresh(void *obj);
+
+    static void die(const char *format, ...) __attribute__ ((__format__ (__printf__, 1, 2)));
 };
 
 void createPwmLutCie1931(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);

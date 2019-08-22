@@ -78,6 +78,8 @@ pwmMapping{}, finfo{}, vinfo{}
 
     if(ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) != 0)
         die("failed to get fixed screen info: %s",strerror(errno));
+    if(ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) != 0)
+        die("failed to get variable screen info: %s",strerror(errno));
 
     // get pointer to raw frame buffer data
     frameRaw = (uint32_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);

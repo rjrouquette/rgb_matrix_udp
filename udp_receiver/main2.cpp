@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
     createPwmLutCie1931(11, 20, matrixDriver.getPwmMapping());
 
     long a, b;
-    for(int i = 0; i < 0; i++) {
+    for(int i = 0; i < 1000; i++) {
         a = nanotime();
         matrixDriver.flipBuffer();
         b = nanotime();

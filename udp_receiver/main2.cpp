@@ -20,7 +20,8 @@ int main(int argc, char **argv) {
     for(int i = 0; i < 1000; i++) {
         matrixDriver.flipBuffer();
         b = nanotime();
-        std::cout << (b-a) << " ns (" << 1000000000.0 / (b-a) << " Hz)"  << std::endl;
+        fprintf(stdout, "%9ld ns (%3.2lf Hz)", (b-a), 1000000000.0 / (double)(b-a));
+        fflush(stdout);
         a = b;
     }
 

@@ -16,6 +16,8 @@
 #include <cassert>
 #include <sys/ioctl.h>
 
+#define MAX_PIXELS (483*271)
+
 struct output_bits {
     uint8_t red;
     uint8_t green;
@@ -37,6 +39,13 @@ MatrixDriver::MatrixDriver(const char *fbDev, int pixelsPerRow, int rowsPerScan,
 frameBuffer{}, threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
 pwmMapping{}, finfo{}, vinfo{}
 {
+    if(pixelsPerRow < 1) abort();
+    if(rowsPerScan < 1) abort();
+    if(rowsPerScan > 32) abort();
+    if(pwmBits < 1) abort();
+    if(pwmBits > 16) abort();
+    if(pixelsPerRow * rowsPerScan > MAX_PIXELS) abort();
+
     fbfd = open(fbDev, O_RDWR);
     if(fbfd < 0) {
         std::cerr << "failed to open fb device: " << fbDev << std::endl;
@@ -53,21 +62,13 @@ pwmMapping{}, finfo{}, vinfo{}
         abort();
     }
 
-    std::cout << "id: " << finfo.id << std::endl;
-    std::cout << "line: " << finfo.line_length << std::endl;
-    std::cout << "smem: " << finfo.smem_len << std::endl;
-    std::cout << "mmio: " << finfo.mmio_len << std::endl;
-
-    std::cout << "dim: " << vinfo.width << " x " << vinfo.height << std::endl;
-    std::cout << "res: " << vinfo.xres << " x " << vinfo.yres << std::endl;
-    std::cout << "virt: " << vinfo.xres_virtual << " x " << vinfo.yres_virtual << std::endl;
-    std::cout << "color depth: " << vinfo.bits_per_pixel << std::endl;
-
-    if(pixelsPerRow < 1) abort();
-    if(rowsPerScan < 1) abort();
-    if(rowsPerScan > 32) abort();
-    if(pwmBits < 1) abort();
-    if(pwmBits > 16) abort();
+    // configure virtual framebuffer for flipping
+    vinfo.xres_virtual = vinfo.xres;
+    vinfo.yres_virtual = vinfo.yres * 2;
+    if(ioctl(fbfd, FBIOPUT_VSCREENINFO, &vinfo) != 0) {
+        std::cerr << "failed to set variable screen info: " << strerror(errno) << std::endl;
+        abort();
+    }
 
     this->pixelsPerRow = pixelsPerRow;
     this->rowsPerScan = rowsPerScan;

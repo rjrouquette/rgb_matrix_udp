@@ -38,9 +38,20 @@ frameBuffer{}, threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(
 pwmMapping{}, finfo{}, vinfo{}
 {
     fbfd = open(fbDev, O_RDWR);
-    assert(fbfd >= 0);
-    assert(0 == ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo));
-    assert(0 == ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo));
+    if(fbfd < 0) {
+        std::cerr << "failed to open fb device: " << fbDev << std::endl;
+        abort();
+    }
+
+    if(ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) != 0) {
+        std::cerr << "failed to get fixed screen info: " << strerror(errno) << std::endl;
+        abort();
+    }
+
+    if(ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) != 0) {
+        std::cerr << "failed to get variable screen info: " << strerror(errno) << std::endl;
+        abort();
+    }
 
     std::cout << "id: " << finfo.id << std::endl;
     std::cout << "line: " << finfo.line_length << std::endl;

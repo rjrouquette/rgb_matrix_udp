@@ -83,7 +83,8 @@ pwmMapping{}, finfo{}, vinfo{}
     frameRaw = (uint32_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
     if(frameRaw == MAP_FAILED)
         die("failed to map raw screen buffer data: %s",strerror(errno));
-    mlock(frameRaw, finfo.smem_len);
+
+    // clear frame buffer
     bzero(frameRaw, finfo.smem_len);
 
     frameBuffer[0] = frameRaw;

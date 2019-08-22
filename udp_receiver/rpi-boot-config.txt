@@ -15,15 +15,14 @@ display_default_lcd=1
 
 # use DPI 24-bit RGB output
 # standard polarity on timing signals
-# disable hsync
-dpi_output_format=0x01017
+dpi_output_format=0x00017
 
 # use custom DPI mode
 # driver SRAM size is 131072 pixels
 # 483 x 271 = 130893 pixels (99.8%)
 dpi_group=2
 dpi_mode=87
-dpi_timings=483 0 0 0 0 271 0 0 1 0 0 0 0 72 0 9600000 3
+dpi_timings=483 0 0 4 0 271 0 0 1 0 0 0 0 72 0 9600000 3
 
 # linux framebuffer
 framebuffer_width=483

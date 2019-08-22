@@ -87,9 +87,13 @@ MatrixDriver::~MatrixDriver() {
     pthread_join(threadGpio, nullptr);
 
     delete frameRaw;
+    close(fbfd);
 }
 
 void MatrixDriver::flipBuffer() {
+    assert(0 == ioctl(fbfd, FBIO_WAITFORVSYNC, nullptr));
+    return;
+
     pthread_mutex_lock(&mutexBuffer);
     nextBuffer ^= 1u;
     pthread_cond_signal(&condBuffer);

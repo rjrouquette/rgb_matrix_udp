@@ -78,8 +78,6 @@ pwmMapping{}, finfo{}, vinfo{}
 
     if(ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) != 0)
         die("failed to get fixed screen info: %s",strerror(errno));
-    if(ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) != 0)
-        die("failed to get variable screen info: %s",strerror(errno));
 
     // get pointer to raw frame buffer data
     frameRaw = (uint32_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
@@ -114,7 +112,7 @@ MatrixDriver::~MatrixDriver() {
 
 void MatrixDriver::flipBuffer() {
     pthread_mutex_lock(&mutexBuffer);
-    nextBuffer ^= 1u;
+    nextBuffer = (nextBuffer + 1u) % 2u;
     pthread_cond_signal(&condBuffer);
     pthread_mutex_unlock(&mutexBuffer);
 }
@@ -181,7 +179,7 @@ void MatrixDriver::sendFrame(const uint32_t *fb) {
 
     // write out to frame buffer
     temp.xoffset = 0;
-    temp.yoffset = (nextBuffer ^ 1u) * vinfo.yres;
+    temp.yoffset = ((nextBuffer - 1u) % 2u) * vinfo.yres;
     temp.activate = FB_ACTIVATE_VBL;
     if(ioctl(fbfd, FBIOPAN_DISPLAY, &temp) != 0)
         die("failed to pan frame buffer: %s", strerror(errno));

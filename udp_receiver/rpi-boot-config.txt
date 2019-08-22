@@ -31,3 +31,6 @@ overscan_left=0
 overscan_right=0
 overscan_top=0
 overscan_bottom=0
+
+# memory trimming
+gpu_mem=64

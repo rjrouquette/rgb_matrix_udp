@@ -27,6 +27,8 @@ dpi_timings=483 0 0 4 0 271 0 0 1 0 0 0 0 72 0 9600000 3
 # linux framebuffer
 framebuffer_width=483
 framebuffer_height=271
+framebuffer_depth=32
+framebuffer_ignore_alpha=1
 overscan_left=0
 overscan_right=0
 overscan_top=0

@@ -82,13 +82,17 @@ pwmMapping{}, finfo{}, vinfo{}
     if(frameRaw == MAP_FAILED)
         die("failed to map raw screen buffer data: %s",strerror(errno));
 
-    // clear frame buffer
-    bzero(frameRaw, finfo.smem_len);
-
+    // configure frame pointers
     currOffset = 0;
     frameSize = (finfo.smem_len / 8);
     currFrame = (uint32_t *) frameRaw;
     nextFrame = currFrame + frameSize;
+
+    // clear frame buffer
+    for(size_t i = 0; i < frameSize; i++) {
+        currFrame[i] = 0xff000000u; // A = 255, BGR = 0
+        nextFrame[i] = 0xff000000u; // A = 255, BGR = 0
+    }
 
     // display off by default
     bzero(pwmMapping, sizeof(pwmMapping));

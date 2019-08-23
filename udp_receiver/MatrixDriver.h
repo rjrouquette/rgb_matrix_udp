@@ -55,5 +55,6 @@ private:
 };
 
 void createPwmLutCie1931(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);
+void createPwmLutLinear(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);
 
 #endif //UDP_RECEIVER_MATRIXDRIVER_H

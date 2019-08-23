@@ -230,14 +230,27 @@ void MatrixDriver::die(const char *format, ...) {
 
 
 
-static uint16_t pwmMappingCie1931(uint8_t bits, uint8_t level, uint8_t intensity) {
-    auto out_factor = (float) ((1u << bits) - 1);
-    auto v = (float) (level * intensity) / 255.0f;
-    return out_factor * ((v <= 8.0f) ? v / 902.3f : powf((v + 16.0f) / 116.0f, 3.0f));
+static uint16_t pwmMappingCie1931(uint8_t bits, int level, float intensity) {
+    auto scale = (double) ((1u << bits) - 1);
+    auto v = ((double) level) * intensity / 255.0;
+    auto value = scale * ((v <= 8.0) ? v / 902.3 : pow((v + 16.0) / 116.0, 3.0));
+    return (uint16_t) lround(value);
 }
 
 void createPwmLutCie1931(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut) {
     for(int i = 0; i < 256; i++) {
-        pwmLut[i] = pwmMappingCie1931(bits, (uint8_t)i, (uint8_t)brightness);
+        pwmLut[i] = pwmMappingCie1931(bits, i, brightness);
+    }
+}
+
+static uint16_t pwmMappingLinear(uint8_t bits, int level, float intensity) {
+    auto scale = (double) ((1u << bits) - 1);
+    auto value = scale * ((double) level) * intensity / 25500.0;
+    return (uint16_t) lround(value);
+}
+
+void pwmMappingLinear(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut) {
+    for(int i = 0; i < 256; i++) {
+        pwmLut[i] = pwmMappingLinear(bits, i, brightness);
     }
 }

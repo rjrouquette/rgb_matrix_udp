@@ -13,7 +13,8 @@ int main(int argc, char **argv) {
     MatrixDriver matrixDriver("/dev/fb0",  5 * 64, 32, 11);
 
     std::cout << "initialize pwm mapping" << std::endl;
-    createPwmLutCie1931(11, 20, matrixDriver.getPwmMapping());
+    //createPwmLutCie1931(11, 20, matrixDriver.getPwmMapping());
+    createPwmLutLinear(11, 100, matrixDriver.getPwmMapping());
 
     long a, b;
     a = nanotime();

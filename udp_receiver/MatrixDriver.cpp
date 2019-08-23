@@ -96,11 +96,11 @@ pwmMapping{}, finfo{}, vinfo{}
     currFrame = (uint32_t *) frameRaw;
     nextFrame = currFrame + frameSize;
 
-    printf("pixels: %d", vinfo.yres * vinfo.xres);
-    printf("frame size: %ld", frameSize);
-    printf("left margin: %d", vinfo.left_margin);
-    printf("right margin: %d", vinfo.right_margin);
-    printf("x offset: %d", vinfo.xoffset);
+    printf("pixels: %d\n", vinfo.yres * vinfo.xres);
+    printf("frame size: %ld\n", frameSize);
+    printf("left margin: %d\n", vinfo.left_margin);
+    printf("right margin: %d\n", vinfo.right_margin);
+    printf("x offset: %d\n", vinfo.xoffset);
 
     // clear frame buffer
     for(size_t i = 0; i < frameSize; i++) {

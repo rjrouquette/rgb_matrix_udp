@@ -77,6 +77,10 @@ pwmMapping{}, finfo{}, vinfo{}
     if(ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) != 0)
         die("failed to get fixed screen info: %s",strerror(errno));
 
+    printf("blue: %d %d %d\n", vinfo.blue.length, vinfo.blue.msb_right, vinfo.blue.offset);
+    printf("green: %d %d %d\n", vinfo.green.length, vinfo.green.msb_right, vinfo.green.offset);
+    printf("red: %d %d %d\n", vinfo.red.length, vinfo.red.msb_right, vinfo.red.offset);
+
     // get pointer to raw frame buffer data
     frameRaw = (uint8_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
     if(frameRaw == MAP_FAILED)

@@ -19,9 +19,9 @@ public:
 
     void clearFrame();
 
-    void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b);
-    void setPixel(int x, int y, uint8_t *rgb);
-    void setPixels(int &x, int &y, uint8_t *rgb, int pixelCount);
+    void setPixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b);
+    void setPixel(uint32_t x, uint32_t y, uint8_t *rgb);
+    void setPixels(uint32_t &x, uint32_t &y, uint8_t *rgb, size_t pixelCount);
 
     typedef uint16_t pwm_lut[256];
     pwm_lut& getPwmMapping() { return pwmMapping; }

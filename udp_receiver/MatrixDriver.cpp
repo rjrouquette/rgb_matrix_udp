@@ -121,7 +121,7 @@ void MatrixDriver::clearFrame() {
     bzero(frameBuffer[nextBuffer], finfo.smem_len / 2);
 }
 
-void MatrixDriver::setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
+void MatrixDriver::setPixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b) {
     if(x < 0 || y < 0) return;
     if(x >= pixelsPerRow || y >= (rowsPerScan << 3u)) return;
     uint32_t roff = y % rowsPerScan;
@@ -159,12 +159,12 @@ void MatrixDriver::setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     }
 }
 
-void MatrixDriver::setPixel(int x, int y, uint8_t *rgb) {
+void MatrixDriver::setPixel(uint32_t x, uint32_t y, uint8_t *rgb) {
     setPixel(x, y, rgb[0], rgb[1], rgb[2]);
 }
 
-void MatrixDriver::setPixels(int &x, int &y, uint8_t *rgb, int pixelCount) {
-    for(int i = 0; i < pixelCount; i++) {
+void MatrixDriver::setPixels(uint32_t &x, uint32_t &y, uint8_t *rgb, size_t pixelCount) {
+    for(size_t i = 0; i < pixelCount; i++) {
         setPixel(x, y, rgb);
         rgb += 3;
         if(++x >= pixelsPerRow) {

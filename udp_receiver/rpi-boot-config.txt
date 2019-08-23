@@ -13,9 +13,9 @@ enable_uart=0
 enable_dpi_lcd=1
 display_default_lcd=1
 
-# use DPI 24-bit BGR output
+# use DPI 24-bit RGB output
 # standard polarity on timing signals
-dpi_output_format=0x00027
+dpi_output_format=0x00017
 
 # use custom DPI mode
 # driver SRAM size is 131072 pixels

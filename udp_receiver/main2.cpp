@@ -16,8 +16,6 @@ int main(int argc, char **argv) {
     //createPwmLutCie1931(11, 20, matrixDriver.getPwmMapping());
     createPwmLutLinear(11, 100, matrixDriver.getPwmMapping());
 
-    return 0;
-
     long a, b;
     a = nanotime();
     for(int i = 0; i < 1000; i++) {

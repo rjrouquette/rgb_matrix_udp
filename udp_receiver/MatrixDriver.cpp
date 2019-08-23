@@ -92,14 +92,9 @@ pwmMapping{}, finfo{}, vinfo{}
 
     // configure frame pointers
     currOffset = 0;
-    frameSize = vinfo.yres * vinfo.xres;
+    frameSize = vinfo.yres * (finfo.line_length / 4);
     currFrame = (uint32_t *) frameRaw;
     nextFrame = currFrame + frameSize;
-
-    printf("pixels: %ld\n", frameSize);
-    printf("yres: %d\n", vinfo.yres);
-    printf("yres virt: %d\n", vinfo.yres_virtual);
-    printf("lineLength: %d\n", finfo.line_length);
 
     // clear frame buffer
     for(size_t i = 0; i < frameSize; i++) {
@@ -148,6 +143,13 @@ void MatrixDriver::clearFrame() {
     }
 }
 
+size_t MatrixDriver::translateOffset(size_t off) {
+    auto a = off / vinfo.xres;
+    auto b = off % vinfo.xres;
+
+    return (a * finfo.line_length) + b;
+}
+
 void MatrixDriver::setPixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b) {
     if(x < 0 || y < 0) return;
     if(x >= pixelsPerRow || y >= (rowsPerScan << 3u)) return;
@@ -166,8 +168,9 @@ void MatrixDriver::setPixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_
     uint16_t B = pwmMapping[b];
 
     // set pixel bits
-    auto pixel = &nextFrame[poff];
     for(uint8_t i = 0; i < pwmBits; i++) {
+        auto pixel = &nextFrame[translateOffset(poff)];
+
         if(R & 1u) *pixel |= maskR;
         else       *pixel &= ~maskR;
 
@@ -180,7 +183,7 @@ void MatrixDriver::setPixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_
         R >>= 1u;
         G >>= 1u;
         B >>= 1u;
-        pixel += pixelsPerRow;
+        poff += pixelsPerRow;
     }
 }
 

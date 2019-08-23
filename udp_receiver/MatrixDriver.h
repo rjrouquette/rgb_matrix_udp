@@ -49,6 +49,7 @@ private:
     fb_var_screeninfo vinfo;
 
     void sendFrame(const uint32_t *fb);
+    size_t translateOffset(size_t off);
 
     static void* doRefresh(void *obj);
 

@@ -54,11 +54,15 @@ pwmMapping{}, finfo{}, vinfo{}
     this->pwmBits = pwmBits;
 
     auto ttyfd = open(ttyDev, O_RDWR);
-    ioctl(ttyfd, KDSETMODE, KD_GRAPHICS);
+    if(fbfd < 0)
+        die("failed to open tty device: %s", fbDev);
+    if(ioctl(ttyfd, KDSETMODE, KD_GRAPHICS) != 0)
+        die("failed to set tty1 to graphics mode: %s",strerror(errno));
     close(ttyfd);
 
     fbfd = open(fbDev, O_RDWR);
-    if(fbfd < 0) die("failed to open fb device: %s", fbDev);
+    if(fbfd < 0)
+        die("failed to open fb device: %s", fbDev);
 
     if(ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) != 0)
         die("failed to get variable screen info: %s",strerror(errno));

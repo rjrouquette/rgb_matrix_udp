@@ -96,6 +96,8 @@ pwmMapping{}, finfo{}, vinfo{}
     currFrame = (uint32_t *) frameRaw;
     nextFrame = currFrame + frameSize;
 
+    printf("pixels: %ld", frameSize);
+
     // clear frame buffer
     for(size_t i = 0; i < frameSize; i++) {
         currFrame[i] = 0xff000000u; // A = 255, BGR = 0

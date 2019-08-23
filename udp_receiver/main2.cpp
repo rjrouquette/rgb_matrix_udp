@@ -10,7 +10,7 @@ long nanotime();
 
 int main(int argc, char **argv) {
     std::cout << "initializing rgb matrix driver" << std::endl;
-    MatrixDriver matrixDriver("/dev/fb0",  5 * 64, 32, 11);
+    MatrixDriver matrixDriver("/dev/fb0", "/dev/tty1",  5 * 64, 32, 11);
 
     std::cout << "initialize pwm mapping" << std::endl;
     //createPwmLutCie1931(11, 20, matrixDriver.getPwmMapping());
@@ -22,9 +22,9 @@ int main(int argc, char **argv) {
         matrixDriver.setPixel(0, 0, 0, 0, 255);
         matrixDriver.flipBuffer();
         b = nanotime();
-        //fprintf(stdout, "%9ld ns (%6.2lf Hz)\n", (b-a), 1000000000.0 / (double)(b-a));
+        fprintf(stdout, "%9ld ns (%6.2lf Hz)\n", (b-a), 1000000000.0 / (double)(b-a));
         a = b;
-        //fflush(stdout);
+        fflush(stdout);
     }
 
     return 0;

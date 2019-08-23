@@ -12,7 +12,7 @@
 
 class MatrixDriver {
 public:
-    MatrixDriver(const char *fbDev, int pixelsPerRow, int rowsPerScan, int pwmBits);
+    MatrixDriver(const char *fbDev, const char *ttyDev, int pixelsPerRow, int rowsPerScan, int pwmBits);
     ~MatrixDriver();
 
     void flipBuffer();

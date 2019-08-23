@@ -13,6 +13,7 @@
 #include <sys/mman.h>
 #include <sched.h>
 #include <sys/ioctl.h>
+#include <linux/kd.h>
 #include <cstdarg>
 
 #define FB_WIDTH (483)
@@ -37,7 +38,7 @@ output_bits output_map[8] = {
     {21, 22, 23}
 };
 
-MatrixDriver::MatrixDriver(const char *fbDev, int pixelsPerRow, int rowsPerScan, int pwmBits) :
+MatrixDriver::MatrixDriver(const char *fbDev, const char *ttyDev, int pixelsPerRow, int rowsPerScan, int pwmBits) :
 threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
 pwmMapping{}, finfo{}, vinfo{}
 {
@@ -51,6 +52,10 @@ pwmMapping{}, finfo{}, vinfo{}
     this->pixelsPerRow = pixelsPerRow;
     this->rowsPerScan = rowsPerScan;
     this->pwmBits = pwmBits;
+
+    auto ttyfd = open(ttyDev, O_RDWR);
+    ioctl(ttyfd, KDSETMODE, KD_GRAPHICS);
+    close(ttyfd);
 
     fbfd = open(fbDev, O_RDWR);
     if(fbfd < 0) die("failed to open fb device: %s", fbDev);

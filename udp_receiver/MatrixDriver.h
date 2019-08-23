@@ -30,11 +30,12 @@ private:
     uint32_t pixelsPerRow;
     uint32_t rowsPerScan;
     uint8_t pwmBits;
-    uint8_t nextBuffer;
+    uint8_t currOffset;
     bool isRunning;
 
-    uint32_t *frameRaw;
-    uint32_t *frameBuffer[2];
+    uint8_t *frameRaw;
+    uint32_t *currFrame;
+    uint32_t *nextFrame;
     pthread_t threadGpio;
     pthread_mutex_t mutexBuffer;
     pthread_cond_t condBuffer;

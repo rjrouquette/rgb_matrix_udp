@@ -146,9 +146,7 @@ void MatrixDriver::setPixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_
     uint16_t B = pwmMapping[b];
 
     // set pixel bits
-    const auto stride = pwmBits * pixelsPerRow;
     auto pixel = &nextFrame[poff];
-
     for(uint8_t i = 0; i < pwmBits; i++) {
         if(R & 1u) *pixel |= maskR;
         else       *pixel &= ~maskR;
@@ -162,7 +160,7 @@ void MatrixDriver::setPixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_
         R >>= 1u;
         G >>= 1u;
         B >>= 1u;
-        pixel += stride;
+        pixel += pixelsPerRow;
     }
 }
 

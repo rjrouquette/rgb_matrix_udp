@@ -19,7 +19,9 @@ int main(int argc, char **argv) {
     long a, b;
     a = nanotime();
     for(int i = 0; i < 1000; i++) {
-        matrixDriver.setPixel(0, 0, 0, 0, 255);
+        for(uint32_t x = 0; x < 320; x++) {
+            matrixDriver.setPixel(x, 0, 0, 0, 255);
+        }
         matrixDriver.flipBuffer();
         b = nanotime();
         fprintf(stdout, "%9ld ns (%6.2lf Hz)\n", (b-a), 1000000000.0 / (double)(b-a));

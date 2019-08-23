@@ -33,6 +33,7 @@ private:
     uint8_t currOffset;
     bool isRunning;
 
+    size_t frameSize;
     uint8_t *frameRaw;
     uint32_t *currFrame;
     uint32_t *nextFrame;

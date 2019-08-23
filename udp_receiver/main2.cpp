@@ -22,9 +22,9 @@ int main(int argc, char **argv) {
         matrixDriver.setPixel(0, 0, 0, 0, 255);
         matrixDriver.flipBuffer();
         b = nanotime();
-        fprintf(stdout, "%9ld ns (%6.2lf Hz)\n", (b-a), 1000000000.0 / (double)(b-a));
+        //fprintf(stdout, "%9ld ns (%6.2lf Hz)\n", (b-a), 1000000000.0 / (double)(b-a));
         a = b;
-        fflush(stdout);
+        //fflush(stdout);
     }
 
     return 0;

@@ -101,6 +101,7 @@ pwmMapping{}, finfo{}, vinfo{}
     printf("left margin: %d\n", vinfo.left_margin);
     printf("right margin: %d\n", vinfo.right_margin);
     printf("x offset: %d\n", vinfo.xoffset);
+    printf("x virt res: %d\n", vinfo.xres_virtual);
 
     // clear frame buffer
     for(size_t i = 0; i < frameSize; i++) {

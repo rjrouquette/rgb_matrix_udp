@@ -78,7 +78,7 @@ pwmMapping{}, finfo{}, vinfo{}
     vinfo.xoffset = 0;
     vinfo.yoffset = 0;
     vinfo.xres_virtual = vinfo.xres;
-    vinfo.yres_virtual = vinfo.yres * 2;
+    vinfo.yres_virtual = vinfo.yres * 3;
     if(ioctl(fbfd, FBIOPUT_VSCREENINFO, &vinfo) != 0)
         die("failed to set variable screen info: %s",strerror(errno));
 
@@ -92,9 +92,9 @@ pwmMapping{}, finfo{}, vinfo{}
 
     // configure frame pointers
     currOffset = 0;
-    frameSize = vinfo.yres * (finfo.line_length / 4);
-    currFrame = (uint32_t *) frameRaw;
-    nextFrame = currFrame + frameSize;
+    frameSize = vinfo.yres * finfo.line_length;
+    currFrame = (uint32_t *) (frameRaw + frameSize);
+    nextFrame = (uint32_t *) (frameRaw + frameSize * 2);
 
     printf("pixels: %d\n", vinfo.yres * vinfo.xres);
     printf("frame size: %ld\n", frameSize);
@@ -105,6 +105,13 @@ pwmMapping{}, finfo{}, vinfo{}
 
     // clear frame buffer
     bzero(frameRaw, finfo.smem_len);
+    for(uint32_t y = 0; y < vinfo.yres; y++) {
+        for(uint32_t x = 0; x < vinfo.xres; x++) {
+            uint32_t off = y * (finfo.line_length / 4) + x;
+            currFrame[off] = 0xff000000;
+            nextFrame[off] = 0xff000000;
+        }
+    }
 
     // display off by default
     bzero(pwmMapping, sizeof(pwmMapping));
@@ -142,7 +149,12 @@ void MatrixDriver::flipBuffer() {
 }
 
 void MatrixDriver::clearFrame() {
-    bzero(nextFrame, frameSize);
+    for(uint32_t y = 0; y < vinfo.yres; y++) {
+        for(uint32_t x = 0; x < vinfo.xres; x++) {
+            uint32_t off = y * (finfo.line_length / 4) + x;
+            nextFrame[off] = 0xff000000;
+        }
+    }
 }
 
 size_t MatrixDriver::translateOffset(size_t off) {
@@ -206,7 +218,8 @@ void MatrixDriver::setPixels(uint32_t &x, uint32_t &y, uint8_t *rgb, size_t pixe
 
 void MatrixDriver::sendFrame(const uint32_t *fb) {
     fb_var_screeninfo temp = vinfo;
-    temp.yoffset = currOffset * vinfo.yres;
+    temp.yoffset = (currOffset + 1) * vinfo.yres;
+    temp.xoffset = 0;
 
     if(ioctl(fbfd, FBIOPAN_DISPLAY, &temp) != 0)
         die("failed to pan frame buffer: %s", strerror(errno));

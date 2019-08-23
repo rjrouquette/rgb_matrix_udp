@@ -104,10 +104,7 @@ pwmMapping{}, finfo{}, vinfo{}
     printf("x virt res: %d\n", vinfo.xres_virtual);
 
     // clear frame buffer
-    for(size_t i = 0; i < frameSize; i++) {
-        currFrame[i] = 0xff000000u; // A = 255, BGR = 0
-        nextFrame[i] = 0xff000000u; // A = 255, BGR = 0
-    }
+    bzero(frameRaw, finfo.smem_len);
 
     // display off by default
     bzero(pwmMapping, sizeof(pwmMapping));
@@ -145,16 +142,14 @@ void MatrixDriver::flipBuffer() {
 }
 
 void MatrixDriver::clearFrame() {
-    for(size_t i = 0; i < frameSize; i++) {
-        nextFrame[i] = 0xff000000u; // A = 255, BGR = 0
-    }
+    bzero(nextFrame, frameSize);
 }
 
 size_t MatrixDriver::translateOffset(size_t off) {
     auto a = off / vinfo.xres;
     auto b = off % vinfo.xres;
 
-    return (a * finfo.line_length) + b;
+    return (a * (finfo.line_length / 4)) + b;
 }
 
 void MatrixDriver::setPixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b) {

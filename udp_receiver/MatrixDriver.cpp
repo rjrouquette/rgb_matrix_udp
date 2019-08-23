@@ -125,7 +125,8 @@ void MatrixDriver::flipBuffer() {
 }
 
 void MatrixDriver::clearFrame() {
-    bzero(nextFrame, finfo.smem_len / 2);
+    //bzero(nextFrame, finfo.smem_len / 2);
+    memset(nextFrame, 255, finfo.smem_len / 2);
 }
 
 void MatrixDriver::setPixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b) {

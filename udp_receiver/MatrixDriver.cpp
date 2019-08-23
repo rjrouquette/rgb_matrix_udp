@@ -249,7 +249,7 @@ static uint16_t pwmMappingLinear(uint8_t bits, int level, float intensity) {
     return (uint16_t) lround(value);
 }
 
-void pwmMappingLinear(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut) {
+void createPwmLutLinear(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut) {
     for(int i = 0; i < 256; i++) {
         pwmLut[i] = pwmMappingLinear(bits, i, brightness);
     }

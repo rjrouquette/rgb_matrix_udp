@@ -58,7 +58,6 @@ pwmMapping{}, finfo{}, vinfo{}
         die("failed to open tty device: %s", fbDev);
     if(ioctl(ttyfd, KDSETMODE, KD_GRAPHICS) != 0)
         die("failed to set tty1 to graphics mode: %s",strerror(errno));
-    close(ttyfd);
 
     fbfd = open(fbDev, O_RDWR);
     if(fbfd < 0)

@@ -92,11 +92,14 @@ pwmMapping{}, finfo{}, vinfo{}
 
     // configure frame pointers
     currOffset = 0;
-    frameSize = (finfo.smem_len / 8);
+    frameSize = vinfo.yres * vinfo.xres;
     currFrame = (uint32_t *) frameRaw;
     nextFrame = currFrame + frameSize;
 
-    printf("pixels: %ld", frameSize);
+    printf("pixels: %ld\n", frameSize);
+    printf("yres: %d\n", vinfo.yres);
+    printf("yres virt: %d\n", vinfo.yres_virtual);
+    printf("lineLength: %d\n", finfo.line_length);
 
     // clear frame buffer
     for(size_t i = 0; i < frameSize; i++) {

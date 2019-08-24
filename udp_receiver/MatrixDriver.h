@@ -12,16 +12,16 @@
 
 class MatrixDriver {
 public:
-    MatrixDriver(const char *fbDev, int pixelsPerRow, int rowsPerScan, int pwmBits);
+    MatrixDriver(const char *fbDev, const char *ttyDev, int pixelsPerRow, int rowsPerScan, int pwmBits);
     ~MatrixDriver();
 
     void flipBuffer();
 
     void clearFrame();
 
-    void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b);
-    void setPixel(int x, int y, uint8_t *rgb);
-    void setPixels(int &x, int &y, uint8_t *rgb, int pixelCount);
+    void setPixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b);
+    void setPixel(uint32_t x, uint32_t y, uint8_t *rgb);
+    void setPixels(uint32_t &x, uint32_t &y, uint8_t *rgb, size_t pixelCount);
 
     typedef uint16_t pwm_lut[256];
     pwm_lut& getPwmMapping() { return pwmMapping; }
@@ -30,11 +30,13 @@ private:
     uint32_t pixelsPerRow;
     uint32_t rowsPerScan;
     uint8_t pwmBits;
-    uint8_t nextBuffer;
+    uint8_t currOffset;
     bool isRunning;
 
-    uint32_t *frameRaw;
-    uint32_t *frameBuffer[2];
+    size_t frameSize;
+    uint8_t *frameRaw;
+    uint32_t *currFrame;
+    uint32_t *nextFrame;
     pthread_t threadGpio;
     pthread_mutex_t mutexBuffer;
     pthread_cond_t condBuffer;
@@ -47,6 +49,7 @@ private:
     fb_var_screeninfo vinfo;
 
     void sendFrame(const uint32_t *fb);
+    size_t translateOffset(size_t off);
 
     static void* doRefresh(void *obj);
 
@@ -54,5 +57,6 @@ private:
 };
 
 void createPwmLutCie1931(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);
+void createPwmLutLinear(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);
 
 #endif //UDP_RECEIVER_MATRIXDRIVER_H

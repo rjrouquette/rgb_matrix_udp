@@ -68,8 +68,8 @@ int main(int argc, char **argv) {
     height = MATRIX_HEIGHT;
     width = MATRIX_WIDTH;
 
-    const int fsize = height * width * 3;
-    const int fmax = (int)((fsize + sizeof(frame_packet::pixelData) - 1) / sizeof(frame_packet::pixelData));
+    const uint32_t fsize = height * width * 3;
+    const uint32_t fmax = ((fsize + sizeof(frame_packet::pixelData) - 1) / sizeof(frame_packet::pixelData));
     if(fmax > (SUBFRAME_MASK + 1)) {
         log("panel dimensions requires too many sub frames: %d x %d -> %d sub frames", height, width, fmax);
         return EX_CONFIG;

@@ -11,10 +11,9 @@
 #include <fcntl.h>
 #include <iostream>
 #include <sys/mman.h>
-#include <syscall.h>
 #include <sched.h>
-#include <cassert>
 #include <sys/ioctl.h>
+#include <linux/kd.h>
 #include <cstdarg>
 
 #define FB_WIDTH (483)
@@ -39,8 +38,8 @@ output_bits output_map[8] = {
     {21, 22, 23}
 };
 
-MatrixDriver::MatrixDriver(const char *fbDev, int pixelsPerRow, int rowsPerScan, int pwmBits) :
-frameBuffer{}, threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
+MatrixDriver::MatrixDriver(const char *fbDev, const char *ttyDev, int pixelsPerRow, int rowsPerScan, int pwmBits) :
+threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
 pwmMapping{}, finfo{}, vinfo{}
 {
     if(pixelsPerRow < 1) abort();
@@ -54,8 +53,15 @@ pwmMapping{}, finfo{}, vinfo{}
     this->rowsPerScan = rowsPerScan;
     this->pwmBits = pwmBits;
 
+    auto ttyfd = open(ttyDev, O_RDWR);
+    if(ttyfd < 0)
+        die("failed to open tty device: %s", ttyDev);
+    if(ioctl(ttyfd, KDSETMODE, KD_GRAPHICS) != 0)
+        die("failed to set %s to graphics mode: %s", ttyDev, strerror(errno));
+
     fbfd = open(fbDev, O_RDWR);
-    if(fbfd < 0) die("failed to open fb device: %s", fbDev);
+    if(fbfd < 0)
+        die("failed to open fb device: %s", fbDev);
 
     if(ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) != 0)
         die("failed to get variable screen info: %s",strerror(errno));
@@ -72,7 +78,7 @@ pwmMapping{}, finfo{}, vinfo{}
     vinfo.xoffset = 0;
     vinfo.yoffset = 0;
     vinfo.xres_virtual = vinfo.xres;
-    vinfo.yres_virtual = vinfo.yres * 2;
+    vinfo.yres_virtual = vinfo.yres * 3;
     if(ioctl(fbfd, FBIOPUT_VSCREENINFO, &vinfo) != 0)
         die("failed to set variable screen info: %s",strerror(errno));
 
@@ -80,16 +86,32 @@ pwmMapping{}, finfo{}, vinfo{}
         die("failed to get fixed screen info: %s",strerror(errno));
 
     // get pointer to raw frame buffer data
-    frameRaw = (uint32_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
+    frameRaw = (uint8_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
     if(frameRaw == MAP_FAILED)
         die("failed to map raw screen buffer data: %s",strerror(errno));
 
+    // configure frame pointers
+    currOffset = 0;
+    frameSize = vinfo.yres * finfo.line_length;
+    currFrame = (uint32_t *) (frameRaw + frameSize);
+    nextFrame = (uint32_t *) (frameRaw + frameSize * 2);
+
+    printf("pixels: %d\n", vinfo.yres * vinfo.xres);
+    printf("frame size: %ld\n", frameSize);
+    printf("left margin: %d\n", vinfo.left_margin);
+    printf("right margin: %d\n", vinfo.right_margin);
+    printf("x offset: %d\n", vinfo.xoffset);
+    printf("x virt res: %d\n", vinfo.xres_virtual);
+
     // clear frame buffer
     bzero(frameRaw, finfo.smem_len);
-
-    frameBuffer[0] = frameRaw;
-    frameBuffer[1] = frameRaw + (finfo.smem_len / 2);
-    nextBuffer = 0;
+    for(uint32_t y = 0; y < vinfo.yres; y++) {
+        for(uint32_t x = 0; x < vinfo.xres; x++) {
+            uint32_t off = y * (finfo.line_length / 4) + x;
+            currFrame[off] = 0xff000000;
+            nextFrame[off] = 0xff000000;
+        }
+    }
 
     // display off by default
     bzero(pwmMapping, sizeof(pwmMapping));
@@ -112,16 +134,37 @@ MatrixDriver::~MatrixDriver() {
 
 void MatrixDriver::flipBuffer() {
     pthread_mutex_lock(&mutexBuffer);
-    nextBuffer = (nextBuffer + 1u) % 2u;
+
+    // move frame offset
+    currOffset = (currOffset + 1u) % 2u;
+
+    // swap buffer pointers
+    auto temp = currFrame;
+    currFrame = nextFrame;
+    nextFrame = temp;
+
+    // wake output thread
     pthread_cond_signal(&condBuffer);
     pthread_mutex_unlock(&mutexBuffer);
 }
 
 void MatrixDriver::clearFrame() {
-    bzero(frameBuffer[nextBuffer], finfo.smem_len / 2);
+    for(uint32_t y = 0; y < vinfo.yres; y++) {
+        for(uint32_t x = 0; x < vinfo.xres; x++) {
+            uint32_t off = y * (finfo.line_length / 4) + x;
+            nextFrame[off] = 0xff000000;
+        }
+    }
 }
 
-void MatrixDriver::setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
+size_t MatrixDriver::translateOffset(size_t off) {
+    auto a = off / vinfo.xres;
+    auto b = off % vinfo.xres;
+
+    return (a * (finfo.line_length / 4)) + b;
+}
+
+void MatrixDriver::setPixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b) {
     if(x < 0 || y < 0) return;
     if(x >= pixelsPerRow || y >= (rowsPerScan << 3u)) return;
     uint32_t roff = y % rowsPerScan;
@@ -139,10 +182,9 @@ void MatrixDriver::setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     uint16_t B = pwmMapping[b];
 
     // set pixel bits
-    const auto stride = pwmBits * pixelsPerRow;
-    auto pixel = &frameBuffer[nextBuffer][poff];
-
     for(uint8_t i = 0; i < pwmBits; i++) {
+        auto pixel = &nextFrame[translateOffset(poff)];
+
         if(R & 1u) *pixel |= maskR;
         else       *pixel &= ~maskR;
 
@@ -155,16 +197,16 @@ void MatrixDriver::setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
         R >>= 1u;
         G >>= 1u;
         B >>= 1u;
-        pixel += stride;
+        poff += pixelsPerRow;
     }
 }
 
-void MatrixDriver::setPixel(int x, int y, uint8_t *rgb) {
+void MatrixDriver::setPixel(uint32_t x, uint32_t y, uint8_t *rgb) {
     setPixel(x, y, rgb[0], rgb[1], rgb[2]);
 }
 
-void MatrixDriver::setPixels(int &x, int &y, uint8_t *rgb, int pixelCount) {
-    for(int i = 0; i < pixelCount; i++) {
+void MatrixDriver::setPixels(uint32_t &x, uint32_t &y, uint8_t *rgb, size_t pixelCount) {
+    for(size_t i = 0; i < pixelCount; i++) {
         setPixel(x, y, rgb);
         rgb += 3;
         if(++x >= pixelsPerRow) {
@@ -176,7 +218,8 @@ void MatrixDriver::setPixels(int &x, int &y, uint8_t *rgb, int pixelCount) {
 
 void MatrixDriver::sendFrame(const uint32_t *fb) {
     fb_var_screeninfo temp = vinfo;
-    temp.yoffset = ((nextBuffer - 1u) % 2u) * vinfo.yres;
+    temp.yoffset = (currOffset + 1) * vinfo.yres;
+    temp.xoffset = 0;
 
     if(ioctl(fbfd, FBIOPAN_DISPLAY, &temp) != 0)
         die("failed to pan frame buffer: %s", strerror(errno));
@@ -204,7 +247,7 @@ void* MatrixDriver::doRefresh(void *obj) {
     pthread_mutex_lock(&ctx.mutexBuffer);
     while(ctx.isRunning) {
         pthread_cond_wait(&ctx.condBuffer, &ctx.mutexBuffer);
-        ctx.sendFrame(ctx.frameBuffer[ctx.nextBuffer ^ 1u]);
+        ctx.sendFrame(ctx.currFrame);
     }
     pthread_mutex_unlock(&ctx.mutexBuffer);
 
@@ -223,14 +266,27 @@ void MatrixDriver::die(const char *format, ...) {
 
 
 
-static uint16_t pwmMappingCie1931(uint8_t bits, uint8_t level, uint8_t intensity) {
-    auto out_factor = (float) ((1u << bits) - 1);
-    auto v = (float) (level * intensity) / 255.0f;
-    return out_factor * ((v <= 8.0f) ? v / 902.3f : powf((v + 16.0f) / 116.0f, 3.0f));
+static uint16_t pwmMappingCie1931(uint8_t bits, int level, float intensity) {
+    auto scale = (double) ((1u << bits) - 1);
+    auto v = ((double) level) * intensity / 255.0;
+    auto value = ((v <= 8.0) ? v / 902.3 : pow((v + 16.0) / 116.0, 3.0));
+    return (uint16_t) lround(scale * value);
 }
 
 void createPwmLutCie1931(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut) {
     for(int i = 0; i < 256; i++) {
-        pwmLut[i] = pwmMappingCie1931(bits, (uint8_t)i, (uint8_t)brightness);
+        pwmLut[i] = pwmMappingCie1931(bits, i, brightness);
+    }
+}
+
+static uint16_t pwmMappingLinear(uint8_t bits, int level, float intensity) {
+    auto scale = (double) ((1u << bits) - 1);
+    auto value = ((double) level) * intensity / 25500.0;
+    return (uint16_t) lround(scale * value);
+}
+
+void createPwmLutLinear(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut) {
+    for(int i = 0; i < 256; i++) {
+        pwmLut[i] = pwmMappingLinear(bits, i, brightness);
     }
 }

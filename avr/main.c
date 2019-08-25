@@ -15,36 +15,84 @@
 
 volatile uint8_t pwmBits = 11;
 volatile uint8_t rows = 32;
-volatile uint16_t rowLength = 16;
+volatile uint16_t rowLength = 320;
 volatile uint8_t clkPin = CLKOUT_PD7;
+volatile uint8_t rowClkCnt = 0;
+volatile uint16_t pwmBase = 3u;
 
 void initSysClock(void);
 void initClkOut(void);
+void initPwm(void);
 void clockRow(uint8_t pinSelect);
 void scanDisplay();
 void startSRAM();
 void waitForVsync();
 
 int main(void) {
+    bool waitForPulse;
+    bool prime = true;
+
     cli();
     initSysClock();
     initClkOut();
 
+    PORTH.DIRSET = 0x1f;
     PORTB.DIRSET = 0x01u;
 
-    // 1ms timer
-    memset(&TCC1, 0, sizeof(TC1_t));
-    TCC1.PERBUF = 19999u; // 1ms @ 20 MHz
-    TCC1.CTRLA = 0x01u; // 20 MHz clock
+    rowClkCnt = ((rowLength + 15u) >> 4u) & 0xffu;
 
     for(;;) {
         PORTB.OUTSET = 0x01u;
         PORTB.OUTCLR = 0x01u;
-        scanDisplay();
-        waitForVsync();
-        TCC1.INTFLAGS |= 0x01u;
-        for(;;) {
-            if(TCC1.INTFLAGS & 0x01u) break;
+
+        waitForPulse = false;
+
+        // use row address output as counter
+        for(uint8_t row = 0; row < rows; row++) {
+            uint16_t pwmPulse = pwmBase;
+            for(uint8_t pwmCnt = 0; pwmCnt < pwmBits; pwmCnt++) {
+                // clock out pixel data
+                volatile uint8_t cnt = rowClkCnt;
+                do {
+                    asm volatile("nop");
+                    PORTCFG.CLKEVOUT = clkPin;
+                    // loop condtion takes 9 cycles, add 7 to make it 16
+                    asm volatile("nop\nnop\nnop\nnop");
+                } while (--cnt);
+                asm volatile("nop\nnop");
+                PORTCFG.CLKEVOUT = 0x00u;
+
+                if (waitForPulse) {
+                    // wait for pwm pulse to complete
+                    while (!(TCC0.INTFLAGS & 0x20u));
+                    TCC0.CTRLA = 0x00u;
+                }
+
+                // set row select
+                PORTH.OUT = row;
+
+                // pulse latch signal
+
+                // do PWM pulse
+                TCC0.CCB = pwmPulse;
+                TCC0.CNT = 0;
+                TCC0.INTFLAGS |= 0x20u;
+                TCC0.CTRLA = 0x01u;
+                waitForPulse = true;
+                pwmPulse <<= 1u;
+            }
+        }
+
+        // wait for last pwm pulse
+        while (!(TCC0.INTFLAGS & 0x20u));
+        TCC0.CTRLA = 0x00u;
+
+        // flip SRAM bufffer
+        prime = !prime;
+        if(prime) {
+            clkPin = CLKOUT_PD7;
+        } else {
+            clkPin = CLKOUT_PE7;
         }
     }
 
@@ -52,7 +100,7 @@ int main(void) {
 }
 
 void initSysClock(void) {
-    OSC.PLLCTRL = OSC_PLLSRC_RC2M_gc | 10u; // 2MHz * 10 = 20MHz
+    OSC.PLLCTRL = OSC_PLLSRC_RC2M_gc | 11u; // 2MHz * 10 = 20MHz
 
     CCP = CCP_IOREG_gc;
     OSC.CTRL = OSC_PLLEN_bm | OSC_RC2MEN_bm ; // Enable PLL
@@ -78,48 +126,6 @@ void initClkOut() {
     PORTCFG.CLKEVOUT = 0x00u;
 }
 
-void clockRow16(uint8_t pinSelect) {
-    PORTCFG.CLKEVOUT = pinSelect;
-    asm volatile("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop");
-    asm volatile("nop\nnop\nnop\nnop\nnop\nnop\n");
-    PORTCFG.CLKEVOUT = 0x00u;
-}
-
-void clockRawFull(uint8_t pinSelect) {
-    volatile uint8_t cnt = ((rowLength >> 4u) - 1u) & 0xffu;
-    PORTCFG.CLKEVOUT = pinSelect;
-    do {
-        // loop condtion takes 9 cycles, add 7 to make it 16
-        asm volatile("nop\nnop\nnop\nnop\nnop\nnop\nnop");
-    }
-    while(--cnt);
-    asm volatile("nop\nnop\nnop\nnop\nnop\nnop\n");
-    PORTCFG.CLKEVOUT = 0x00u;
-}
-
-#pragma GCC optimization_level s
-void clockRow(uint8_t pinSelect) {
-    if(rowLength <= 16) {
-        clockRow16(pinSelect);
-    } else {
-        clockRawFull(pinSelect);
-    }
-}
-#pragma GCC optimization_level reset
-
-void scanDisplay() {
-    startSRAM();
-    clockRow(clkPin);
-    // use row address output as counter
-    for(PORTH.OUT = 0; PORTH.OUT < rows; PORTH.OUT++) {
-
-    }
-}
-
-void startSRAM() {
-
-}
-
-void waitForVsync() {
-
+void initPwm() {
+    TCC0.PER = 0xffffu;
 }

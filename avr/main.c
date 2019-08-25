@@ -18,6 +18,7 @@ volatile uint8_t rows = 32;
 volatile uint16_t rowLength = 320;
 volatile uint8_t rowClkCnt = 0;
 volatile uint16_t pwmBase = 3u;
+volatile bool doReset = false;
 
 void initSysClock(void);
 void initClkOut(void);
@@ -44,6 +45,11 @@ int main(void) {
     rowClkCnt = ((rowLength + 15u) >> 4u) & 0xffu;
 
     for(;;) {
+        // check for serial commands
+
+        // check for reset flag
+        if(doReset) break;
+
         PORTB.OUTSET = 0x01u;
         PORTB.OUTCLR = 0x01u;
 
@@ -106,6 +112,8 @@ int main(void) {
         prime = !prime;
     }
 
+    // reset xmega
+    RST.CTRL = RST_SWRST_bm;
     return 0;
 }
 
@@ -137,10 +145,15 @@ void initClkOut() {
 }
 
 void initPwm() {
+    // full timer period
     TCC0.PER = 0xffffu;
+    // single slope PWM mode
+    TCC0.CTRLB = 0x24u;
 
-    // set OCCB output pin
+    // set PE1 as OCCB output pin
     PORTE.DIRSET = 0x02u;
+    // inverted, input sensing disabled
+    PORTE.PIN1CTRL = 0x47u;
 }
 
 void initSRAM() {

@@ -16,28 +16,30 @@
 volatile uint8_t pwmBits = 11;
 volatile uint8_t rows = 32;
 volatile uint16_t rowLength = 320;
-volatile uint8_t clkPin = CLKOUT_PD7;
 volatile uint8_t rowClkCnt = 0;
 volatile uint16_t pwmBase = 3u;
 
 void initSysClock(void);
 void initClkOut(void);
 void initPwm(void);
-void clockRow(uint8_t pinSelect);
-void scanDisplay();
-void startSRAM();
-void waitForVsync();
+void initSRAM();
 
 int main(void) {
+    uint8_t clkPin, vsyncMask;
     bool waitForPulse;
     bool prime = true;
 
     cli();
     initSysClock();
     initClkOut();
+    initPwm();
+    initSRAM();
 
     PORTH.DIRSET = 0x1f;
     PORTB.DIRSET = 0x01u;
+
+    // LAT output
+    PORTE.DIRSET = 0x01u;
 
     rowClkCnt = ((rowLength + 15u) >> 4u) & 0xffu;
 
@@ -45,8 +47,14 @@ int main(void) {
         PORTB.OUTSET = 0x01u;
         PORTB.OUTCLR = 0x01u;
 
-        waitForPulse = false;
+        // TODO init SRAM
 
+        // set clk output pin
+        clkPin = prime ? CLKOUT_PD7 : CLKOUT_PE7;
+        // set vsync pin mask
+        vsyncMask = prime ? 0x02u : 0x04u;
+
+        waitForPulse = false;
         // use row address output as counter
         for(uint8_t row = 0; row < rows; row++) {
             uint16_t pwmPulse = pwmBase;
@@ -72,6 +80,10 @@ int main(void) {
                 PORTH.OUT = row;
 
                 // pulse latch signal
+                PORTE.OUTSET = 0x01u;
+                asm volatile("nop\nnop");
+                asm volatile("nop\nnop");
+                PORTE.OUTCLR = 0x01u;
 
                 // do PWM pulse
                 TCC0.CCB = pwmPulse;
@@ -87,20 +99,18 @@ int main(void) {
         while (!(TCC0.INTFLAGS & 0x20u));
         TCC0.CTRLA = 0x00u;
 
-        // flip SRAM bufffer
+        // wait for vsync
+        while(!(PORTK.IN & vsyncMask));
+
+        // flip SRAM buffer
         prime = !prime;
-        if(prime) {
-            clkPin = CLKOUT_PD7;
-        } else {
-            clkPin = CLKOUT_PE7;
-        }
     }
 
     return 0;
 }
 
 void initSysClock(void) {
-    OSC.PLLCTRL = OSC_PLLSRC_RC2M_gc | 11u; // 2MHz * 10 = 20MHz
+    OSC.PLLCTRL = OSC_PLLSRC_RC2M_gc | 10u; // 2MHz * 10 = 20MHz
 
     CCP = CCP_IOREG_gc;
     OSC.CTRL = OSC_PLLEN_bm | OSC_RC2MEN_bm ; // Enable PLL
@@ -128,4 +138,11 @@ void initClkOut() {
 
 void initPwm() {
     TCC0.PER = 0xffffu;
+
+    // set OCCB output pin
+    PORTE.DIRSET = 0x02u;
+}
+
+void initSRAM() {
+
 }

@@ -9,6 +9,7 @@ dist/
 *.bin
 *.a
 *.so
+*.hex
 
 # Core dumps
 core

@@ -1,13 +1,7 @@
 #include <avr/io.h>
-#include <avr/wdt.h>
-#include <avr/power.h>
 #include <avr/interrupt.h>
-#include <avr/delay.h>
-#include <string.h>
 #include <stdio.h>
-#include <avr/pgmspace.h>
 
-#include <stddef.h>
 #include <stdbool.h>
 
 #define CLKOUT_PD7 0x02u

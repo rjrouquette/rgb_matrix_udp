@@ -14,3 +14,7 @@ dist/
 # Core dumps
 core
 !/core
+
+# EAGLE snapshot files
+*.b#*
+*.s#*

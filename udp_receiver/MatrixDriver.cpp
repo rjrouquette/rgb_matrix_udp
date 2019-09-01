@@ -15,11 +15,17 @@
 #include <sys/ioctl.h>
 #include <linux/kd.h>
 #include <cstdarg>
+#include <set>
 
 #define FB_WIDTH (483)
 #define FB_HEIGHT (271)
 #define FB_DEPTH (32)
 #define MAX_PIXELS (483*271)
+
+// little-endian RGBA byte order on frame buffer
+#define DPI_R(x) (0u + x)
+#define DPI_G(x) (8u + x)
+#define DPI_B(x) (16u + x)
 
 struct output_bits {
     uint8_t red;
@@ -27,27 +33,79 @@ struct output_bits {
     uint8_t blue;
 };
 
+/*
+ *  Pin Translation
+ *
+ *  RPi Header  DPI     RGB Matrix      SRAM    XMega
+ *  38          R0      P3.B0           SIO0    CFG.10
+ *  40          R1      P3.R0           SIO1    CFG.11
+ *  15          R2      P1.R0           SIOx
+ *  16          R3      P1.G0           SIO1    CFG.03
+ *  18          R4      P1.B0           SIOx
+ *  22          R5      P1.B1           SIO1    CFG.05
+ *  37          R6      P3.G0           SIOx
+ *  13          R7      P0.B1           SIO0    CFG.02
+ *  32          G0      P2.G0           SIOx
+ *  33          G1      P3.B1           SIOx
+ *  08          G2      P0.R0           SIO0    CFG.00
+ *  10          G3      P0.B0           SIOx
+ *  36          G4      P3.G1           SIO1    CFG.09
+ *  11          G5      P0.G1           SIO1    CFG.01
+ *  12          G6      P0.R1           SIOx
+ *  35          G7      P3.R1           SIOx
+ *  07          B0      P0.G0           SIOx
+ *  29          B1      P2.B0           SIO1    CFG.07
+ *  31          B2      P2.R0           SIO0    CFG.08
+ *  26          B3      P2.R1           SIOx
+ *  24          B4      P2.B1           SIOx
+ *  21          B5      P1.G1           SIOx
+ *  19          B6      P1.R1           SIO0    CFG.04
+ *  23          B7      P2.G1           SIO0    CFG.06
+*/
+
 output_bits output_map[8] = {
-    {0, 1, 2},
-    {3, 4, 5},
-    {6, 7, 8},
-    {9, 10, 11},
-    {12, 13, 14},
-    {15, 16, 17},
-    {18, 19, 20},
-    {21, 22, 23}
+    { DPI_G(2), DPI_B(0), DPI_G(3) }, // P0.0 = G2, B0, G3
+    { DPI_G(6), DPI_G(5), DPI_R(7) }, // P0.1 = G6, G5, R7
+    { DPI_R(2), DPI_R(3), DPI_R(4) }, // P1.0 = R2, R3, R4
+    { DPI_B(6), DPI_B(5), DPI_R(5) }, // P1.1 = B6, B5, R5
+    { DPI_B(2), DPI_G(0), DPI_B(1) }, // P2.0 = B2, G0, B1
+    { DPI_B(3), DPI_B(7), DPI_B(4) }, // P2.1 = B3, B7, B4
+    { DPI_R(1), DPI_R(6), DPI_R(0) }, // P3.0 = R1, R6, R0
+    { DPI_G(7), DPI_G(4), DPI_G(1) }  // P3.1 = G7, G4, G1
 };
+static bool checkOutputMap();
+
+uint8_t write_map[6] = {
+        DPI_R(1),   DPI_R(3),   DPI_R(5),
+        DPI_G(4),   DPI_G(5),   DPI_B(1)
+};
+static bool checkWriteMap();
+
+uint8_t config_map[12] = {
+        DPI_G(2),   DPI_G(5),   DPI_R(7),
+        DPI_R(3),   DPI_B(6),   DPI_R(5),
+        DPI_B(7),   DPI_B(1),   DPI_B(2),
+        DPI_G(4),   DPI_R(0),   DPI_R(1)
+};
+static bool checkConfigMap();
 
 MatrixDriver::MatrixDriver(const char *fbDev, const char *ttyDev, int pixelsPerRow, int rowsPerScan, int pwmBits) :
 threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
 pwmMapping{}, finfo{}, vinfo{}
 {
-    if(pixelsPerRow < 1) abort();
-    if(rowsPerScan < 1) abort();
-    if(rowsPerScan > 32) abort();
-    if(pwmBits < 1) abort();
-    if(pwmBits > 16) abort();
-    if(pixelsPerRow * rowsPerScan > MAX_PIXELS) abort();
+    if(!checkOutputMap()) die("overlapping bits in output map");
+    if(!checkWriteMap()) die("overlapping bits in write command map");
+    if(!checkConfigMap()) die("overlapping bits in config map");
+
+    if(pixelsPerRow < 1) die("display must have at least one pixel per row, %d were specified", pixelsPerRow);
+    if(rowsPerScan < 1) die("display must have at least one row address, %d were specified", rowsPerScan);
+    if(rowsPerScan > 32) die("display may not have more than 32 row addresses, %d were specified", rowsPerScan);
+    if(pwmBits < 1) die("display must have at least one pwm bit per pixel, %d were specified", pwmBits);
+    if(pwmBits > 16) die("display may not have more than 16 pwm bits per pixel, %d were specified", pwmBits);
+
+    // validate raster size
+    if(pwmBits * pixelsPerRow * rowsPerScan > MAX_PIXELS)
+        die("raster size requires %d cells, the maximum is %d", pwmBits * pixelsPerRow * rowsPerScan, MAX_PIXELS);
 
     this->pixelsPerRow = pixelsPerRow;
     this->rowsPerScan = rowsPerScan;
@@ -289,4 +347,36 @@ void createPwmLutLinear(uint8_t bits, float brightness, MatrixDriver::pwm_lut &p
     for(int i = 0; i < 256; i++) {
         pwmLut[i] = pwmMappingLinear(bits, i, brightness);
     }
+}
+
+
+static bool checkOutputMap() {
+    std::set<uint8_t> bits;
+    for(const auto &m : output_map) {
+        if(bits.count(m.red)) return false;
+        bits.insert(m.red);
+        if(bits.count(m.green)) return false;
+        bits.insert(m.green);
+        if(bits.count(m.blue)) return false;
+        bits.insert(m.blue);
+    }
+    return true;
+}
+
+static bool checkWriteMap() {
+    std::set<uint8_t> bits;
+    for(const auto &v : write_map) {
+        if(bits.count(v)) return false;
+        bits.insert(v);
+    }
+    return true;
+}
+
+static bool checkConfigMap() {
+    std::set<uint8_t> bits;
+    for(const auto &v : config_map) {
+        if(bits.count(v)) return false;
+        bits.insert(v);
+    }
+    return true;
 }

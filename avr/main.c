@@ -264,34 +264,23 @@ void doConfig() {
         if(config[0] != CFG_MAGIC_0) continue;
         if(config[1] != CFG_MAGIC_1) continue;
 
-        // https://lb9mg.no/2016/09/03/using-xmega-hardware-crc-generator-for-crc-16-ccitt/
-        // validate CRC-16 CCITT checksum using hardware module
-
-        // Set initial checksum value
+        // compute CRC-16 CCITT checksum
         CRC.CTRL |= CRC_RESET_RESET0_gc;
-        CRC.CHECKSUM0 = 0x0F;
-        CRC.CHECKSUM1 = 0x1D;
-        CRC.CHECKSUM2 = 0xFF;
-        CRC.CHECKSUM3 = 0xFF;
+        asm("nop");
+        CRC.CTRL = CRC_SOURCE_IO_gc;
 
-        //source is IO
-        CRC.CTRL &= ~CRC_SOURCE_gm;
-        CRC.CTRL |= CRC_SOURCE_IO_gc;
-
-        // Write data to DATAIN register (include magic bytes)
         for(uint8_t i = 0; i < CFG_BYTES - 2; i++)
             CRC.DATAIN = config[i];
 
-        // Signal CRC complete
-        CRC.STATUS |= CRC_BUSY_bm;
+        CRC.STATUS = CRC_BUSY_bm;
+        while(CRC.STATUS & CRC_BUSY_bm);
 
-        //busy wait until the module is ready
-        while (CRC.STATUS & CRC_BUSY_bm) {}
+        bool ok = true;
+        if(config[CFG_BYTES - 2] != CRC.CHECKSUM0) ok = false;
+        if(config[CFG_BYTES - 1] != CRC.CHECKSUM1) ok = false;
+        CRC.CTRL = CRC_SOURCE_DISABLE_gc;
 
-        CRC.CTRL &= ~CRC_SOURCE_gm; //disable CRC module
-
-        if(config[CFG_BYTES - 2] == CRC.CHECKSUM0) continue;
-        if(config[CFG_BYTES - 1] != CRC.CHECKSUM1) break;
+        if(ok) break;
     }
 
     // extract config fields (2 bytes currently unused)

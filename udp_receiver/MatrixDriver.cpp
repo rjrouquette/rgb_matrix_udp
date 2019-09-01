@@ -89,6 +89,8 @@ uint8_t config_map[12] = {
 };
 static bool checkConfigMap();
 
+static uint16_t crc_ccitt_update (uint16_t crc, uint8_t data);
+
 MatrixDriver::MatrixDriver(const char *fbDev, const char *ttyDev, int pixelsPerRow, int rowsPerScan, int pwmBits) :
 threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
 pwmMapping{}, finfo{}, vinfo{}
@@ -194,6 +196,12 @@ MatrixDriver::~MatrixDriver() {
 
 void MatrixDriver::flipBuffer() {
     pthread_mutex_lock(&mutexBuffer);
+
+    // set frame header cells
+    auto *ptr = currFrame;
+    for(auto v : frameHeader) {
+        *(ptr++) = v;
+    }
 
     // move frame offset
     currOffset = (currOffset + 1u) % 2u;
@@ -345,13 +353,13 @@ void MatrixDriver::initFrameHeader() {
     frameHeader[0] = 0xff000000;    // set alpha bits, data bits zero
     frameHeader[1] = 0xff000000;    // set alpha bits, data bits zero
     // set bits for write command
-    for(const auto bit : write_map) {
+    for (const auto bit : write_map) {
         frameHeader[1] |= 1u << bit;
     }
 
     // compute optimal timing
     uint8_t pllctrl, psctrl, pwmBase;
-    // TODO actually calculate these dynamically
+    // TODO establish profile framework
     // empirically derived values for 4x5 array of 64x64 panels
     pllctrl = xmega_ext_clk | 9u; // external clock, multiply by 9
     psctrl = xmega_clk_div[2]; // divide by 4
@@ -372,10 +380,28 @@ void MatrixDriver::initFrameHeader() {
     config[9] = 0; // future use
 
     // compute CRC-16 CCITT checksum
-    config[10] = 0;
-    config[11] = 0;
+    uint16_t crc = 0u;
+    for (int j = 0; j < 10; j++) {
+        crc = crc_ccitt_update(crc, config[j]);
+    }
+    config[10] = crc & 0xffu;
+    config[11] = (crc >> 8u) & 0xffu;
+
+    for(auto v : config) {
+        printf("%02x", v);
+    }
+    printf("\n");
+    fflush(stdout);
 
     // apply bits
+    for(size_t i = 0; i < 8; i++) {
+        auto &fh = frameHeader[i + 2];
+         fh = 0xff000000u; // set alpha bits, data bits zero
+        for(size_t j = 0; j < 12; j++) {
+            if(config[j] & 0x01u) fh |= (1u << config_map[j]);
+            config[j] >>= 1u;
+        }
+    }
 }
 
 
@@ -435,4 +461,15 @@ static bool checkConfigMap() {
         bits.insert(v);
     }
     return true;
+}
+
+// CRC16-CCITT
+static inline uint8_t lo8(uint16_t v) { return v & 0xffu; }
+static inline uint8_t hi8(uint16_t v) { return (v >> 8u) & 0xffu; }
+
+static uint16_t crc_ccitt_update (uint16_t crc, uint8_t data) {
+    data ^= lo8 (crc);
+    data ^= data << 4u;
+    return ((((uint16_t)data << 8u) | hi8 (crc)) ^ (uint8_t)(data >> 4u)
+             ^ ((uint16_t)data << 3u));
 }

@@ -49,9 +49,9 @@ private:
     fb_var_screeninfo vinfo;
 
     // frame header
-    // 2 bytes for SRAM write command
-    // 12 bytes for xmega config
-    uint32_t frameHeader[2 + 12];
+    // 2 cells for SRAM write command
+    // 8 cells for xmega config
+    uint32_t frameHeader[2 + 8];
     void initFrameHeader();
 
     void sendFrame(const uint32_t *fb);

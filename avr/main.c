@@ -239,23 +239,23 @@ void doConfig() {
         for(uint8_t cnt = 0; cnt < 8; cnt++) {
             // shift previous bits
             for(uint8_t i = 0; i < CFG_BYTES; i++)
-                config[i] <<= 1u;
+                config[i] >>= 1u;
 
             // bank 0 lower half (PH0-PH2, PJ2-PJ4)
-            config[0] |= (PORTH.IN & PIN0_bm) ? 1u : 0u;
-            config[1] |= (PORTH.IN & PIN1_bm) ? 1u : 0u;
-            config[2] |= (PORTH.IN & PIN2_bm) ? 1u : 0u;
-            config[3] |= (PORTJ.IN & PIN2_bm) ? 1u : 0u;
-            config[4] |= (PORTJ.IN & PIN3_bm) ? 1u : 0u;
-            config[5] |= (PORTJ.IN & PIN4_bm) ? 1u : 0u;
+            config[0] |= (PORTH.IN & PIN0_bm) ? 0x80u : 0x00u;
+            config[1] |= (PORTH.IN & PIN1_bm) ? 0x80u : 0x00u;
+            config[2] |= (PORTH.IN & PIN2_bm) ? 0x80u : 0x00u;
+            config[3] |= (PORTJ.IN & PIN2_bm) ? 0x80u : 0x00u;
+            config[4] |= (PORTJ.IN & PIN3_bm) ? 0x80u : 0x00u;
+            config[5] |= (PORTJ.IN & PIN4_bm) ? 0x80u : 0x00u;
 
             // bank 0 upper half (PC0-PC5)
-            config[6] |= (PORTC.IN & PIN0_bm) ? 1u : 0u;
-            config[7] |= (PORTC.IN & PIN1_bm) ? 1u : 0u;
-            config[8] |= (PORTC.IN & PIN2_bm) ? 1u : 0u;
-            config[9] |= (PORTC.IN & PIN3_bm) ? 1u : 0u;
-            config[10] |= (PORTC.IN & PIN4_bm) ? 1u : 0u;
-            config[11] |= (PORTC.IN & PIN5_bm) ? 1u : 0u;
+            config[6] |= (PORTC.IN & PIN0_bm) ? 0x80u : 0x00u;
+            config[7] |= (PORTC.IN & PIN1_bm) ? 0x80u : 0x00u;
+            config[8] |= (PORTC.IN & PIN2_bm) ? 0x80u : 0x00u;
+            config[9] |= (PORTC.IN & PIN3_bm) ? 0x80u : 0x00u;
+            config[10] |= (PORTC.IN & PIN4_bm) ? 0x80u : 0x00u;
+            config[11] |= (PORTC.IN & PIN5_bm) ? 0x80u : 0x00u;
 
             clkBank0();
         }

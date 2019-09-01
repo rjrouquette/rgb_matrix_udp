@@ -141,8 +141,6 @@ void initSysClock(void) {
     while(!(OSC.STATUS & OSC_XOSCRDY_bm)); // wait for external clock ready
 
     // configure PLL
-    //OSC.PLLCTRL = OSC_PLLSRC_XOSC_gc | 9u; // 9.6 MHz * 9 = 86.4 MHz
-    //OSC.PLLCTRL = OSC_PLLSRC_XOSC_gc | 2u; // 9.6 MHz * 2 = 19.2 MHz
     OSC.PLLCTRL = CFG_PLLCTRL;
     CCP = CCP_IOREG_gc;
     OSC.CTRL |= OSC_PLLEN_bm; // Enable PLL
@@ -151,8 +149,6 @@ void initSysClock(void) {
 
     CCP = CCP_IOREG_gc;
     CLK.PSCTRL = CFG_PSCTRL;
-    //CLK.PSCTRL = CLK_PSADIV_4_gc; // CPU = 21.6 MHz = 86.4 / 4
-    //CLK.PSCTRL = CLK_PSADIV_1_gc; // CPU = 19.2 MHz
     asm volatile("nop\nnop\nnop\nnop");
 
     CCP = CCP_IOREG_gc;

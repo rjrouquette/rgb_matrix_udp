@@ -48,6 +48,12 @@ private:
     fb_fix_screeninfo finfo;
     fb_var_screeninfo vinfo;
 
+    // frame header
+    // 2 bytes for SRAM write command
+    // 12 bytes for xmega config
+    uint32_t frameHeader[2 + 12];
+    void initFrameHeader();
+
     void sendFrame(const uint32_t *fb);
     size_t translateOffset(size_t off);
 

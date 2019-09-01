@@ -111,6 +111,8 @@ pwmMapping{}, finfo{}, vinfo{}
     this->rowsPerScan = rowsPerScan;
     this->pwmBits = pwmBits;
 
+    initFrameHeader();
+
     auto ttyfd = open(ttyDev, O_RDWR);
     if(ttyfd < 0)
         die("failed to open tty device: %s", ttyDev);
@@ -320,6 +322,60 @@ void MatrixDriver::die(const char *format, ...) {
     fflush(stderr);
     va_end(argptr);
     abort();
+}
+
+static const uint8_t xmega_ext_clk = (0x03u<<6u);
+
+// taken from xmega64a1u headers
+static const uint8_t xmega_clk_div[10] = {
+        (0x00u<<2u),  /* Divide by 1 */
+        (0x01u<<2u),  /* Divide by 2 */
+        (0x03u<<2u),  /* Divide by 4 */
+        (0x05u<<2u),  /* Divide by 8 */
+        (0x07u<<2u),  /* Divide by 16 */
+        (0x09u<<2u),  /* Divide by 32 */
+        (0x0Bu<<2u),  /* Divide by 64 */
+        (0x0Du<<2u),  /* Divide by 128 */
+        (0x0Fu<<2u),  /* Divide by 256 */
+        (0x11u<<2u),  /* Divide by 512 */
+};
+
+void MatrixDriver::initFrameHeader() {
+    // set SRAM write command
+    frameHeader[0] = 0xff000000;    // set alpha bits, data bits zero
+    frameHeader[1] = 0xff000000;    // set alpha bits, data bits zero
+    // set bits for write command
+    for(const auto bit : write_map) {
+        frameHeader[1] |= 1u << bit;
+    }
+
+    // compute optimal timing
+    uint8_t pllctrl, psctrl, pwmBase;
+    // TODO actually calculate these dynamically
+    // empirically derived values for 4x5 array of 64x64 panels
+    pllctrl = xmega_ext_clk | 9u; // external clock, multiply by 9
+    psctrl = xmega_clk_div[2]; // divide by 4
+    pwmBase = 4;
+
+    // compute xmega config
+    uint8_t config[12];
+    // magic bytes
+    config[0] = 0xda;
+    config[1] = 0x21;
+    config[2] = pllctrl;
+    config[3] = psctrl;
+    config[4] = pwmBits;
+    config[5] = rowsPerScan;
+    config[6] = pixelsPerRow;
+    config[7] = pwmBase;
+    config[8] = 0; // future use
+    config[9] = 0; // future use
+
+    // compute CRC-16 CCITT checksum
+    config[10] = 0;
+    config[11] = 0;
+
+    // apply bits
 }
 
 

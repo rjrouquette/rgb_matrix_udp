@@ -10,4 +10,4 @@ avr-objcopy -j .text -j .data -O ihex rgb_matrix.elf rgb_matrix.hex
 if [ $? -ne 0 ]; then exit 1; fi
 
 # change this back to xmega64A1U for production
-avrdude -v -B 1.0 -c jtag3pdi -p ATxmega128A1U -P usb -u -Uflash:w:rgb_matrix.hex
+avrdude -v -B 1.0 -c jtag3pdi -p ATxmega64A1U -P usb -u -Uflash:w:rgb_matrix.hex

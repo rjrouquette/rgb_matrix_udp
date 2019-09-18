@@ -30,6 +30,8 @@ void initSysClock(void);
 void initClkOut(void);
 void initMatrixOutputs(void);
 void initSRAM();
+void initMuxPins();
+void initLeds();
 
 inline void doPulse(uint16_t width);
 
@@ -44,16 +46,29 @@ inline void stopRxBank0();
 inline void startRxBank1();
 inline void stopRxBank1();
 
+inline void ledOn0() { PORTA.OUTSET = 0x08u; }
+inline void ledOn1() { PORTA.OUTSET = 0x10u; }
+inline void ledOn2() { PORTA.OUTSET = 0x20u; }
+
+inline void ledOff0() { PORTA.OUTCLR = 0x08u; }
+inline void ledOff1() { PORTA.OUTCLR = 0x10u; }
+inline void ledOff2() { PORTA.OUTCLR = 0x20u; }
+
 int main(void) {
     // wait for configuration
+    initMuxPins();
+    initLeds();
     initSRAM();
-    doConfig();
+    ledOn0();
+    //doConfig();
+    ledOn1();
 
     // initialize xmega
     cli();
     initSysClock();
     initClkOut();
     initMatrixOutputs();
+    ledOn2();
 
     // start matrix output
     uint8_t clkPin, vsyncMask;
@@ -72,10 +87,12 @@ int main(void) {
             startRxBank1();
             stopRxBank0();
             readBank0();
+            PORTE.OUTSET = 0x40u;
         } else {
             startRxBank0();
             stopRxBank1();
             readBank1();
+            PORTE.OUTSET = 0x20u;
         }
 
         // set clk output pin
@@ -122,6 +139,9 @@ int main(void) {
         // wait for pwm pulse to complete
         while (!(TCE0.INTFLAGS & 0x20u));
         TCE0.CTRLA = 0x00u;
+
+        // disable panel output
+        PORTE.OUTCLR = 0x60u;
 
         // wait for vsync
         while(!(PORTK.IN & vsyncMask));
@@ -358,18 +378,42 @@ inline void clkBank1() {
 
 inline void startRxBank0() {
     PORTD.DIRCLR = CLK_PIN_MASK;
+    PORTK.OUTSET = 0x10u;
 
 }
 
 inline void stopRxBank0() {
+    PORTK.OUTCLR = 0x10u;
 
 }
 
 inline void startRxBank1() {
     PORTE.DIRCLR = CLK_PIN_MASK;
+    PORTK.OUTSET = 0x08u;
 
 }
 
 inline void stopRxBank1() {
+    PORTK.OUTCLR = 0x08u;
 
+}
+
+void initMuxPins() {
+    PORTE.DIRSET = 0x60u;
+    PORTK.DIRSET = 0x18u;
+
+    // inverted, input sensing disabled
+    PORTE.PIN5CTRL = 0x47u;
+    PORTE.PIN6CTRL = 0x47u;
+    PORTK.PIN3CTRL = 0x47u;
+    PORTK.PIN4CTRL = 0x47u;
+}
+
+void initLeds() {
+    PORTA.DIRSET = 0x38u;
+
+    // inverted, input sensing disabled
+    PORTA.PIN3CTRL = 0x07u;
+    PORTA.PIN4CTRL = 0x07u;
+    PORTA.PIN5CTRL = 0x07u;
 }

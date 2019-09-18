@@ -1,0 +1,58 @@
+//
+// Created by robert on 9/18/19.
+//
+
+#ifndef RGB_MATRIX_AVR_SRAM_H
+#define RGB_MATRIX_AVR_SRAM_H
+
+#include <avr/io.h>
+
+#define VSYNC_PORT0 PORTK
+#define VSYNC_PORT1 PORTA
+
+#define VSYNC_MASK0 0x06u
+#define VSYNC0_MASK 0x02u
+#define VSYNC1_MASK 0x04u
+
+#define VSYNC_MASK1 0xc0u
+#define VSYNC2_MASK 0x40u
+#define VSYNC3_MASK 0x80u
+
+inline void setVsync0() {
+    VSYNC_PORT0.OUTSET = VSYNC0_MASK;
+    VSYNC_PORT1.OUTSET = VSYNC2_MASK;
+    VSYNC_PORT0.DIRSET = VSYNC0_MASK;
+    VSYNC_PORT1.DIRSET = VSYNC2_MASK;
+}
+
+inline void clearVsync0() {
+    VSYNC_PORT0.OUTCLR = VSYNC0_MASK;
+    VSYNC_PORT1.OUTCLR = VSYNC2_MASK;
+    VSYNC_PORT0.DIRCLR = VSYNC0_MASK;
+    VSYNC_PORT1.DIRCLR = VSYNC2_MASK;
+}
+
+inline void setVsync1() {
+    VSYNC_PORT0.OUTSET = VSYNC1_MASK;
+    VSYNC_PORT1.OUTSET = VSYNC3_MASK;
+    VSYNC_PORT0.DIRSET = VSYNC1_MASK;
+    VSYNC_PORT1.DIRSET = VSYNC3_MASK;
+}
+
+inline void clearVsync1() {
+    VSYNC_PORT0.OUTCLR = VSYNC1_MASK;
+    VSYNC_PORT1.OUTCLR = VSYNC3_MASK;
+    VSYNC_PORT0.DIRCLR = VSYNC1_MASK;
+    VSYNC_PORT1.DIRCLR = VSYNC3_MASK;
+}
+
+inline void clearVsync() {
+    clearVsync0();
+    clearVsync1();
+}
+
+inline void waitVsync() {
+    while (VSYNC_PORT0.IN & VSYNC_MASK0);
+}
+
+#endif //RGB_MATRIX_AVR_SRAM_H

@@ -54,4 +54,18 @@ void initGpio() {
     // disable input sensing
     LAT_PORT.DIRSET = LAT_MASK;
     LAT_PORT.PIN0CTRL = 0x07u;
+
+
+    // configure vsync pins (sram chip selects)
+    // high impedance, inverted, pull-ups
+    VSYNC_PORT0.OUTCLR = VSYNC_MASK0;
+    VSYNC_PORT0.DIRCLR = VSYNC_MASK0;
+    VSYNC_PORT0.PIN3CTRL = 0x58u;
+    VSYNC_PORT0.PIN4CTRL = 0x58u;
+    VSYNC_PORT1.OUTCLR = VSYNC_MASK1;
+    VSYNC_PORT1.DIRCLR = VSYNC_MASK1;
+    VSYNC_PORT1.PIN6CTRL = 0x58u;
+    VSYNC_PORT1.PIN7CTRL = 0x58u;
+
+
 }

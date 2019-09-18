@@ -12,9 +12,6 @@
 #define CLKOUT_PD7 0x02u
 #define CLKOUT_PE7 0x03u
 
-#define VSYNC_MASK0 0x02u
-#define VSYNC_MASK1 0x04u
-
 volatile uint8_t CFG_PLLCTRL = OSC_PLLSRC_RC2M_gc | 10u; // default is 20 MHz using internal osc
 volatile uint8_t CFG_PSCTRL = CLK_PSADIV_1_gc; // default is no prescaling
 volatile uint8_t pwmBits = 11;
@@ -47,12 +44,13 @@ int main(void) {
     ledOn2();
 
     // start matrix output
-    uint8_t clkPin, vsyncMask;
+    uint8_t clkPin;
     uint8_t prime = 1u;
     const uint8_t rowClkCnt = ((rowLength + 15u) >> 4u) & 0xffu;
 
     // dummy pulse to set pwm state
     doPwmPulse(0);
+    waitVsync();
 
     while(!doReset) {
         // mux pins
@@ -64,6 +62,7 @@ int main(void) {
             // set bank 0 as output
             disableInput0();
             enableClk0();
+            setVsync0();
             readBank0();
             enableOutput0();
         } else {
@@ -74,14 +73,13 @@ int main(void) {
             // set bank 1 as output
             disableInput1();
             enableClk1();
+            setVsync1();
             readBank1();
             enableOutput1();
         }
 
         // set clk output pin
         clkPin = prime ? CLKOUT_PD7 : CLKOUT_PE7;
-        // set vsync pin mask
-        vsyncMask = prime ? VSYNC_MASK0 : VSYNC_MASK1;
 
         // skip over configuration block (8 clock cycles)
         PORTCFG.CLKEVOUT = clkPin;
@@ -115,11 +113,10 @@ int main(void) {
 
         // disable panel output
         disableOutput();
+        clearVsync();
 
-        // wait for vsync
-        while(!(PORTK.IN & vsyncMask));
-
-        // flip SRAM buffer
+        // flip SRAM buffer on vsync
+        waitVsync();
         prime ^= 1u;
     }
 
@@ -171,19 +168,19 @@ void doConfig() {
 
     // wait for valid config
     for(;;) {
-        // wait for vsync
-        while (!(PORTK.IN & VSYNC_MASK0));
+        clearVsync();
+        waitVsync();
 
         // accept frame data on bank 0
         disableClk0();
         enableInput0();
 
-        // wait for vsync
-        while (!(PORTK.IN & VSYNC_MASK0));
+        waitVsync();
 
         // stop frame data on bank 0
         disableInput0();
         enableClk0();
+        setVsync0();
         readBank0();
 
         // clear config bytes
@@ -237,6 +234,7 @@ void doConfig() {
 
         if(ok) break;
     }
+    clearVsync();
 
     // extract config fields (2 bytes currently unused)
     CFG_PLLCTRL = config[2];
@@ -255,7 +253,7 @@ inline void readBank0() {
     // bank 0 upper half (PC0-PC5)
     PORTC.DIRSET = 0x3fu;
 
-    // clock in command
+    // clock in READ command
     PORTH.OUTCLR = 0x07u;
     PORTJ.OUTCLR = 0x0eu;
     PORTC.OUTCLR = 0x3fu;

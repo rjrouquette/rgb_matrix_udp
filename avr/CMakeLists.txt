@@ -24,4 +24,5 @@ add_executable(
         mux.h
         clkout.h
         matrix.h
+        sram.h
 )

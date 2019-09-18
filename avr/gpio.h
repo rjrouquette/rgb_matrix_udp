@@ -9,6 +9,7 @@
 #include "mux.h"
 #include "clkout.h"
 #include "matrix.h"
+#include "sram.h"
 
 void initGpio();
 

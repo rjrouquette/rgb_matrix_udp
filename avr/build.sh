@@ -3,7 +3,7 @@
 # cleanup old files
 rm rgb_matrix.elf rgb_matrix.hex
 
-avr-gcc -Os -mmcu=atxmega64a1u -DF_CPU=20000000 -o rgb_matrix.elf main.c
+avr-gcc -Os -mmcu=atxmega64a1u -DF_CPU=20000000 -o rgb_matrix.elf main.c gpio.c
 if [ $? -ne 0 ]; then exit 1; fi
 
 avr-objcopy -j .text -j .data -O ihex rgb_matrix.elf rgb_matrix.hex

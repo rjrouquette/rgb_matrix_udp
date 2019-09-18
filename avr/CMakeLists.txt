@@ -6,7 +6,7 @@ set(CMAKE_FIND_ROOT_PATH /usr/lib/avr/include)
 set(CMAKE_C_COMPILER avr-gcc)
 set(CMAKE_CXX_COMPILER avr-g++)
 
-# don't test as they won't worl
+# don't test as they won't work
 set(CMAKE_C_COMPILER_WORKS 1)
 set(CMAKE_CXX_COMPILER_WORKS 1)
 
@@ -14,4 +14,14 @@ project("rgb_matrix_avr")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -Wall -mmcu=atxmega64a1u -D__AVR_ATxmega64A1U__ -DF_CPU=20000000 -DARCH_XMEGA")
 
-add_executable(rgb-matrix-avr main.c)
+add_executable(
+        rgb-matrix-avr
+
+        main.c
+        leds.h
+        gpio.c
+        gpio.h
+        mux.h
+        clkout.h
+        matrix.h
+)

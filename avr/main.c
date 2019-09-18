@@ -1,8 +1,9 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdio.h>
-
 #include <stdbool.h>
+
+#include "gpio.h"
 
 #define CFG_BYTES 12u
 #define CFG_MAGIC_0 0xdau
@@ -13,8 +14,6 @@
 
 #define VSYNC_MASK0 0x02u
 #define VSYNC_MASK1 0x04u
-
-#define CLK_PIN_MASK PIN7_bm
 
 volatile uint8_t CFG_PLLCTRL = OSC_PLLSRC_RC2M_gc | 10u; // default is 20 MHz using internal osc
 volatile uint8_t CFG_PSCTRL = CLK_PSADIV_1_gc; // default is no prescaling
@@ -27,47 +26,24 @@ volatile bool doReset = false;
 void doConfig();
 
 void initSysClock(void);
-void initClkOut(void);
-void initMatrixOutputs(void);
 void initSRAM();
-void initMuxPins();
-void initLeds();
-
-inline void doPulse(uint16_t width);
 
 inline void readBank0();
 inline void readBank1();
 
-inline void clkBank0();
-inline void clkBank1();
-
-inline void startRxBank0();
-inline void stopRxBank0();
-inline void startRxBank1();
-inline void stopRxBank1();
-
-inline void ledOn0() { PORTA.OUTSET = 0x08u; }
-inline void ledOn1() { PORTA.OUTSET = 0x10u; }
-inline void ledOn2() { PORTA.OUTSET = 0x20u; }
-
-inline void ledOff0() { PORTA.OUTCLR = 0x08u; }
-inline void ledOff1() { PORTA.OUTCLR = 0x10u; }
-inline void ledOff2() { PORTA.OUTCLR = 0x20u; }
-
 int main(void) {
-    // wait for configuration
-    initMuxPins();
-    initLeds();
+    // init gpio and external sram
+    initGpio();
     initSRAM();
     ledOn0();
+
+    // wait for configuration
     //doConfig();
     ledOn1();
 
     // initialize xmega
     cli();
     initSysClock();
-    initClkOut();
-    initMatrixOutputs();
     ledOn2();
 
     // start matrix output
@@ -76,23 +52,30 @@ int main(void) {
     const uint8_t rowClkCnt = ((rowLength + 15u) >> 4u) & 0xffu;
 
     // dummy pulse to set pwm state
-    doPulse(0);
+    doPwmPulse(0);
 
-    for(;;) {
-        // check for reset flag
-        if(doReset) break;
-
+    while(!doReset) {
         // mux pins
         if(prime) {
-            startRxBank1();
-            stopRxBank0();
+            // set bank 1 as input
+            disableClk1();
+            enableInput1();
+
+            // set bank 0 as output
+            disableInput0();
+            enableClk0();
             readBank0();
-            PORTE.OUTSET = 0x40u;
+            enableOutput0();
         } else {
-            startRxBank0();
-            stopRxBank1();
+            // set bank 0 as input
+            disableClk0();
+            enableInput0();
+
+            // set bank 1 as output
+            disableInput1();
+            enableClk1();
             readBank1();
-            PORTE.OUTSET = 0x20u;
+            enableOutput1();
         }
 
         // set clk output pin
@@ -100,14 +83,14 @@ int main(void) {
         // set vsync pin mask
         vsyncMask = prime ? VSYNC_MASK0 : VSYNC_MASK1;
 
-        // advance over configuration block (8 clock cycles)
+        // skip over configuration block (8 clock cycles)
         PORTCFG.CLKEVOUT = clkPin;
         asm volatile("nop\nnop\nnop\nnop");
         asm volatile("nop\nnop");
         PORTCFG.CLKEVOUT = 0x00u;
 
         // use row address output as counter
-        for(PORTF.OUT = 0; PORTF.OUT < rows; PORTF.OUT++) {
+        for(ADDR_PORT.OUT = 0; ADDR_PORT.OUT < rows; ADDR_PORT.OUT++) {
             uint16_t pwmPulse = pwmBase;
             for(uint8_t pwmCnt = 0; pwmCnt < pwmBits; pwmCnt++) {
                 // clock out pixel data, timing is empirically derived
@@ -120,28 +103,18 @@ int main(void) {
                 asm volatile("nop\nnop");
                 PORTCFG.CLKEVOUT = 0x00u;
 
-                // wait for pwm pulse to complete
-                while (!(TCE0.INTFLAGS & 0x20u));
-                TCE0.CTRLA = 0x00u;
-
-                // pulse latch signal
-                PORTE.OUTSET = 0x01u;
-                asm volatile("nop\nnop");
-                asm volatile("nop\nnop");
-                PORTE.OUTCLR = 0x01u;
+                waitPwm();
+                pulseLatch();
 
                 // do PWM pulse
-                doPulse(pwmPulse);
+                doPwmPulse(pwmPulse);
                 pwmPulse <<= 1u;
             }
         }
-
-        // wait for pwm pulse to complete
-        while (!(TCE0.INTFLAGS & 0x20u));
-        TCE0.CTRLA = 0x00u;
+        waitPwm();
 
         // disable panel output
-        PORTE.OUTCLR = 0x60u;
+        disableOutput();
 
         // wait for vsync
         while(!(PORTK.IN & vsyncMask));
@@ -175,46 +148,6 @@ void initSysClock(void) {
     CLK.CTRL = CLK_SCLKSEL_PLL_gc; // Select PLL
 }
 
-// init PD7 and PE7 as clock outputs
-void initClkOut() {
-    // set pins as high-impedance
-    PORTD.DIRCLR = 0x80;
-    PORTE.DIRCLR = 0x80;
-
-    // disable input sensing
-    PORTD.PIN7CTRL = 0x07u;
-    PORTE.PIN7CTRL = 0x07u;
-
-    // leave clk output disabled for now
-    PORTCFG.CLKEVOUT = 0x00u;
-}
-
-void initMatrixOutputs() {
-    // row select outputs
-    PORTF.DIRSET = 0x1f;
-
-    // inverted, input sensing disabled
-    PORTF.PIN0CTRL = 0x47u;
-    PORTF.PIN1CTRL = 0x47u;
-    PORTF.PIN2CTRL = 0x47u;
-    PORTF.PIN3CTRL = 0x47u;
-    PORTF.PIN4CTRL = 0x47u;
-
-    // full timer period
-    TCE0.PER = 0xffffu;
-    // single slope PWM mode
-    TCE0.CTRLB = 0x23u;
-
-    // set PE1 as OCCB output pin
-    PORTE.DIRSET = 0x02u;
-    // inverted, input sensing disabled
-    PORTE.PIN1CTRL = 0x47u;
-
-    // LAT output
-    PORTE.DIRSET = 0x01u;
-    PORTE.PIN0CTRL = 0x07u;
-}
-
 void initSRAM() {
 
 }
@@ -240,20 +173,22 @@ void doConfig() {
     for(;;) {
         // wait for vsync
         while (!(PORTK.IN & VSYNC_MASK0));
+
         // accept frame data on bank 0
-        startRxBank0();
+        disableClk0();
+        enableInput0();
 
         // wait for vsync
         while (!(PORTK.IN & VSYNC_MASK0));
+
         // stop frame data on bank 0
-        stopRxBank0();
+        disableInput0();
+        enableClk0();
+        readBank0();
 
         // clear config bytes
         for(uint8_t i = 0; i < CFG_BYTES; i++)
             config[i] = 0;
-
-        // prepare to read from bank 0
-        readBank0();
 
         // extract config bytes
         for(uint8_t cnt = 0; cnt < 8; cnt++) {
@@ -277,7 +212,7 @@ void doConfig() {
             config[10] |= (PORTC.IN & PIN4_bm) ? 0x80u : 0x00u;
             config[11] |= (PORTC.IN & PIN5_bm) ? 0x80u : 0x00u;
 
-            clkBank0();
+            pulseClk0();
         }
 
         // verify magic bytes
@@ -312,16 +247,7 @@ void doConfig() {
     pwmBase = config[7];
 }
 
-inline void doPulse(uint16_t width) {
-    TCE0.CCB = width;
-    TCE0.CNT = 0;
-    TCE0.INTFLAGS |= 0x20u;
-    TCE0.CTRLA = 0x01u;
-}
-
 inline void readBank0() {
-    PORTD.DIRSET = CLK_PIN_MASK;
-
     // set data pins to outputs
     // bank 0 lower half (PH0-PH2, PJ2-PJ4)
     PORTH.DIRSET = 0x07u;
@@ -333,20 +259,20 @@ inline void readBank0() {
     PORTH.OUTCLR = 0x07u;
     PORTJ.OUTCLR = 0x0eu;
     PORTC.OUTCLR = 0x3fu;
-    clkBank0();
+    pulseClk0();
     PORTH.OUTSET = 0x07u;
     PORTJ.OUTSET = 0x0eu;
     PORTC.OUTSET = 0x3fu;
-    clkBank0();
+    pulseClk0();
 
     // clock in zero as starting address
     PORTH.OUTCLR = 0x07u;
     PORTJ.OUTCLR = 0x0eu;
     PORTC.OUTCLR = 0x3fu;
-    clkBank0();
-    clkBank0();
-    clkBank0();
-    clkBank0();
+    pulseClk0();
+    pulseClk0();
+    pulseClk0();
+    pulseClk0();
 
     // set data pins back to inputs
     PORTH.DIRCLR = 0x07u;
@@ -354,66 +280,13 @@ inline void readBank0() {
     PORTC.DIRCLR = 0x3fu;
 
     // dummy byte
-    clkBank0();
-    clkBank0();
+    pulseClk0();
+    pulseClk0();
 }
 
 inline void readBank1() {
-    PORTE.DIRSET = CLK_PIN_MASK;
 
     // dummy byte
-    clkBank0();
-    clkBank0();
-}
-
-inline void clkBank0() {
-    PORTD.OUTSET = CLK_PIN_MASK;
-    PORTD.OUTCLR = CLK_PIN_MASK;
-}
-
-inline void clkBank1() {
-    PORTE.OUTSET = CLK_PIN_MASK;
-    PORTE.OUTCLR = CLK_PIN_MASK;
-}
-
-inline void startRxBank0() {
-    PORTD.DIRCLR = CLK_PIN_MASK;
-    PORTK.OUTSET = 0x10u;
-
-}
-
-inline void stopRxBank0() {
-    PORTK.OUTCLR = 0x10u;
-
-}
-
-inline void startRxBank1() {
-    PORTE.DIRCLR = CLK_PIN_MASK;
-    PORTK.OUTSET = 0x08u;
-
-}
-
-inline void stopRxBank1() {
-    PORTK.OUTCLR = 0x08u;
-
-}
-
-void initMuxPins() {
-    PORTE.DIRSET = 0x60u;
-    PORTK.DIRSET = 0x18u;
-
-    // inverted, input sensing disabled
-    PORTE.PIN5CTRL = 0x47u;
-    PORTE.PIN6CTRL = 0x47u;
-    PORTK.PIN3CTRL = 0x47u;
-    PORTK.PIN4CTRL = 0x47u;
-}
-
-void initLeds() {
-    PORTA.DIRSET = 0x38u;
-
-    // inverted, input sensing disabled
-    PORTA.PIN3CTRL = 0x07u;
-    PORTA.PIN4CTRL = 0x07u;
-    PORTA.PIN5CTRL = 0x07u;
+    pulseClk1();
+    pulseClk1();
 }

@@ -9,9 +9,6 @@
 #define CFG_MAGIC_0 0xdau
 #define CFG_MAGIC_1 0x21u
 
-#define CLKOUT_PD7 0x02u
-#define CLKOUT_PE7 0x03u
-
 volatile uint8_t CFG_PLLCTRL = OSC_PLLSRC_RC2M_gc | 10u; // default is 20 MHz using internal osc
 volatile uint8_t CFG_PSCTRL = CLK_PSADIV_1_gc; // default is no prescaling
 volatile uint8_t pwmBits = 11;
@@ -21,14 +18,13 @@ volatile uint16_t pwmBase = 4u;
 volatile bool doReset = false;
 
 void doConfig();
-
 void initSysClock(void);
-void initSRAM();
-
-inline void readBank0();
-inline void readBank1();
 
 int main(void) {
+    // disable all interrupts
+    // ISR timing is too variable
+    cli();
+
     // init gpio and external sram
     initGpio();
     initSRAM();
@@ -38,8 +34,7 @@ int main(void) {
     //doConfig();
     ledOn1();
 
-    // initialize xmega
-    cli();
+    // configure system clock
     initSysClock();
     ledOn2();
 
@@ -50,6 +45,11 @@ int main(void) {
 
     // dummy pulse to set pwm state
     doPwmPulse(0);
+
+    // load first frame into bank 0
+    waitVsync();
+    disableClk0();
+    enableInput0();
     waitVsync();
 
     while(!doReset) {
@@ -79,7 +79,7 @@ int main(void) {
         }
 
         // set clk output pin
-        clkPin = prime ? CLKOUT_PD7 : CLKOUT_PE7;
+        clkPin = prime ? CLKOUT0 : CLKOUT1;
 
         // skip over configuration block (8 clock cycles)
         PORTCFG.CLKEVOUT = clkPin;
@@ -145,10 +145,6 @@ void initSysClock(void) {
     CLK.CTRL = CLK_SCLKSEL_PLL_gc; // Select PLL
 }
 
-void initSRAM() {
-
-}
-
 void doConfig() {
     // configure PLL as system clk at 20 MHz
     OSC.PLLCTRL = OSC_PLLSRC_RC2M_gc | 10u; // 20 MHz
@@ -194,20 +190,20 @@ void doConfig() {
                 config[i] >>= 1u;
 
             // bank 0 lower half (PH0-PH2, PJ2-PJ4)
-            config[0] |= (PORTH.IN & PIN0_bm) ? 0x80u : 0x00u;
-            config[1] |= (PORTH.IN & PIN1_bm) ? 0x80u : 0x00u;
-            config[2] |= (PORTH.IN & PIN2_bm) ? 0x80u : 0x00u;
-            config[3] |= (PORTJ.IN & PIN2_bm) ? 0x80u : 0x00u;
-            config[4] |= (PORTJ.IN & PIN3_bm) ? 0x80u : 0x00u;
-            config[5] |= (PORTJ.IN & PIN4_bm) ? 0x80u : 0x00u;
+            config[0] |= (PORTH.IN & 0x01u) ? 0x80u : 0x00u;
+            config[1] |= (PORTH.IN & 0x02u) ? 0x80u : 0x00u;
+            config[2] |= (PORTH.IN & 0x04u) ? 0x80u : 0x00u;
+            config[3] |= (PORTJ.IN & 0x04u) ? 0x80u : 0x00u;
+            config[4] |= (PORTJ.IN & 0x08u) ? 0x80u : 0x00u;
+            config[5] |= (PORTJ.IN & 0x10u) ? 0x80u : 0x00u;
 
             // bank 0 upper half (PC0-PC5)
-            config[6] |= (PORTC.IN & PIN0_bm) ? 0x80u : 0x00u;
-            config[7] |= (PORTC.IN & PIN1_bm) ? 0x80u : 0x00u;
-            config[8] |= (PORTC.IN & PIN2_bm) ? 0x80u : 0x00u;
-            config[9] |= (PORTC.IN & PIN3_bm) ? 0x80u : 0x00u;
-            config[10] |= (PORTC.IN & PIN4_bm) ? 0x80u : 0x00u;
-            config[11] |= (PORTC.IN & PIN5_bm) ? 0x80u : 0x00u;
+            config[6] |= (PORTC.IN & 0x01u) ? 0x80u : 0x00u;
+            config[7] |= (PORTC.IN & 0x02u) ? 0x80u : 0x00u;
+            config[8] |= (PORTC.IN & 0x04u) ? 0x80u : 0x00u;
+            config[9] |= (PORTC.IN & 0x08u) ? 0x80u : 0x00u;
+            config[10] |= (PORTC.IN & 0x10u) ? 0x80u : 0x00u;
+            config[11] |= (PORTC.IN & 0x20u) ? 0x80u : 0x00u;
 
             pulseClk0();
         }
@@ -243,48 +239,4 @@ void doConfig() {
     rows = config[5];
     rowLength = config[6];
     pwmBase = config[7];
-}
-
-inline void readBank0() {
-    // set data pins to outputs
-    // bank 0 lower half (PH0-PH2, PJ2-PJ4)
-    PORTH.DIRSET = 0x07u;
-    PORTJ.DIRSET = 0x0eu;
-    // bank 0 upper half (PC0-PC5)
-    PORTC.DIRSET = 0x3fu;
-
-    // clock in READ command
-    PORTH.OUTCLR = 0x07u;
-    PORTJ.OUTCLR = 0x0eu;
-    PORTC.OUTCLR = 0x3fu;
-    pulseClk0();
-    PORTH.OUTSET = 0x07u;
-    PORTJ.OUTSET = 0x0eu;
-    PORTC.OUTSET = 0x3fu;
-    pulseClk0();
-
-    // clock in zero as starting address
-    PORTH.OUTCLR = 0x07u;
-    PORTJ.OUTCLR = 0x0eu;
-    PORTC.OUTCLR = 0x3fu;
-    pulseClk0();
-    pulseClk0();
-    pulseClk0();
-    pulseClk0();
-
-    // set data pins back to inputs
-    PORTH.DIRCLR = 0x07u;
-    PORTJ.DIRCLR = 0x0eu;
-    PORTC.DIRCLR = 0x3fu;
-
-    // dummy byte
-    pulseClk0();
-    pulseClk0();
-}
-
-inline void readBank1() {
-
-    // dummy byte
-    pulseClk1();
-    pulseClk1();
 }

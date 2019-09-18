@@ -25,4 +25,4 @@ add_executable(
         clkout.h
         matrix.h
         sram.h
-)
+        sram.c)

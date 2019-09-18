@@ -5,9 +5,14 @@
 #ifndef RGB_MATRIX_AVR_CLKOUT_H
 #define RGB_MATRIX_AVR_CLKOUT_H
 
+#include <avr/io.h>
+
 #define CLK0_PORT PORTD
 #define CLK1_PORT PORTE
 #define CLK_PIN_MASK 0x80u
+
+#define CLKOUT0 0x02u
+#define CLKOUT1 0x03u
 
 inline void enableClk0() {
     CLK0_PORT.OUTCLR = CLK_PIN_MASK;

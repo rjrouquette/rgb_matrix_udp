@@ -4,7 +4,79 @@
 
 #include "sram.h"
 
-
 void initSRAM() {
+    // reset SRAM bus mode
+    // set chip selects
+    setVsync0();
+    setVsync1();
+    // set upper command bits (PH6, PH7, PC7, PB7)
+    PORTH.DIRSET = 0xc0u;
+    PORTC.DIRSET = 0x80u;
+    PORTB.DIRSET = 0x80u;
+    PORTH.OUTSET = 0xc0u;
+    PORTC.OUTSET = 0x80u;
+    PORTB.OUTSET = 0x80u;
+    // raise lower command bits
+    PORTH.DIRSET = BANK0H_MASK | BANK1H_MASK;
+    PORTJ.DIRSET = BANK0J_MASK | BANK1J_MASK;
+    PORTC.DIRSET = BANK0C_MASK;
+    PORTB.DIRSET = BANK1B_MASK;
+    PORTH.OUTSET = BANK0H_MASK | BANK1H_MASK;
+    PORTJ.OUTSET = BANK0J_MASK | BANK1J_MASK;
+    PORTC.OUTSET = BANK0C_MASK;
+    PORTB.OUTSET = BANK1B_MASK;
+    // clock data 8 times to guarantee bus mode reset
+    pulseClk0(); pulseClk1();
+    pulseClk0(); pulseClk1();
+    pulseClk0(); pulseClk1();
+    pulseClk0(); pulseClk1();
+    pulseClk0(); pulseClk1();
+    pulseClk0(); pulseClk1();
+    pulseClk0(); pulseClk1();
+    pulseClk0(); pulseClk1();
+    // clear chip selects
+    clearVsync0();
+    clearVsync1();
 
+    // set SO bits as high impedance
+    PORTH.DIRCLR = 0x07u; // PH0 - PH2
+    PORTJ.DIRCLR = 0xe0u; // PJ5 - PJ7
+    PORTC.DIRCLR = 0x07u; // PC0 - PC2
+    PORTB.DIRCLR = 0x38u; // PB3 - PB5
+
+    // set SRAM bus mode to QPI
+    // set chip selects
+    setVsync0();
+    setVsync1();
+    // clear lower command bits
+    PORTH.OUTCLR = BANK0H_MASK | BANK1H_MASK;
+    PORTJ.OUTCLR = BANK0J_MASK | BANK1J_MASK;
+    PORTC.OUTCLR = BANK0C_MASK;
+    PORTB.OUTCLR = BANK1B_MASK;
+    pulseClk0(); pulseClk1();
+    pulseClk0(); pulseClk1();
+    // set lower command bits
+    PORTH.OUTSET = BANK0H_MASK | BANK1H_MASK;
+    PORTJ.OUTSET = BANK0J_MASK | BANK1J_MASK;
+    PORTC.OUTSET = BANK0C_MASK;
+    PORTB.OUTSET = BANK1B_MASK;
+    pulseClk0(); pulseClk1();
+    pulseClk0(); pulseClk1();
+    pulseClk0(); pulseClk1();
+    // clear lower command bits
+    PORTH.OUTCLR = BANK0H_MASK | BANK1H_MASK;
+    PORTJ.OUTCLR = BANK0J_MASK | BANK1J_MASK;
+    PORTC.OUTCLR = BANK0C_MASK;
+    PORTB.OUTCLR = BANK1B_MASK;
+    pulseClk0(); pulseClk1();
+    pulseClk0(); pulseClk1();
+    pulseClk0(); pulseClk1();
+    // clear chip selects
+    clearVsync0();
+    clearVsync1();
+
+    // clear upper command bits
+    PORTH.OUTCLR = 0xc0u;
+    PORTC.OUTCLR = 0x80u;
+    PORTB.OUTCLR = 0x80u;
 }

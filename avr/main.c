@@ -34,7 +34,7 @@ int main(void) {
     //doConfig();
     ledOn1();
 
-    // configure system clock
+    // reconfigure system clock
     initSysClock();
     ledOn2();
 
@@ -126,6 +126,10 @@ int main(void) {
 }
 
 void initSysClock(void) {
+    // drop down to 2MHz clock before changing PLL settings
+    CCP = CCP_IOREG_gc;
+    CLK.CTRL = CLK_SCLKSEL_RC2M_gc; // Select 2MHz RC OSC
+
     OSC.XOSCCTRL = OSC_XOSCSEL_EXTCLK_gc;
     OSC.CTRL |= OSC_XOSCEN_bm;
     while(!(OSC.STATUS & OSC_XOSCRDY_bm)); // wait for external clock ready

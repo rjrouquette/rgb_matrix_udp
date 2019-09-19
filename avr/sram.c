@@ -19,12 +19,12 @@ void initSRAM() {
     // raise lower command bits
     PORTH.DIRSET = BANK0H_MASK | BANK1H_MASK;
     PORTJ.DIRSET = BANK0J_MASK | BANK1J_MASK;
-    PORTC.DIRSET = BANK0C_MASK;
-    PORTB.DIRSET = BANK1B_MASK;
+    PORTC.DIRSET = BANK1C_MASK;
+    PORTB.DIRSET = BANK0B_MASK;
     PORTH.OUTSET = BANK0H_MASK | BANK1H_MASK;
     PORTJ.OUTSET = BANK0J_MASK | BANK1J_MASK;
-    PORTC.OUTSET = BANK0C_MASK;
-    PORTB.OUTSET = BANK1B_MASK;
+    PORTC.OUTSET = BANK1C_MASK;
+    PORTB.OUTSET = BANK0B_MASK;
     // clock data 8 times to guarantee bus mode reset
     pulseClk0(); pulseClk1();
     pulseClk0(); pulseClk1();
@@ -51,23 +51,23 @@ void initSRAM() {
     // clear lower command bits
     PORTH.OUTCLR = BANK0H_MASK | BANK1H_MASK;
     PORTJ.OUTCLR = BANK0J_MASK | BANK1J_MASK;
-    PORTC.OUTCLR = BANK0C_MASK;
-    PORTB.OUTCLR = BANK1B_MASK;
+    PORTC.OUTCLR = BANK1C_MASK;
+    PORTB.OUTCLR = BANK0B_MASK;
     pulseClk0(); pulseClk1();
     pulseClk0(); pulseClk1();
     // set lower command bits
     PORTH.OUTSET = BANK0H_MASK | BANK1H_MASK;
     PORTJ.OUTSET = BANK0J_MASK | BANK1J_MASK;
-    PORTC.OUTSET = BANK0C_MASK;
-    PORTB.OUTSET = BANK1B_MASK;
+    PORTC.OUTSET = BANK1C_MASK;
+    PORTB.OUTSET = BANK0B_MASK;
     pulseClk0(); pulseClk1();
     pulseClk0(); pulseClk1();
     pulseClk0(); pulseClk1();
     // clear lower command bits
     PORTH.OUTCLR = BANK0H_MASK | BANK1H_MASK;
     PORTJ.OUTCLR = BANK0J_MASK | BANK1J_MASK;
-    PORTC.OUTCLR = BANK0C_MASK;
-    PORTB.OUTCLR = BANK1B_MASK;
+    PORTC.OUTCLR = BANK1C_MASK;
+    PORTB.OUTCLR = BANK0B_MASK;
     pulseClk0(); pulseClk1();
     pulseClk0(); pulseClk1();
     pulseClk0(); pulseClk1();

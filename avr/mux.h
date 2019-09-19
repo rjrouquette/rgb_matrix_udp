@@ -20,8 +20,8 @@ inline void disableOutput()  { OE_PORT.OUTCLR = OE_MASK; }
 
 #define INE_PORT PORTK
 #define INE_MASK 0x18u
-#define INE_MASK_0 0x10u
-#define INE_MASK_1 0x08u
+#define INE_MASK_0 0x08u
+#define INE_MASK_1 0x10u
 
 inline void enableInput0() { INE_PORT.OUTSET = INE_MASK_0; }
 inline void enableInput1() { INE_PORT.OUTSET = INE_MASK_1; }

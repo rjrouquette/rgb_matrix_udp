@@ -9,8 +9,6 @@
 #include "clkout.h"
 
 #define VSYNC_PORT0 PORTK
-#define VSYNC_PORT1 PORTA
-
 #define VSYNC_MASK0 0x06u
 #define VSYNC0_MASK 0x02u
 #define VSYNC1_MASK 0x04u

@@ -44,7 +44,7 @@ inline void waitVsync() {
     while (VSYNC_PORT0.IN & VSYNC_MASK0);
 }
 
-// bank 0 - PH3-PH5, PJ5-PJ7, PB0-PC5 (underside)
+// bank 0 - PH3-PH5, PJ5-PJ7, PB0-PB5 (underside)
 #define BANK0H_MASK 0x68u
 #define BANK0J_MASK 0xe0u
 #define BANK0B_MASK 0x3fu

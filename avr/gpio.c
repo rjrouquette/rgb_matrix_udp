@@ -58,10 +58,10 @@ void initGpio() {
 
     // configure vsync pins (sram chip selects)
     // high impedance, inverted, pull-ups
-    VSYNC_PORT0.OUTCLR = VSYNC_MASK0;
-    VSYNC_PORT0.DIRCLR = VSYNC_MASK0;
-    VSYNC_PORT0.PIN3CTRL = 0x58u;
-    VSYNC_PORT0.PIN4CTRL = 0x58u;
+    VSYNC_PORT.OUTCLR = VSYNC_MASK;
+    VSYNC_PORT.DIRCLR = VSYNC_MASK;
+    VSYNC_PORT.PIN3CTRL = 0x58u;
+    VSYNC_PORT.PIN4CTRL = 0x58u;
 
 
 }

@@ -31,7 +31,7 @@ int main(void) {
     ledOn0();
 
     // wait for configuration
-    //doConfig();
+    doConfig();
     ledOn1();
 
     // reconfigure system clock

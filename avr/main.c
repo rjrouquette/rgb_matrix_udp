@@ -171,18 +171,18 @@ void doConfig() {
         clearVsync();
         waitVsync();
 
-        // accept frame data on bank 0
-        disableClk0();
-        enableInput0();
+        // accept frame data on bank 1
+        disableClk1();
+        enableInput1();
 
         waitVsync();
         ledOn1();
 
-        // stop frame data on bank 0
-        disableInput0();
-        enableClk0();
-        setVsync0();
-        readBank0();
+        // stop frame data on bank 1
+        disableInput1();
+        enableClk1();
+        setVsync1();
+        readBank1();
 
         // clear config bytes
         for(uint8_t i = 0; i < CFG_BYTES; i++)
@@ -194,7 +194,7 @@ void doConfig() {
             for(uint8_t i = 0; i < CFG_BYTES; i++)
                 config[i] >>= 1u;
 
-            // bank 0 lower half (PH0-PH2, PJ2-PJ4)
+            // bank 1 lower half (PH0-PH2, PJ2-PJ4)
             config[0] |= (PORTH.IN & 0x01u) ? 0x80u : 0x00u;
             config[1] |= (PORTH.IN & 0x02u) ? 0x80u : 0x00u;
             config[2] |= (PORTH.IN & 0x04u) ? 0x80u : 0x00u;
@@ -202,7 +202,7 @@ void doConfig() {
             config[4] |= (PORTJ.IN & 0x08u) ? 0x80u : 0x00u;
             config[5] |= (PORTJ.IN & 0x10u) ? 0x80u : 0x00u;
 
-            // bank 0 upper half (PC0-PC5)
+            // bank 1 upper half (PC0-PC5)
             config[6] |= (PORTC.IN & 0x01u) ? 0x80u : 0x00u;
             config[7] |= (PORTC.IN & 0x02u) ? 0x80u : 0x00u;
             config[8] |= (PORTC.IN & 0x04u) ? 0x80u : 0x00u;
@@ -210,7 +210,7 @@ void doConfig() {
             config[10] |= (PORTC.IN & 0x10u) ? 0x80u : 0x00u;
             config[11] |= (PORTC.IN & 0x20u) ? 0x80u : 0x00u;
 
-            pulseClk0();
+            pulseClk1();
         }
         ledOff1();
 

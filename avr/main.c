@@ -175,6 +175,7 @@ void doConfig() {
         disableClk1();
         enableInput1();
 
+        waitVsyncClear();
         waitVsync();
         ledOn1();
 

@@ -42,6 +42,10 @@ inline void waitVsync() {
     while (VSYNC_PORT.IN & VSYNC_MASK);
 }
 
+inline void waitVsyncClear() {
+    while (!(VSYNC_PORT.IN & VSYNC_MASK));
+}
+
 // bank 0 - PH3-PH5, PJ5-PJ7, PB0-PB5 (underside)
 #define BANK0H_MASK 0x68u
 #define BANK0J_MASK 0xe0u

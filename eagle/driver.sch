@@ -16258,7 +16258,7 @@ Source: www.kingbright.com</description>
 <junction x="40.64" y="332.74"/>
 </segment>
 </net>
-<net name="N$94" class="0">
+<net name="VSYNC" class="0">
 <segment>
 <pinref part="IC6" gate="G$1" pin="2D5"/>
 <wire x1="88.9" y1="403.86" x2="71.12" y2="403.86" width="0.1524" layer="91"/>
@@ -16269,6 +16269,12 @@ Source: www.kingbright.com</description>
 <wire x1="0" y1="287.02" x2="71.12" y2="287.02" width="0.1524" layer="91"/>
 <wire x1="71.12" y1="287.02" x2="71.12" y2="363.22" width="0.1524" layer="91"/>
 <junction x="71.12" y="363.22"/>
+<label x="58.42" y="287.02" size="1.778" layer="95"/>
+</segment>
+<segment>
+<pinref part="IC1" gate="G$1" pin="PK5"/>
+<wire x1="144.78" y1="43.18" x2="142.24" y2="43.18" width="0.1524" layer="91"/>
+<label x="142.24" y="43.18" size="1.778" layer="95" rot="R180"/>
 </segment>
 </net>
 <net name="N$87" class="0">

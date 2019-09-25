@@ -10,8 +10,8 @@
 
 #define CS_PORT PORTK
 #define CS_MASK 0x06u
-#define CS_MASK_0 0x02u
-#define CS_MASK_1 0x04u
+#define CS_MASK_0 0x04u
+#define CS_MASK_1 0x02u
 
 inline void csOn0() {
     CS_PORT.OUTSET = CS_MASK_0;

@@ -8,42 +8,34 @@
 #include <avr/io.h>
 #include "clkout.h"
 
-#define VSYNC_PORT PORTK
-#define VSYNC_MASK 0x06u
-#define VSYNC_MASK_0 0x02u
-#define VSYNC_MASK_1 0x04u
+#define CS_PORT PORTK
+#define CS_MASK 0x06u
+#define CS_MASK_0 0x02u
+#define CS_MASK_1 0x04u
 
-inline void setVsync0() {
-    VSYNC_PORT.OUTSET = VSYNC_MASK_0;
-    VSYNC_PORT.DIRSET = VSYNC_MASK_0;
+inline void csOn0() {
+    CS_PORT.OUTSET = CS_MASK_0;
+    CS_PORT.DIRSET = CS_MASK_0;
 }
 
-inline void clearVsync0() {
-    VSYNC_PORT.OUTCLR = VSYNC_MASK_0;
-    VSYNC_PORT.DIRCLR = VSYNC_MASK_0;
+inline void csOff0() {
+    CS_PORT.OUTCLR = CS_MASK_0;
+    CS_PORT.DIRCLR = CS_MASK_0;
 }
 
-inline void setVsync1() {
-    VSYNC_PORT.OUTSET = VSYNC_MASK_1;
-    VSYNC_PORT.DIRSET = VSYNC_MASK_1;
+inline void csOn1() {
+    CS_PORT.OUTSET = CS_MASK_1;
+    CS_PORT.DIRSET = CS_MASK_1;
 }
 
-inline void clearVsync1() {
-    VSYNC_PORT.OUTCLR = VSYNC_MASK_1;
-    VSYNC_PORT.DIRCLR = VSYNC_MASK_1;
+inline void csOff1() {
+    CS_PORT.OUTCLR = CS_MASK_1;
+    CS_PORT.DIRCLR = CS_MASK_1;
 }
 
-inline void clearVsync() {
-    clearVsync0();
-    clearVsync1();
-}
-
-inline void waitVsync() {
-    while (VSYNC_PORT.IN & VSYNC_MASK);
-}
-
-inline void waitVsyncOff() {
-    while (!(VSYNC_PORT.IN & VSYNC_MASK));
+inline void csOff() {
+    csOff0();
+    csOff1();
 }
 
 // bank 0 - PH3-PH5, PJ5-PJ7, PB0-PB5 (underside)

@@ -7,8 +7,8 @@
 void initSRAM() {
     // reset SRAM bus mode
     // set chip selects
-    setVsync0();
-    setVsync1();
+    csOn0();
+    csOn1();
     // set upper command bits (PH6, PH7, PC7, PB7)
     PORTH.DIRSET = 0xc0u;
     PORTC.DIRSET = 0x80u;
@@ -35,8 +35,8 @@ void initSRAM() {
     pulseClk0(); pulseClk1();
     pulseClk0(); pulseClk1();
     // clear chip selects
-    clearVsync0();
-    clearVsync1();
+    csOff0();
+    csOff1();
 
     // set SO bits as high impedance
     PORTH.DIRCLR = 0x07u; // PH0 - PH2
@@ -46,8 +46,8 @@ void initSRAM() {
 
     // set SRAM bus mode to QPI
     // set chip selects
-    setVsync0();
-    setVsync1();
+    csOn0();
+    csOn1();
     // clear lower command bits
     PORTH.OUTCLR = BANK0H_MASK | BANK1H_MASK;
     PORTJ.OUTCLR = BANK0J_MASK | BANK1J_MASK;
@@ -72,8 +72,8 @@ void initSRAM() {
     pulseClk0(); pulseClk1();
     pulseClk0(); pulseClk1();
     // clear chip selects
-    clearVsync0();
-    clearVsync1();
+    csOff0();
+    csOff1();
 
     // clear upper command bits
     PORTH.OUTCLR = 0xc0u;

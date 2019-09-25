@@ -5,6 +5,12 @@
 #include "gpio.h"
 
 void initGpio() {
+    // configure vsync input
+    // high impedance, inverted, pull-up
+    VSYNC_PORT.DIRCLR = VSYNC_MASK;
+    VSYNC_PORT.PIN1CTRL = 0x58u; // debug board errata
+    //VSYNC_PORT.PIN5CTRL = 0x58u;
+
     // configure register and output buffer mux pins
     // inverted, disable input sensing
     OE_PORT.DIRSET = OE_MASK;
@@ -56,12 +62,12 @@ void initGpio() {
     LAT_PORT.PIN0CTRL = 0x07u;
 
 
-    // configure vsync pins (sram chip selects)
+    // configure sram chip selects
     // high impedance, inverted, pull-ups
-    VSYNC_PORT.OUTCLR = VSYNC_MASK;
-    VSYNC_PORT.DIRCLR = VSYNC_MASK;
-    VSYNC_PORT.PIN3CTRL = 0x58u;
-    VSYNC_PORT.PIN4CTRL = 0x58u;
+    CS_PORT.OUTCLR = CS_MASK;
+    CS_PORT.DIRCLR = CS_MASK;
+    CS_PORT.PIN3CTRL = 0x58u;
+    CS_PORT.PIN4CTRL = 0x58u;
 
 
 }

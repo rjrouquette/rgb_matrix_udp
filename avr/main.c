@@ -62,7 +62,7 @@ int main(void) {
             // set bank 0 as output
             disableInput0();
             enableClk0();
-            setVsync0();
+            csOn0();
             readBank0();
             enableOutput0();
         } else {
@@ -73,7 +73,7 @@ int main(void) {
             // set bank 1 as output
             disableInput1();
             enableClk1();
-            setVsync1();
+            csOn1();
             readBank1();
             enableOutput1();
         }
@@ -113,7 +113,7 @@ int main(void) {
 
         // disable panel output
         disableOutput();
-        clearVsync();
+        csOff();
 
         // flip SRAM buffer on vsync
         waitVsync();
@@ -168,21 +168,21 @@ void doConfig() {
 
     // wait for valid config
     for(;;) {
-        // accept frame data on bank 1
-        clearVsync();
+        // prepare to read from rpi
+        csOff();
         disableClk1();
-        enableInput1();
-        waitVsync();
 
-        // wait for complete frame
-        waitVsyncOff();
-        waitVsync();
-        ledOn1();
+        // synchronized frame capture
+        waitVsync();    // wait for vsync high
+        enableInput1(); // accept frame data on bank 1
+        waitNotVsync(); // wait for vsync low
+        ledOn1();       // pulse led
+        waitVsync();    // wait for vsync high
 
         // stop frame data on bank 1
         disableInput1();
         enableClk1();
-        setVsync1();
+        csOn1();
         readBank1();
 
         // clear config bytes
@@ -237,7 +237,7 @@ void doConfig() {
 
         if(ok) break;
     }
-    clearVsync();
+    csOff();
 
     // extract config fields (2 bytes currently unused)
     CFG_PLLCTRL = config[2];

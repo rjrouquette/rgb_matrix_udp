@@ -11,6 +11,18 @@
 #include "matrix.h"
 #include "sram.h"
 
+#define VSYNC_PORT PORTK
+#define VSYNC_MASK 0x01u  // debug board errata
+//#define VSYNC_MASK 0x20u
+
+inline void waitVsync() {
+    while (VSYNC_PORT.IN & VSYNC_MASK);
+}
+
+inline void waitNotVsync() {
+    while (!(VSYNC_PORT.IN & VSYNC_MASK));
+}
+
 void initGpio();
 
 #endif //RGB_MATRIX_AVR_GPIO_H

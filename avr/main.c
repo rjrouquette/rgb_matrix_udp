@@ -168,16 +168,20 @@ void doConfig() {
 
     // wait for valid config
     for(;;) {
+        // wait for vsync
+        waitVsync();
+
         // prepare to read from rpi
         csOff();
         disableClk1();
+        enableInput1();
+        // pulse led
+        ledOn1();
 
-        // synchronized frame capture
-        waitVsync();    // wait for vsync high
-        enableInput1(); // accept frame data on bank 1
-        waitNotVsync(); // wait for vsync low
-        ledOn1();       // pulse led
-        waitVsync();    // wait for vsync high
+        // wait for vsync end
+        waitNotVsync();
+        // wait for next vsync
+        waitVsync();
 
         // stop frame data on bank 1
         disableInput1();

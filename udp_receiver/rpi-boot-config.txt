@@ -1,8 +1,8 @@
 kernel=kernel8.bin
 device_tree_address=0x03000000
 arm_64bit=1
-arm_freq=500
-arm_freq_min=500
+arm_freq=1000
+arm_freq_min=1000
 force_turbo=1
 
 # RGB LED matrix driver using DPI

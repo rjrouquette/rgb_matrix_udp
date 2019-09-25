@@ -16,11 +16,11 @@
 //#define VSYNC_MASK 0x20u
 
 inline void waitVsync() {
-    while (VSYNC_PORT.IN & VSYNC_MASK);
+    while (VSYNC_PORT.IN & VSYNC_MASK) asm("");
 }
 
 inline void waitNotVsync() {
-    while (!(VSYNC_PORT.IN & VSYNC_MASK));
+    while ((VSYNC_PORT.IN & VSYNC_MASK) == 0) asm("");
 }
 
 void initGpio();

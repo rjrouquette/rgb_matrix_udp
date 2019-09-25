@@ -42,7 +42,7 @@ inline void waitVsync() {
     while (VSYNC_PORT.IN & VSYNC_MASK);
 }
 
-inline void waitVsyncClear() {
+inline void waitVsyncOff() {
     while (!(VSYNC_PORT.IN & VSYNC_MASK));
 }
 

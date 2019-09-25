@@ -6,10 +6,10 @@
 
 void initGpio() {
     // configure vsync input
-    // high impedance, inverted, pull-up
+    // input with pull-down
     VSYNC_PORT.DIRCLR = VSYNC_MASK;
-    VSYNC_PORT.PIN1CTRL = 0x58u; // debug board errata
-    //VSYNC_PORT.PIN5CTRL = 0x58u;
+    VSYNC_PORT.PIN1CTRL = 0x10u; // debug board errata
+    //VSYNC_PORT.PIN5CTRL = 0x10u;
 
     // configure register and output buffer mux pins
     // inverted, disable input sensing

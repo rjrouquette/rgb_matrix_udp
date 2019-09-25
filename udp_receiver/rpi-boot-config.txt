@@ -22,7 +22,7 @@ dpi_output_format=0x00217
 # 483 x 271 = 130893 pixels (99.8%)
 dpi_group=2
 dpi_mode=87
-dpi_timings=483 0 0 4 0 271 0 0 256 0 0 0 0 72 0 9600000 3
+dpi_timings=483 0 0 4 0 271 0 0 1 0 0 0 0 72 0 9600000 3
 
 # linux framebuffer
 framebuffer_width=483

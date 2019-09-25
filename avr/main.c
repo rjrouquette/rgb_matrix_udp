@@ -168,14 +168,13 @@ void doConfig() {
 
     // wait for valid config
     for(;;) {
-        clearVsync();
-        waitVsyncOff();
-        waitVsync();
-
         // accept frame data on bank 1
+        clearVsync();
         disableClk1();
         enableInput1();
+        waitVsync();
 
+        // wait for complete frame
         waitVsyncOff();
         waitVsync();
         ledOn1();

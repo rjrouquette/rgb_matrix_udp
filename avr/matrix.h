@@ -39,7 +39,7 @@ inline void doPwmPulse(uint16_t width) {
 
 inline void waitPwm() {
     // wait for pwm pulse to complete
-    while (!(PWM_TIMER.INTFLAGS & 0x20u));
+    while (!(PWM_TIMER.INTFLAGS & 0x20u)) asm("");
     // stop timer
     PWM_TIMER.CTRLA = 0x00u;
 }

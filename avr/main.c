@@ -50,6 +50,7 @@ int main(void) {
     waitVsync();
     disableClk0();
     enableInput0();
+    waitNotVsync();
     waitVsync();
 
     while(!doReset) {
@@ -167,6 +168,7 @@ void doConfig() {
     volatile uint8_t config[CFG_BYTES];
 
     // wait for valid config
+    waitNotVsync();
     for(;;) {
         // wait for vsync
         waitVsync();

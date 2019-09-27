@@ -66,8 +66,8 @@ void initGpio() {
     // high impedance, inverted, pull-ups
     CS_PORT.OUTCLR = CS_MASK;
     CS_PORT.DIRCLR = CS_MASK;
+    CS_PORT.PIN2CTRL = 0x58u;
     CS_PORT.PIN3CTRL = 0x58u;
-    CS_PORT.PIN4CTRL = 0x58u;
 
 
 }

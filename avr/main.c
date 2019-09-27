@@ -170,6 +170,8 @@ void doConfig() {
     // wait for valid config
     waitNotVsync();
     for(;;) {
+        // led off
+        ledOff1();
         // wait for vsync
         waitVsync();
 
@@ -184,7 +186,6 @@ void doConfig() {
         waitVsync();
         // pulse led
         ledOn1();
-        ledOff1();
 
         // stop frame data on bank 1
         disableInput1();

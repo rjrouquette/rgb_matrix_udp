@@ -177,13 +177,14 @@ void doConfig() {
         csOff();
         disableClk1();
         enableInput1();
-        // pulse led
-        ledOn1();
 
         // wait for vsync end
         waitNotVsync();
         // wait for next vsync
         waitVsync();
+        // pulse led
+        ledOn1();
+        ledOff1();
 
         // stop frame data on bank 1
         disableInput1();
@@ -219,7 +220,6 @@ void doConfig() {
 
             pulseClk1();
         }
-        ledOff1();
 
         // verify magic bytes
         if(config[0] != CFG_MAGIC_0) continue;

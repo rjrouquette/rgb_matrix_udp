@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
 
     long a, b;
     a = nanotime();
-    for(int i = 0; i < 10; i++) {
+    for(int i = 0; i < 1000; i++) {
         matrixDriver.clearFrame();
         matrixDriver.setPixel(0, 0, 0, 0, 255);
         matrixDriver.flipBuffer();

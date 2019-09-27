@@ -15883,7 +15883,7 @@ Source: www.kingbright.com</description>
 <label x="205.74" y="411.48" size="1.778" layer="95"/>
 </segment>
 </net>
-<net name="VSYNC0" class="0">
+<net name="!CS0" class="0">
 <segment>
 <pinref part="IC6" gate="G$1" pin="2Q5"/>
 <pinref part="IC10" gate="G$1" pin="!S"/>
@@ -15928,7 +15928,7 @@ Source: www.kingbright.com</description>
 <label x="119.38" y="241.3" size="1.778" layer="95"/>
 </segment>
 </net>
-<net name="VSYNC1" class="0">
+<net name="!CS1" class="0">
 <segment>
 <pinref part="IC7" gate="G$1" pin="1Q4"/>
 <wire x1="116.84" y1="363.22" x2="119.38" y2="363.22" width="0.1524" layer="91"/>

@@ -25,6 +25,10 @@ void initSRAM() {
     PORTJ.OUTSET = BANK0J_MASK | BANK1J_MASK;
     PORTC.OUTSET = BANK1C_MASK;
     PORTB.OUTSET = BANK0B_MASK;
+
+    // wait for data pins to stabilize
+    for(uint16_t cnt = 0; cnt < 0xffffu; cnt++) asm("nop\nnop\nnop\nnop");
+
     // clock data 8 times to guarantee bus mode reset
     pulseClk0(); pulseClk1();
     pulseClk0(); pulseClk1();
@@ -79,4 +83,7 @@ void initSRAM() {
     PORTH.OUTCLR = 0xc0u;
     PORTC.OUTCLR = 0x80u;
     PORTB.OUTCLR = 0x80u;
+
+    // wait for data pins to stabilize
+    for(uint16_t cnt = 0; cnt < 0xffffu; cnt++) asm("nop\nnop\nnop\nnop");
 }

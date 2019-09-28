@@ -228,6 +228,7 @@ void MatrixDriver::clearFrame() {
 }
 
 size_t MatrixDriver::translateOffset(size_t off) {
+    off += sizeof(frameHeader);
     auto a = off / vinfo.xres;
     auto b = off % vinfo.xres;
 

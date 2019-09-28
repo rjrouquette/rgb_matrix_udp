@@ -389,7 +389,7 @@ void MatrixDriver::initFrameHeader() {
 
     for(auto &v : config) {
         printf("%02x", v);
-        v = 0xffu;
+        v = 0x55u;
     }
     printf("\n");
     fflush(stdout);

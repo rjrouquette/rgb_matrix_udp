@@ -114,7 +114,6 @@ pwmMapping{}, finfo{}, vinfo{}
     this->pwmBits = pwmBits;
 
     initFrameHeader();
-    abort();
 
     auto ttyfd = open(ttyDev, O_RDWR);
     if(ttyfd < 0)
@@ -198,12 +197,6 @@ MatrixDriver::~MatrixDriver() {
 void MatrixDriver::flipBuffer() {
     pthread_mutex_lock(&mutexBuffer);
 
-    // set frame header cells
-    auto *ptr = currFrame;
-    for(auto v : frameHeader) {
-        *(ptr++) = v;
-    }
-
     // move frame offset
     currOffset = (currOffset + 1u) % 2u;
 
@@ -211,6 +204,12 @@ void MatrixDriver::flipBuffer() {
     auto temp = currFrame;
     currFrame = nextFrame;
     nextFrame = temp;
+
+    // set frame header cells
+    auto *ptr = currFrame;
+    for(auto v : frameHeader) {
+        *(ptr++) = v;
+    }
 
     // wake output thread
     pthread_cond_signal(&condBuffer);
@@ -398,7 +397,7 @@ void MatrixDriver::initFrameHeader() {
     // apply bits
     for(size_t i = 0; i < 8; i++) {
         auto &fh = frameHeader[i + 2];
-         fh = 0xff000000u; // set alpha bits, data bits zero
+        fh = 0xff000000u; // set alpha bits, data bits zero
         for(size_t j = 0; j < 12; j++) {
             if(config[j] & 0x01u) fh |= (1u << config_map[j]);
             config[j] >>= 1u;

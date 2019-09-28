@@ -114,10 +114,6 @@ pwmMapping{}, finfo{}, vinfo{}
     this->pwmBits = pwmBits;
 
     initFrameHeader();
-    for(auto v : frameHeader) {
-        fprintf(stdout, "0x%08x\n", v);
-    }
-    fflush(stdout);
     abort();
 
     auto ttyfd = open(ttyDev, O_RDWR);
@@ -392,9 +388,9 @@ void MatrixDriver::initFrameHeader() {
     config[10] = crc & 0xffu;
     config[11] = (crc >> 8u) & 0xffu;
 
-    for(auto &v : config) {
-        printf("%02x", v);
-        v = 0x55u;
+    printf("xmega config:");
+    for(auto v : config) {
+        printf(" %02x", v);
     }
     printf("\n");
     fflush(stdout);
@@ -408,6 +404,12 @@ void MatrixDriver::initFrameHeader() {
             config[j] >>= 1u;
         }
     }
+
+    printf("frame header:\n");
+    for(auto v : frameHeader) {
+        fprintf(stdout, "- 0x%08x\n", v);
+    }
+    fflush(stdout);
 }
 
 

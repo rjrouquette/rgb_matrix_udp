@@ -27,6 +27,8 @@
 #define DPI_G(x) (8u + x)
 #define DPI_B(x) (16u + x)
 
+#define PIXEL_BASE 0xff000000u
+
 struct output_bits {
     uint8_t red;
     uint8_t green;
@@ -170,8 +172,8 @@ pwmMapping{}, finfo{}, vinfo{}
     for(uint32_t y = 0; y < vinfo.yres; y++) {
         for(uint32_t x = 0; x < vinfo.xres; x++) {
             uint32_t off = y * (finfo.line_length / 4) + x;
-            currFrame[off] = 0xff000000;
-            nextFrame[off] = 0xff000000;
+            currFrame[off] = PIXEL_BASE;
+            nextFrame[off] = PIXEL_BASE;
         }
     }
 
@@ -220,7 +222,7 @@ void MatrixDriver::clearFrame() {
     for(uint32_t y = 0; y < vinfo.yres; y++) {
         for(uint32_t x = 0; x < vinfo.xres; x++) {
             uint32_t off = y * (finfo.line_length / 4) + x;
-            nextFrame[off] = 0xff000000;
+            nextFrame[off] = PIXEL_BASE;
         }
     }
 }
@@ -350,8 +352,8 @@ static const uint8_t xmega_clk_div[10] = {
 
 void MatrixDriver::initFrameHeader() {
     // set SRAM write command
-    frameHeader[0] = 0xff000000;    // set alpha bits, data bits zero
-    frameHeader[1] = 0xff000000;    // set alpha bits, data bits zero
+    frameHeader[0] = PIXEL_BASE;    // set alpha bits, data bits zero
+    frameHeader[1] = PIXEL_BASE;    // set alpha bits, data bits zero
     // set bits for write command
     for (const auto bit : write_map) {
         frameHeader[1] |= 1u << bit;
@@ -397,7 +399,7 @@ void MatrixDriver::initFrameHeader() {
     // apply bits
     for(size_t i = 0; i < 8; i++) {
         auto &fh = frameHeader[i + 2];
-        fh = 0xff000000u; // set alpha bits, data bits zero
+        fh = PIXEL_BASE; // set alpha bits, data bits zero
         for(size_t j = 0; j < 12; j++) {
             if(config[j] & 0x01u) fh |= (1u << config_map[j]);
             config[j] >>= 1u;

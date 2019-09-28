@@ -51,7 +51,7 @@ private:
     // frame header
     // 2 cells for SRAM write command
     // 8 cells for xmega config
-    uint32_t frameHeader[2 + 8];
+    uint32_t frameHeader[10];
     void initFrameHeader();
 
     void sendFrame(const uint32_t *fb);

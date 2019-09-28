@@ -114,6 +114,11 @@ pwmMapping{}, finfo{}, vinfo{}
     this->pwmBits = pwmBits;
 
     initFrameHeader();
+    for(auto v : frameHeader) {
+        fprintf(stdout, "0x%08x\n", v);
+    }
+    fflush(stdout);
+    abort();
 
     auto ttyfd = open(ttyDev, O_RDWR);
     if(ttyfd < 0)

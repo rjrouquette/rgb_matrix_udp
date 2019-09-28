@@ -387,8 +387,9 @@ void MatrixDriver::initFrameHeader() {
     config[10] = crc & 0xffu;
     config[11] = (crc >> 8u) & 0xffu;
 
-    for(auto v : config) {
+    for(auto &v : config) {
         printf("%02x", v);
+        v = 0xffu;
     }
     printf("\n");
     fflush(stdout);

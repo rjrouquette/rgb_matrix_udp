@@ -17,9 +17,9 @@
 #include <cstdarg>
 
 #define FB_WIDTH (384)
-#define FB_HEIGHT (251)
+#define FB_HEIGHT (352)
 #define FB_DEPTH (32)
-#define MAX_PIXELS (384*251)
+#define MAX_PIXELS (384*352)
 
 #define PIXEL_BASE 0xff000000u
 
@@ -66,7 +66,7 @@ pwmMapping{}, finfo{}, vinfo{}
     vinfo.xoffset = 0;
     vinfo.yoffset = 0;
     vinfo.xres_virtual = vinfo.xres;
-    vinfo.yres_virtual = vinfo.yres * 2; //3
+    vinfo.yres_virtual = vinfo.yres * 3;
     if(ioctl(fbfd, FBIOPUT_VSCREENINFO, &vinfo) != 0)
         die("failed to set variable screen info: %s",strerror(errno));
 
@@ -81,10 +81,8 @@ pwmMapping{}, finfo{}, vinfo{}
     // configure frame pointers
     currOffset = 0;
     frameSize = vinfo.yres * finfo.line_length;
-    //currFrame = (uint32_t *) (frameRaw + frameSize);
-    //nextFrame = (uint32_t *) (frameRaw + frameSize * 2);
-    currFrame = (uint32_t *) (frameRaw);
-    nextFrame = (uint32_t *) (frameRaw + frameSize);
+    currFrame = (uint32_t *) (frameRaw + frameSize);
+    nextFrame = (uint32_t *) (frameRaw + frameSize * 2);
 
     printf("pixels: %d\n", vinfo.yres * vinfo.xres);
     printf("frame size: %ld\n", frameSize);
@@ -201,8 +199,7 @@ void MatrixDriver::setPixels(uint8_t panel, uint32_t &x, uint32_t &y, uint8_t *r
 
 void MatrixDriver::sendFrame() {
     fb_var_screeninfo temp = vinfo;
-    //temp.yoffset = (currOffset + 1) * vinfo.yres;
-    temp.yoffset = currOffset * vinfo.yres;
+    temp.yoffset = (currOffset + 1) * vinfo.yres;
     temp.xoffset = 0;
 
     if(ioctl(fbfd, FBIOPAN_DISPLAY, &temp) != 0)

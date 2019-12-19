@@ -18,15 +18,17 @@ display_default_lcd=1
 dpi_output_format=0x00227
 
 # use custom DPI mode
-# driver SRAM size is 131072 pixels
-# 483 x 271 = 130893 pixels (99.8%)
+# 384 x 352 x 24
+# 384 = 6 rgb bits x 64 pixels
+# 352 = 11 pwm bits x 32 scan rows
+# 24-bit depth = 24 panels
 dpi_group=2
 dpi_mode=87
-dpi_timings=483 0 0 4 0 271 0 0 1 0 0 0 0 72 0 9600000 3
+dpi_timings=384 0 0 4 0 352 0 0 1 0 0 0 0 71 0 9600000 4
 
 # linux framebuffer
-framebuffer_width=483
-framebuffer_height=271
+framebuffer_width=384
+framebuffer_height=352
 framebuffer_depth=32
 framebuffer_ignore_alpha=1
 overscan_left=0

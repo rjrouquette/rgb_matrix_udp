@@ -21,7 +21,7 @@
 #define FB_DEPTH (32)
 #define MAX_PIXELS (384*352)
 
-#define PIXEL_BASE 0xff000000u
+#define PIXEL_BASE 0x000000ffu
 
 MatrixDriver::MatrixDriver(const char *fbDev, const char *ttyDev, int pixelsPerRow, int rowsPerScan, int pwmBits) :
 threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
@@ -154,7 +154,7 @@ void MatrixDriver::setPixel(uint8_t panel, uint32_t x, uint32_t y, uint8_t r, ui
     uint16_t G = pwmMapping[g];
     uint16_t B = pwmMapping[b];
 
-    const uint32_t maskPanelHi = 1u << panel;
+    const uint32_t maskPanelHi = 1u << (panel + 8u);
     const uint32_t maskPanelLo = ~maskPanelHi;
 
     const auto rowSize = finfo.line_length;

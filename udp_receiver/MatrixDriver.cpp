@@ -237,3 +237,158 @@ void createPwmLutLinear(uint8_t bits, float brightness, MatrixDriver::pwm_lut &p
         pwmLut[i] = pwmMappingLinear(bits, i, brightness);
     }
 }
+
+// 5x7 hex characters
+char hexChars[16][7][6] = {
+        {
+                " ### ",
+                "#   #",
+                "#  ##",
+                "# # #",
+                "##  #",
+                "#   #",
+                " ### "
+        },{
+                "  #  ",
+                " ##  ",
+                "# #  ",
+                "  #  ",
+                "  #  ",
+                "  #  ",
+                "#####"
+        },{
+                " ### ",
+                "#   #",
+                "    #",
+                "  ## ",
+                " #   ",
+                "#    ",
+                "#####",
+        },{
+                " ### ",
+                "#   #",
+                "    #",
+                "  ## ",
+                "    #",
+                "#   #",
+                " ### "
+        },{
+                "   # ",
+                "  ## ",
+                " # # ",
+                "#  # ",
+                "#####",
+                "   # ",
+                "   # "
+        },{
+                "#####",
+                "#    ",
+                "#### ",
+                "    #",
+                "    #",
+                "#   #",
+                " ### "
+        },{
+                " ### ",
+                "#   #",
+                "#    ",
+                "#### ",
+                "#   #",
+                "#   #",
+                " ### "
+        },{
+                "#####",
+                "    #",
+                "   # ",
+                "  #  ",
+                "  #  ",
+                "  #  ",
+                "  #  "
+        },{
+                " ### ",
+                "#   #",
+                "#   #",
+                " ### ",
+                "#   #",
+                "#   #",
+                " ### "
+        },{
+                " ### ",
+                "#   #",
+                "#   #",
+                " ####",
+                "    #",
+                "#   #",
+                " ### "
+        },{
+                " ### ",
+                "#   #",
+                "#   #",
+                "#   #",
+                "#####",
+                "#   #",
+                "#   #"
+        },{
+                "#### ",
+                "#   #",
+                "#   #",
+                "#### ",
+                "#   #",
+                "#   #",
+                "#### "
+        },{
+                " ### ",
+                "#   #",
+                "#    ",
+                "#    ",
+                "#    ",
+                "#   #",
+                " ### "
+        },{
+                "#### ",
+                "#   #",
+                "#   #",
+                "#   #",
+                "#   #",
+                "#   #",
+                "#### "
+        },{
+                "#####",
+                "#    ",
+                "#    ",
+                "#### ",
+                "#    ",
+                "#    ",
+                "#####"
+        },{
+                "#####",
+                "#    ",
+                "#    ",
+                "#### ",
+                "#    ",
+                "#    ",
+                "#    "
+        }
+};
+
+void MatrixDriver::drawHex(int panel, int xoff, int yoff, uint8_t hexValue, uint32_t fore, uint32_t back) {
+    auto pattern = hexChars[hexValue & 0xfu];
+
+    for(int y = 0; y < 7; y++) {
+        for(int x = 0; x < 5; x++) {
+            if (pattern[y][x] == '#')
+                setPixel(panel, x + xoff, y + yoff, (uint8_t *) &fore);
+            else
+                setPixel(panel, x + xoff, y + yoff, (uint8_t *) &back);
+        }
+    }
+}
+
+void MatrixDriver::enumeratePanels() {
+    clearFrame();
+    for(uint8_t p = 0; p < 24; p++) {
+        drawHex(p, 0, 0, p >> 3u, 0xffffff, 0);
+        drawHex(p, 6, 0, p & 7u, 0xffffff, 0);
+    }
+    flipBuffer();
+}

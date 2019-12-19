@@ -16,6 +16,11 @@ int main(int argc, char **argv) {
     createPwmLutCie1931(11, 100, matrixDriver.getPwmMapping());
     //createPwmLutLinear(11, 100, matrixDriver.getPwmMapping());
 
+    sleep(1);
+    matrixDriver.enumeratePanels();
+    sleep(3);
+
+    /*
     long a, b;
     a = nanotime();
     for(int i = 0; i < 255; i++) {
@@ -33,7 +38,7 @@ int main(int argc, char **argv) {
         fprintf(stdout, "%9ld ns (%6.2lf Hz)\n", (b-a), 1000000000.0 / (double)(b-a));
         a = b;
         fflush(stdout);
-    }
+    }*/
 
     return 0;
 }

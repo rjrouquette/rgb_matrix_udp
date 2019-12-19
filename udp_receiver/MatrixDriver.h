@@ -21,6 +21,8 @@ public:
     void setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8_t b);
     void setPixel(int panel, int x, int y, uint8_t *rgb);
     void setPixels(int panel, int &x, int &y, uint8_t *rgb, size_t pixelCount);
+    void drawHex(int panel, int xoff, int yoff, uint8_t hexValue, uint32_t rgbFore, uint32_t rgbBack);
+    void enumeratePanels();
 
     typedef uint16_t pwm_lut[256];
     pwm_lut& getPwmMapping() { return pwmMapping; }

@@ -16,12 +16,11 @@ public:
     ~MatrixDriver();
 
     void flipBuffer();
-
     void clearFrame();
 
-    void setPixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b);
-    void setPixel(uint32_t x, uint32_t y, uint8_t *rgb);
-    void setPixels(uint32_t &x, uint32_t &y, uint8_t *rgb, size_t pixelCount);
+    void setPixel(uint8_t panel, uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b);
+    void setPixel(uint8_t panel, uint32_t x, uint32_t y, uint8_t *rgb);
+    void setPixels(uint8_t panel, uint32_t &x, uint32_t &y, uint8_t *rgb, size_t pixelCount);
 
     typedef uint16_t pwm_lut[256];
     pwm_lut& getPwmMapping() { return pwmMapping; }
@@ -48,15 +47,7 @@ private:
     fb_fix_screeninfo finfo;
     fb_var_screeninfo vinfo;
 
-    // frame header
-    // 2 cells for SRAM write command
-    // 8 cells for xmega config
-    uint32_t frameHeader[10];
-    void initFrameHeader();
-
-    void sendFrame(const uint32_t *fb);
-    size_t translateOffset(size_t off);
-
+    void sendFrame();
     static void* doRefresh(void *obj);
 
     static void die(const char *format, ...) __attribute__ ((__format__ (__printf__, 1, 2)));

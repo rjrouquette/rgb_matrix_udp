@@ -15,92 +15,18 @@
 #include <sys/ioctl.h>
 #include <linux/kd.h>
 #include <cstdarg>
-#include <set>
 
-#define FB_WIDTH (483)
-#define FB_HEIGHT (271)
+#define FB_WIDTH (384)
+#define FB_HEIGHT (251)
 #define FB_DEPTH (32)
-#define MAX_PIXELS (483*271)
-
-// little-endian RGBA byte order on frame buffer
-#define DPI_R(x) (0u + x)
-#define DPI_G(x) (8u + x)
-#define DPI_B(x) (16u + x)
+#define MAX_PIXELS (384*251)
 
 #define PIXEL_BASE 0xff000000u
-
-struct output_bits {
-    uint8_t red;
-    uint8_t green;
-    uint8_t blue;
-};
-
-/*
- *  Pin Translation
- *
- *  RPi Header  DPI     RGB Matrix      SRAM    XMega
- *  38          R0      P3.B0           SIO0    CFG.10
- *  40          R1      P3.R0           SIO1    CFG.11
- *  15          R2      P1.R0           SIOx
- *  16          R3      P1.G0           SIO1    CFG.03
- *  18          R4      P1.B0           SIOx
- *  22          R5      P1.B1           SIO1    CFG.05
- *  37          R6      P3.G0           SIOx
- *  13          R7      P0.B1           SIO0    CFG.02
- *  32          G0      P2.G0           SIOx
- *  33          G1      P3.B1           SIOx
- *  08          G2      P0.R0           SIO0    CFG.00
- *  10          G3      P0.B0           SIOx
- *  36          G4      P3.G1           SIO1    CFG.09
- *  11          G5      P0.G1           SIO1    CFG.01
- *  12          G6      P0.R1           SIOx
- *  35          G7      P3.R1           SIOx
- *  07          B0      P0.G0           SIOx
- *  29          B1      P2.B0           SIO1    CFG.07
- *  31          B2      P2.R0           SIO0    CFG.08
- *  26          B3      P2.R1           SIOx
- *  24          B4      P2.B1           SIOx
- *  21          B5      P1.G1           SIOx
- *  19          B6      P1.R1           SIO0    CFG.04
- *  23          B7      P2.G1           SIO0    CFG.06
-*/
-
-output_bits output_map[8] = {
-    { DPI_G(2), DPI_B(0), DPI_G(3) }, // P0.0 = G2, B0, G3
-    { DPI_G(6), DPI_G(5), DPI_R(7) }, // P0.1 = G6, G5, R7
-    { DPI_R(2), DPI_R(3), DPI_R(4) }, // P1.0 = R2, R3, R4
-    { DPI_B(6), DPI_B(5), DPI_R(5) }, // P1.1 = B6, B5, R5
-    { DPI_B(2), DPI_G(0), DPI_B(1) }, // P2.0 = B2, G0, B1
-    { DPI_B(3), DPI_B(7), DPI_B(4) }, // P2.1 = B3, B7, B4
-    { DPI_R(1), DPI_R(6), DPI_R(0) }, // P3.0 = R1, R6, R0
-    { DPI_G(7), DPI_G(4), DPI_G(1) }  // P3.1 = G7, G4, G1
-};
-static bool checkOutputMap();
-
-uint8_t write_map[6] = {
-        DPI_R(1),   DPI_R(3),   DPI_R(5),
-        DPI_G(4),   DPI_G(5),   DPI_B(1)
-};
-static bool checkWriteMap();
-
-uint8_t config_map[12] = {
-        DPI_G(2),   DPI_G(5),   DPI_R(7),
-        DPI_R(3),   DPI_B(6),   DPI_R(5),
-        DPI_B(7),   DPI_B(1),   DPI_B(2),
-        DPI_G(4),   DPI_R(0),   DPI_R(1)
-};
-static bool checkConfigMap();
-
-static uint16_t crc_ccitt_update (uint16_t crc, uint8_t data);
 
 MatrixDriver::MatrixDriver(const char *fbDev, const char *ttyDev, int pixelsPerRow, int rowsPerScan, int pwmBits) :
 threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
 pwmMapping{}, finfo{}, vinfo{}
 {
-    if(!checkOutputMap()) die("overlapping bits in output map");
-    if(!checkWriteMap()) die("overlapping bits in write command map");
-    if(!checkConfigMap()) die("overlapping bits in config map");
-
     if(pixelsPerRow < 1) die("display must have at least one pixel per row, %d were specified", pixelsPerRow);
     if(rowsPerScan < 1) die("display must have at least one row address, %d were specified", rowsPerScan);
     if(rowsPerScan > 32) die("display may not have more than 32 row addresses, %d were specified", rowsPerScan);
@@ -114,8 +40,6 @@ pwmMapping{}, finfo{}, vinfo{}
     this->pixelsPerRow = pixelsPerRow;
     this->rowsPerScan = rowsPerScan;
     this->pwmBits = pwmBits;
-
-    initFrameHeader();
 
     auto ttyfd = open(ttyDev, O_RDWR);
     if(ttyfd < 0)
@@ -207,12 +131,6 @@ void MatrixDriver::flipBuffer() {
     currFrame = nextFrame;
     nextFrame = temp;
 
-    // set frame header cells
-    auto *ptr = currFrame;
-    for(auto v : frameHeader) {
-        *(ptr++) = v;
-    }
-
     // wake output thread
     pthread_cond_signal(&condBuffer);
     pthread_mutex_unlock(&mutexBuffer);
@@ -227,58 +145,50 @@ void MatrixDriver::clearFrame() {
     }
 }
 
-size_t MatrixDriver::translateOffset(size_t off) {
-    off += sizeof(frameHeader);
-    auto a = off / vinfo.xres;
-    auto b = off % vinfo.xres;
-
-    return (a * (finfo.line_length / 4)) + b;
-}
-
-void MatrixDriver::setPixel(uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b) {
+void MatrixDriver::setPixel(uint8_t panel, uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b) {
     if(x < 0 || y < 0) return;
-    if(x >= pixelsPerRow || y >= (rowsPerScan << 3u)) return;
-    uint32_t roff = y % rowsPerScan;
-    uint32_t rcnt = y / rowsPerScan;
-    uint32_t poff = x + (roff * pwmBits * pixelsPerRow);
-
-    // set gpio masks
-    const uint32_t maskR = 1u << output_map[rcnt].red;
-    const uint32_t maskG = 1u << output_map[rcnt].green;
-    const uint32_t maskB = 1u << output_map[rcnt].blue;
+    if(x >= pixelsPerRow || y >= (rowsPerScan * 2u)) return;
 
     // get pwm values
     uint16_t R = pwmMapping[r];
     uint16_t G = pwmMapping[g];
     uint16_t B = pwmMapping[b];
 
+    const uint32_t maskPanelHi = 1u << panel;
+    const uint32_t maskPanelLo = ~maskPanelHi;
+
+    const auto rowSize = finfo.line_length;
+    const auto rowBlock = pwmBits * rowSize;
+    auto poff = (x * 3) + (y * rowBlock);
+    poff += rowBlock * rowsPerScan * (y / rowsPerScan);
+
     // set pixel bits
     for(uint8_t i = 0; i < pwmBits; i++) {
-        auto pixel = &nextFrame[translateOffset(poff)];
+        auto pixel = nextFrame + poff;
 
-        if(R & 1u) *pixel |= maskR;
-        else       *pixel &= ~maskR;
+        if(R & 1u) pixel[0] |= maskPanelHi;
+        else       pixel[0] &= maskPanelLo;
 
-        if(G & 1u) *pixel |= maskG;
-        else       *pixel &= ~maskG;
+        if(G & 1u) pixel[1] |= maskPanelHi;
+        else       pixel[1] &= maskPanelLo;
 
-        if(B & 1u) *pixel |= maskB;
-        else       *pixel &= ~maskB;
+        if(B & 1u) pixel[2] |= maskPanelHi;
+        else       pixel[2] &= maskPanelLo;
 
         R >>= 1u;
         G >>= 1u;
         B >>= 1u;
-        poff += pixelsPerRow;
+        poff += rowSize;
     }
 }
 
-void MatrixDriver::setPixel(uint32_t x, uint32_t y, uint8_t *rgb) {
-    setPixel(x, y, rgb[0], rgb[1], rgb[2]);
+void MatrixDriver::setPixel(uint8_t panel, uint32_t x, uint32_t y, uint8_t *rgb) {
+    setPixel(panel, x, y, rgb[0], rgb[1], rgb[2]);
 }
 
-void MatrixDriver::setPixels(uint32_t &x, uint32_t &y, uint8_t *rgb, size_t pixelCount) {
+void MatrixDriver::setPixels(uint8_t panel, uint32_t &x, uint32_t &y, uint8_t *rgb, size_t pixelCount) {
     for(size_t i = 0; i < pixelCount; i++) {
-        setPixel(x, y, rgb);
+        setPixel(panel, x, y, rgb);
         rgb += 3;
         if(++x >= pixelsPerRow) {
             x = 0;
@@ -287,7 +197,7 @@ void MatrixDriver::setPixels(uint32_t &x, uint32_t &y, uint8_t *rgb, size_t pixe
     }
 }
 
-void MatrixDriver::sendFrame(const uint32_t *fb) {
+void MatrixDriver::sendFrame() {
     fb_var_screeninfo temp = vinfo;
     temp.yoffset = (currOffset + 1) * vinfo.yres;
     temp.xoffset = 0;
@@ -318,7 +228,7 @@ void* MatrixDriver::doRefresh(void *obj) {
     pthread_mutex_lock(&ctx.mutexBuffer);
     while(ctx.isRunning) {
         pthread_cond_wait(&ctx.condBuffer, &ctx.mutexBuffer);
-        ctx.sendFrame(ctx.currFrame);
+        ctx.sendFrame();
     }
     pthread_mutex_unlock(&ctx.mutexBuffer);
 
@@ -333,85 +243,6 @@ void MatrixDriver::die(const char *format, ...) {
     fflush(stderr);
     va_end(argptr);
     abort();
-}
-
-static const uint8_t xmega_ext_clk = (0x03u<<6u);
-
-// taken from xmega64a1u headers
-static const uint8_t xmega_clk_div[10] = {
-        (0x00u<<2u),  /* Divide by 1 */
-        (0x01u<<2u),  /* Divide by 2 */
-        (0x03u<<2u),  /* Divide by 4 */
-        (0x05u<<2u),  /* Divide by 8 */
-        (0x07u<<2u),  /* Divide by 16 */
-        (0x09u<<2u),  /* Divide by 32 */
-        (0x0Bu<<2u),  /* Divide by 64 */
-        (0x0Du<<2u),  /* Divide by 128 */
-        (0x0Fu<<2u),  /* Divide by 256 */
-        (0x11u<<2u),  /* Divide by 512 */
-};
-
-void MatrixDriver::initFrameHeader() {
-    // set SRAM write command
-    frameHeader[0] = PIXEL_BASE;    // set alpha bits, data bits zero
-    frameHeader[1] = PIXEL_BASE;    // set alpha bits, data bits zero
-    // set bits for write command
-    for (const auto bit : write_map) {
-        frameHeader[1] |= 1u << bit;
-    }
-
-    // compute optimal timing
-    uint8_t pllctrl, psctrl, pwmBase;
-    // TODO establish profile framework
-    // empirically derived values for 4x5 array of 64x64 panels
-    pllctrl = xmega_ext_clk | 9u; // external clock, multiply by 9
-    psctrl = xmega_clk_div[2]; // divide by 4
-    pwmBase = 4;
-
-    // compute xmega config
-    uint8_t config[12];
-    // magic bytes
-    config[0] = 0xda;
-    config[1] = 0x21;
-    config[2] = pllctrl;
-    config[3] = psctrl;
-    config[4] = pwmBits;
-    config[5] = rowsPerScan;
-    config[6] = pixelsPerRow;
-    config[7] = pwmBase;
-    config[8] = 0; // future use
-    config[9] = 0; // future use
-
-    // compute CRC-16 CCITT checksum
-    uint16_t crc = 0u;
-    for (int j = 0; j < 10; j++) {
-        crc = crc_ccitt_update(crc, config[j]);
-    }
-    config[10] = crc & 0xffu;
-    config[11] = (crc >> 8u) & 0xffu;
-
-    printf("xmega config:");
-    for(auto v : config) {
-        printf(" %02x", v);
-    }
-    printf("\n");
-    fflush(stdout);
-
-    // apply bits
-    for(size_t i = 0; i < 8; i++) {
-        auto &fh = frameHeader[i + 2];
-        fh = PIXEL_BASE; // set alpha bits, data bits zero
-        for(size_t j = 0; j < 12; j++) {
-            if(config[j] & 0x01u) fh |= (1u << config_map[j]);
-            config[j] >>= 1u;
-        }
-    }
-
-    printf("frame header:\n");
-    for(auto v : frameHeader) {
-        fprintf(stdout, "- 0x%08x\n", v);
-    }
-    fflush(stdout);
 }
 
 
@@ -439,47 +270,4 @@ void createPwmLutLinear(uint8_t bits, float brightness, MatrixDriver::pwm_lut &p
     for(int i = 0; i < 256; i++) {
         pwmLut[i] = pwmMappingLinear(bits, i, brightness);
     }
-}
-
-
-static bool checkOutputMap() {
-    std::set<uint8_t> bits;
-    for(const auto &m : output_map) {
-        if(bits.count(m.red)) return false;
-        bits.insert(m.red);
-        if(bits.count(m.green)) return false;
-        bits.insert(m.green);
-        if(bits.count(m.blue)) return false;
-        bits.insert(m.blue);
-    }
-    return true;
-}
-
-static bool checkWriteMap() {
-    std::set<uint8_t> bits;
-    for(const auto &v : write_map) {
-        if(bits.count(v)) return false;
-        bits.insert(v);
-    }
-    return true;
-}
-
-static bool checkConfigMap() {
-    std::set<uint8_t> bits;
-    for(const auto &v : config_map) {
-        if(bits.count(v)) return false;
-        bits.insert(v);
-    }
-    return true;
-}
-
-// CRC16-CCITT
-static inline uint8_t lo8(uint16_t v) { return v & 0xffu; }
-static inline uint8_t hi8(uint16_t v) { return (v >> 8u) & 0xffu; }
-
-static uint16_t crc_ccitt_update (uint16_t crc, uint8_t data) {
-    data ^= lo8 (crc);
-    data ^= data << 4u;
-    return ((((uint16_t)data << 8u) | hi8 (crc)) ^ (uint8_t)(data >> 4u)
-             ^ ((uint16_t)data << 3u));
 }

@@ -105,6 +105,7 @@ void MatrixDriver::clearFrame() {
 }
 
 void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8_t b) {
+    if(panel < 0 || panel >= 24) return;
     if(x < 0 || y < 0) return;
     if(x >= panelCols || y >= panelRows) return;
 
@@ -148,7 +149,7 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t *rgb) {
     setPixel(panel, x, y, rgb[0], rgb[1], rgb[2]);
 }
 
-void MatrixDriver::setPixels(int panel, int &x, int &y, uint8_t *rgb, size_t pixelCount) {
+void MatrixDriver::setPixels(int &panel, int &x, int &y, uint8_t *rgb, size_t pixelCount) {
     for(size_t i = 0; i < pixelCount; i++) {
         setPixel(panel, x, y, rgb);
         rgb += 3;

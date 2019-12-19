@@ -13,6 +13,7 @@
 #include <cstdarg>
 
 // xmega to panel rgb bit mapping
+// bit offsets are in octal notation
 int mapRGB[8][3] = {
 //       RED  GRN  BLU
         {001, 000, 002}, // x = 0, y = 0
@@ -25,10 +26,11 @@ int mapRGB[8][3] = {
         {017, 026, 027}  // x = 3, y = 1
 };
 
+// panel channels are enumerated in octal notation
 uint8_t mapPanel[24] = {
-        000, 001, 002, 003, 004, 005, 006, 007, // Panel A0 - A7
-        010, 011, 012, 013, 014, 015, 016, 017, // Panel B0 - B7
-        020, 021, 022, 023, 024, 025, 026, 027  // Panel C0 - C7
+        000, 001, 002, 003, 004, 005, 006, 007, // Panel 00 - 07
+        010, 011, 012, 013, 014, 015, 016, 017, // Panel 10 - 17
+        020, 021, 022, 023, 024, 025, 026, 027  // Panel 20 - 27
 };
 
 MatrixDriver::MatrixDriver(int cols, int rows, int pwm) :

@@ -24,8 +24,8 @@
 #define RECVMMSG_CNT (64)
 
 #define FRAME_MASK (0x0fu)      // 16 frame circular buffer
-#define SUBFRAME_MASK (0xffu)    // 256 sub-frames per frame
-#define SUBFRAME_PIXELS (400)
+#define SUBFRAME_MASK (0xffu)   // 256 sub-frames per frame
+#define SUBFRAME_PIXELS (400)   // 400 pixels per sub-frame
 #define SUBFRAME_MATRIX ((PANEL_COUNT * PANEL_WIDTH * PANEL_WIDTH + SUBFRAME_PIXELS - 1) / SUBFRAME_PIXELS)
 
 bool isRunning = true;

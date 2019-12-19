@@ -4,127 +4,87 @@
 
 #include "MatrixDriver.h"
 
+#include <SDL/SDL.h>
 #include <cstring>
 #include <cstdlib>
 #include <cmath>
-#include <unistd.h>
-#include <fcntl.h>
-#include <iostream>
 #include <sys/mman.h>
 #include <sched.h>
-#include <sys/ioctl.h>
-#include <linux/kd.h>
 #include <cstdarg>
 
-#define FB_WIDTH (384)
-#define FB_HEIGHT (352)
-#define FB_DEPTH (32)
-#define MAX_PIXELS (384*352)
+// xmega to panel rgb bit mapping
+int mapRGB[8][3] = {
+//       RED  GRN  BLU
+        {001, 000, 002}, // x = 0, y = 0
+        {004, 003, 005}, // x = 0, y = 1
+        {011, 010, 012}, // x = 1, y = 0
+        {014, 013, 015}, // x = 1, y = 1
+        {021, 020, 022}, // x = 2, y = 0
+        {024, 023, 025}, // x = 2, y = 1
+        {006, 007, 016}, // x = 3, y = 0
+        {017, 026, 027}  // x = 3, y = 1
+};
 
-#define PIXEL_BASE 0x000000ffu
+uint8_t mapPanel[24] = {
+        000, 001, 002, 003, 004, 005, 006, 007, // Panel A0 - A7
+        010, 011, 012, 013, 014, 015, 016, 017, // Panel B0 - B7
+        020, 021, 022, 023, 024, 025, 026, 027  // Panel C0 - C7
+};
 
-MatrixDriver::MatrixDriver(const char *fbDev, const char *ttyDev, int pixelsPerRow, int rowsPerScan, int pwmBits) :
-threadGpio{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
-pwmMapping{}, finfo{}, vinfo{}
+MatrixDriver::MatrixDriver(int cols, int rows, int pwm) :
+        panelRows(rows), panelCols(cols), scanRowCnt(rows / 2), pwmBits(pwm),
+        threadOutput{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
+        pwmMapping{}
 {
-    if(pixelsPerRow < 1) die("display must have at least one pixel per row, %d were specified", pixelsPerRow);
-    if(rowsPerScan < 1) die("display must have at least one row address, %d were specified", rowsPerScan);
-    if(rowsPerScan > 32) die("display may not have more than 32 row addresses, %d were specified", rowsPerScan);
-    if(pwmBits < 1) die("display must have at least one pwm bit per pixel, %d were specified", pwmBits);
-    if(pwmBits > 16) die("display may not have more than 16 pwm bits per pixel, %d were specified", pwmBits);
+    SDL_Init(SDL_INIT_VIDEO);
+    auto videoInfo = SDL_GetVideoInfo();
 
-    // validate raster size
-    if(pwmBits * pixelsPerRow * rowsPerScan > MAX_PIXELS)
-        die("raster size requires %d cells, the maximum is %d", pwmBits * pixelsPerRow * rowsPerScan, MAX_PIXELS);
+    // create SDL canvas
+    screen = SDL_SetVideoMode(
+            videoInfo->current_w,
+            videoInfo->current_h,
+            32,
+            SDL_DOUBLEBUF | SDL_FULLSCREEN
+    );
+    if(screen == nullptr)
+        die("SDL_SetVideoMode failed: %d x %d x %d", videoInfo->current_w, videoInfo->current_h, 32);
+    if(screen->format->BytesPerPixel != 4)
+        die("SDL_Surface is not 32-bit color");
 
-    this->pixelsPerRow = pixelsPerRow;
-    this->rowsPerScan = rowsPerScan;
-    this->pwmBits = pwmBits;
+    frameSize = panelRows * panelCols * pwmBits * 3;
+    currFrame = new uint32_t[frameSize];
+    nextFrame = new uint32_t[frameSize];
 
-    auto ttyfd = open(ttyDev, O_RDWR);
-    if(ttyfd < 0)
-        die("failed to open tty device: %s", ttyDev);
-    if(ioctl(ttyfd, KDSETMODE, KD_GRAPHICS) != 0)
-        die("failed to set %s to graphics mode: %s", ttyDev, strerror(errno));
-
-    fbfd = open(fbDev, O_RDWR);
-    if(fbfd < 0)
-        die("failed to open fb device: %s", fbDev);
-
-    if(ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) != 0)
-        die("failed to get variable screen info: %s",strerror(errno));
-
-    // abort if framebuffer is not configured correctly
-    if(vinfo.xres != FB_WIDTH)
-        die("framebuffer width is unexpected: %d != %d", vinfo.xres, FB_WIDTH);
-    if(vinfo.yres != FB_HEIGHT)
-        die("framebuffer height is unexpected: %d != %d", vinfo.yres, FB_HEIGHT);
-    if(vinfo.bits_per_pixel != FB_DEPTH)
-        die("framebuffer depth is unexpected: %d != %d", vinfo.bits_per_pixel, FB_DEPTH);
-
-    // configure virtual framebuffer for flipping
-    vinfo.xoffset = 0;
-    vinfo.yoffset = 0;
-    vinfo.xres_virtual = vinfo.xres;
-    vinfo.yres_virtual = vinfo.yres * 3;
-    if(ioctl(fbfd, FBIOPUT_VSCREENINFO, &vinfo) != 0)
-        die("failed to set variable screen info: %s",strerror(errno));
-
-    if(ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) != 0)
-        die("failed to get fixed screen info: %s",strerror(errno));
-
-    // get pointer to raw frame buffer data
-    frameRaw = (uint8_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
-    if(frameRaw == MAP_FAILED)
-        die("failed to map raw screen buffer data: %s",strerror(errno));
-
-    // configure frame pointers
-    currOffset = 0;
-    frameSize = vinfo.yres * finfo.line_length;
-    currFrame = (uint32_t *) (frameRaw + frameSize);
-    nextFrame = (uint32_t *) (frameRaw + frameSize * 2);
-
-    printf("pixels: %d\n", vinfo.yres * vinfo.xres);
-    printf("frame size: %ld\n", frameSize);
-    printf("left margin: %d\n", vinfo.left_margin);
-    printf("right margin: %d\n", vinfo.right_margin);
-    printf("x offset: %d\n", vinfo.xoffset);
-    printf("x virt res: %d\n", vinfo.xres_virtual);
-
-    // clear frame buffer
-    bzero(frameRaw, finfo.smem_len);
-    for(uint32_t y = 0; y < vinfo.yres; y++) {
-        for(uint32_t x = 0; x < vinfo.xres; x++) {
-            uint32_t off = y * (finfo.line_length / 4) + x;
-            currFrame[off] = PIXEL_BASE;
-            nextFrame[off] = PIXEL_BASE;
-        }
-    }
+    pixBlock = 24;
+    rowBlock = panelCols * 6;
+    pwmBlock = rowBlock * pwmBits;
 
     // display off by default
     bzero(pwmMapping, sizeof(pwmMapping));
+    // clear frame buffers
+    bzero(currFrame, sizeof(uint32_t) * frameSize);
+    bzero(nextFrame, sizeof(uint32_t) * frameSize);
 
     // start output thread
     isRunning = true;
-    pthread_create(&threadGpio, nullptr, doRefresh, this);
+    pthread_create(&threadOutput, nullptr, doRefresh, this);
 }
 
 MatrixDriver::~MatrixDriver() {
-    // stop gpio thread
-    isRunning = false;
     clearFrame();
     flipBuffer();
-    pthread_join(threadGpio, nullptr);
 
-    munmap(frameRaw, finfo.smem_len);
-    close(fbfd);
+    // stop output thread
+    isRunning = false;
+    pthread_join(threadOutput, nullptr);
+
+    delete[] currFrame;
+    delete[] nextFrame;
+    SDL_FreeSurface(screen);
 }
 
 void MatrixDriver::flipBuffer() {
     pthread_mutex_lock(&mutexBuffer);
-
-    // move frame offset
-    currOffset = (currOffset + 1u) % 2u;
 
     // swap buffer pointers
     auto temp = currFrame;
@@ -137,81 +97,87 @@ void MatrixDriver::flipBuffer() {
 }
 
 void MatrixDriver::clearFrame() {
-    for(uint32_t y = 0; y < vinfo.yres; y++) {
-        for(uint32_t x = 0; x < vinfo.xres; x++) {
-            uint32_t off = y * (finfo.line_length / 4) + x;
-            nextFrame[off] = PIXEL_BASE;
-        }
+    for(size_t i = 0; i < frameSize; i++) {
+        nextFrame[i] = 0xff000000u;
     }
 }
 
-void MatrixDriver::setPixel(uint8_t panel, uint32_t x, uint32_t y, uint8_t r, uint8_t g, uint8_t b) {
+void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     if(x < 0 || y < 0) return;
-    if(x >= pixelsPerRow || y >= (rowsPerScan * 2u)) return;
+    if(x >= panelCols || y >= panelRows) return;
 
     // get pwm values
     uint16_t R = pwmMapping[r];
     uint16_t G = pwmMapping[g];
     uint16_t B = pwmMapping[b];
 
-    const uint32_t maskPanelHi = 1u << (panel + 8u);
+    const uint32_t maskPanelHi = 1u << mapPanel[panel];
     const uint32_t maskPanelLo = ~maskPanelHi;
 
-    const auto rowSize = finfo.line_length;
-    const auto rowBlock = pwmBits * rowSize;
-    auto poff = (x * 3) + (y * rowBlock);
-    poff += rowBlock * rowsPerScan * (y / rowsPerScan);
+    auto boff = (x * 2 + (y / scanRowCnt)) % 8;
+    auto poff = (x / 4) * pixBlock;
+    poff += (y % scanRowCnt) * pwmBlock;
 
     // set pixel bits
+    const auto &rgbMap = mapRGB[boff];
+    auto pixel = nextFrame + poff;
     for(uint8_t i = 0; i < pwmBits; i++) {
-        auto pixel = nextFrame + poff;
+        auto &rBit = pixel[rgbMap[0]];
+        auto &gBit = pixel[rgbMap[1]];
+        auto &bBit = pixel[rgbMap[2]];
 
-        if(R & 1u) pixel[0] |= maskPanelHi;
-        else       pixel[0] &= maskPanelLo;
+        if(R & 1u)  rBit |= maskPanelHi;
+        else        rBit &= maskPanelLo;
 
-        if(G & 1u) pixel[1] |= maskPanelHi;
-        else       pixel[1] &= maskPanelLo;
+        if(G & 1u)  gBit |= maskPanelHi;
+        else        gBit &= maskPanelLo;
 
-        if(B & 1u) pixel[2] |= maskPanelHi;
-        else       pixel[2] &= maskPanelLo;
+        if(B & 1u)  bBit |= maskPanelHi;
+        else        bBit &= maskPanelLo;
 
         R >>= 1u;
         G >>= 1u;
         B >>= 1u;
-        poff += rowSize;
+        pixel += rowBlock;
     }
 }
 
-void MatrixDriver::setPixel(uint8_t panel, uint32_t x, uint32_t y, uint8_t *rgb) {
+void MatrixDriver::setPixel(int panel, int x, int y, uint8_t *rgb) {
     setPixel(panel, x, y, rgb[0], rgb[1], rgb[2]);
 }
 
-void MatrixDriver::setPixels(uint8_t panel, uint32_t &x, uint32_t &y, uint8_t *rgb, size_t pixelCount) {
+void MatrixDriver::setPixels(int panel, int &x, int &y, uint8_t *rgb, size_t pixelCount) {
     for(size_t i = 0; i < pixelCount; i++) {
         setPixel(panel, x, y, rgb);
         rgb += 3;
-        if(++x >= pixelsPerRow) {
+        if(++x >= panelCols) {
             x = 0;
-            ++y;
+            if(++y >= panelRows) {
+                y = 0;
+                ++panel;
+            }
         }
     }
 }
 
-void MatrixDriver::sendFrame() {
-    fb_var_screeninfo temp = vinfo;
-    temp.yoffset = (currOffset + 1) * vinfo.yres;
-    temp.xoffset = 0;
-
-    if(ioctl(fbfd, FBIOPAN_DISPLAY, &temp) != 0)
-        die("failed to pan frame buffer: %s", strerror(errno));
-
-    if(ioctl(fbfd, FBIO_WAITFORVSYNC, nullptr) != 0)
-        die("failed to wait for vsync: %s", strerror(errno));
+void MatrixDriver::blitFrame() {
+    SDL_LockSurface(screen);
+    auto srow = (uint8_t *) screen->pixels;
+    auto prow = currFrame;
+    for(int x = 0; x < scanRowCnt; x++) {
+        for(int p = 0; p < pwmBits; p++) {
+            memcpy(srow, prow, rowBlock * sizeof(uint32_t));
+            srow += screen->pitch;
+            prow += rowBlock;
+        }
+    }
+    SDL_UnlockSurface(screen);
+    SDL_Flip(screen);
 }
 
 void* MatrixDriver::doRefresh(void *obj) {
     // set thread name
-    pthread_setname_np(pthread_self(), "gpio_out");
+    pthread_setname_np(pthread_self(), "dpi_out");
 
     // set cpu affinity
     cpu_set_t cpuset;
@@ -228,7 +194,7 @@ void* MatrixDriver::doRefresh(void *obj) {
     pthread_mutex_lock(&ctx.mutexBuffer);
     while(ctx.isRunning) {
         pthread_cond_wait(&ctx.condBuffer, &ctx.mutexBuffer);
-        ctx.sendFrame();
+        ctx.blitFrame();
     }
     pthread_mutex_unlock(&ctx.mutexBuffer);
 

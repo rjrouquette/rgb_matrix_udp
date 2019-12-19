@@ -28,4 +28,4 @@ add_executable(
         MatrixDriver.h
 )
 
-target_link_libraries(udp_receiver2 -pthread)
+target_link_libraries(udp_receiver2 -lSDL -pthread)

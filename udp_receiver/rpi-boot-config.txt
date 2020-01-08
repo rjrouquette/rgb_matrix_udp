@@ -25,7 +25,7 @@ dpi_output_format=0x00217
 # 24-bit depth = 24 panels
 dpi_group=2
 dpi_mode=87
-dpi_timings=256 0 0 8 0 480 0 0 1 0 0 0 0 250 0 32000000 3
+dpi_timings=256 0 0 8 0 480 0 0 1 0 0 0 0 252 0 32000000 3
 
 # linux framebuffer
 framebuffer_width=256

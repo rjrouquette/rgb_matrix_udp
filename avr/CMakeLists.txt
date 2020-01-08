@@ -12,7 +12,7 @@ set(CMAKE_CXX_COMPILER_WORKS 1)
 
 project("rgb_matrix_avr")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -Wall -mmcu=atxmega64a1u -D__AVR_ATxmega64A1U__ -DF_CPU=20000000 -DARCH_XMEGA")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -Wall -mmcu=atxmega16a4u -D__AVR_ATxmega16A4U__ -DF_CPU=2000000 -DARCH_XMEGA")
 
 add_executable(
         rgb-matrix-avr
@@ -21,9 +21,5 @@ add_executable(
         leds.h
         gpio.c
         gpio.h
-        mux.h
-        clkout.h
         matrix.h
-        sram.h
-        sram.c
 )

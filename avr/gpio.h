@@ -6,21 +6,17 @@
 #define RGB_MATRIX_AVR_GPIO_H
 
 #include "leds.h"
-#include "mux.h"
-#include "clkout.h"
 #include "matrix.h"
-#include "sram.h"
 
-#define VSYNC_PORT PORTK
-#define VSYNC_MASK 0x01u  // debug board errata
-//#define VSYNC_MASK 0x20u
+#define VSYNC_PORT PORTE
+#define VSYNC_MASK 0x01u
 
-inline void waitVsync() {
-    while ((VSYNC_PORT.IN & VSYNC_MASK) == 0) asm("");
-}
+#define HSYNC_PORT PORTE
 
-inline void waitNotVsync() {
-    while ((VSYNC_PORT.IN & VSYNC_MASK) != 0) asm("");
+#define META_PORT PORTD
+
+inline uint8_t isVsync() {
+    return VSYNC_PORT.IN & VSYNC_MASK;
 }
 
 void initGpio();

@@ -5,69 +5,58 @@
 #include "gpio.h"
 
 void initGpio() {
-    // configure vsync input
-    // input with pull-down
-    VSYNC_PORT.DIRCLR = VSYNC_MASK;
-    VSYNC_PORT.PIN1CTRL = 0x10u; // debug board errata
-    //VSYNC_PORT.PIN5CTRL = 0x10u;
-
-    // configure register and output buffer mux pins
-    // inverted, disable input sensing
-    OE_PORT.DIRSET = OE_MASK;
-    OE_PORT.PIN5CTRL = 0x47u;
-    OE_PORT.PIN6CTRL = 0x47u;
-    INE_PORT.DIRSET = INE_MASK;
-    INE_PORT.PIN3CTRL = 0x47u;
-    INE_PORT.PIN4CTRL = 0x47u;
-
-    // configure LED pins
+    // configure LED pin (PC1)
     // disable input sensing
-    LED_PORT.DIRSET = 0x38u;
-    LED_PORT.PIN3CTRL = 0x07u;
-    LED_PORT.PIN4CTRL = 0x07u;
-    LED_PORT.PIN5CTRL = 0x07u;
+    LED_PORT.DIRSET = LED_MASK;
+    LED_PORT.PIN2CTRL = 0x07u;
 
-    // configure clock output pins
-    // high-impedance, disable input sensing, pull down
-    CLK0_PORT.DIRCLR = CLK_PIN_MASK;
-    CLK0_PORT.PIN7CTRL = 0x17u;
-    CLK1_PORT.DIRCLR = CLK_PIN_MASK;
-    CLK1_PORT.PIN7CTRL = 0x17u;
-    // leave clk output disabled for now
-    PORTCFG.CLKEVOUT = 0x00u;
+    // configure vsync input
+    VSYNC_PORT.DIRCLR = VSYNC_MASK;
 
+    // configure hsync input (PE1, PE2)
+    HSYNC_PORT.DIRCLR = 0x06u;
+    // rising edge event
+    HSYNC_PORT.PIN1CTRL = 0x01u; // rising edge
+    EVSYS.CH1MUX = 0x71u; // event channel 1
+
+    // falling-edge interrupt end event
+    HSYNC_PORT.PIN2CTRL = 0x02u; // falling edge
+    HSYNC_PORT.INT0MASK = 0x04u; // interrupt on pin 2
+    HSYNC_PORT.INTCTRL = 0x03u; // port interrupt 0, high level
+    EVSYS.CH0MUX = 0x72u; // event channel 0
 
     // configure row select outputs
-    // inverted, disable input sensing
-    ADDR_PORT.DIRSET = 0x1f;
-    ADDR_PORT.PIN0CTRL = 0x47u;
-    ADDR_PORT.PIN1CTRL = 0x47u;
-    ADDR_PORT.PIN2CTRL = 0x47u;
-    ADDR_PORT.PIN3CTRL = 0x47u;
-    ADDR_PORT.PIN4CTRL = 0x47u;
+    // disable input sensing
+    ROWSEL_PORT.DIRSET = 0xf8;
+    ROWSEL_PORT.PIN0CTRL = 0x07u;
+    ROWSEL_PORT.PIN1CTRL = 0x07u;
+    ROWSEL_PORT.PIN2CTRL = 0x07u;
+    ROWSEL_PORT.PIN3CTRL = 0x07u;
+    ROWSEL_PORT.PIN4CTRL = 0x07u;
+    ROWSEL_PORT.PIN5CTRL = 0x07u;
+    ROWSEL_PORT.PIN6CTRL = 0x07u;
+    ROWSEL_PORT.PIN7CTRL = 0x07u;
 
-    // full timer period
-    // single slope PWM mode
-    PWM_TIMER.PER = 0xffffu;
-    PWM_TIMER.CTRLB = 0x23u;
+    // init pwm timer
+    PWM_TIMER.PER = 0xffffu; // maximum period
+    PWM_TIMER.CCA = 0;       // start with zero width pulse
+    PWM_TIMER.CTRLA = 0x01u; // no clock divisor
+    PWM_TIMER.CTRLB = 0x13u; // CCA, single slope pwm
+    PWM_TIMER.CTRLD = 0x89u; // restart on event channel 1
 
-    // set PE1 as OCCB output pin
+    // PWM output (PC0)
     // inverted, disable input sensing
     PWM_PORT.DIRSET = PWM_MASK;
-    PWM_PORT.PIN1CTRL = 0x47u;
+    PWM_PORT.PIN0CTRL = 0x47u;
 
-    // LAT output
+    // LAT output (PC7)
     // disable input sensing
+    // event channel 0 as output value
     LAT_PORT.DIRSET = LAT_MASK;
-    LAT_PORT.PIN0CTRL = 0x07u;
+    LAT_PORT.PIN7CTRL = 0x07u;
+    PORTCFG.CLKEVOUT = 0x10u;
+    PORTCFG.EVOUTSEL = 0x00u;
 
-
-    // configure sram chip selects
-    // high impedance, inverted, pull-ups
-    CS_PORT.OUTCLR = CS_MASK;
-    CS_PORT.DIRCLR = CS_MASK;
-    CS_PORT.PIN1CTRL = 0x58u;
-    CS_PORT.PIN2CTRL = 0x58u;
-
-
+    // line meta data input
+    META_PORT.DIRCLR = 0xffu;
 }

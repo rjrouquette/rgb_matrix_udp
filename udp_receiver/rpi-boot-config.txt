@@ -17,7 +17,7 @@ display_default_lcd=1
 # standard polarity on timing signals
 dpi_output_format=0x00217
 
-# 4 chains of four 64x64 panels)
+# 4 chains with four 64x64 panels each
 # use custom DPI mode
 # 256 x 480 x 24
 # 256 = 256 pixels per row

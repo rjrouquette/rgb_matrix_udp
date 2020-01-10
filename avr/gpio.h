@@ -21,4 +21,8 @@ inline uint8_t isVsync() {
 
 void initGpio();
 
+inline void nop1() { asm volatile("nop"); }
+inline void nop2() { nop1(); nop1(); }
+inline void nop4() { nop2(); nop2(); }
+
 #endif //RGB_MATRIX_AVR_GPIO_H

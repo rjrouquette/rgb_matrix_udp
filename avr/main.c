@@ -28,7 +28,7 @@ int main(void) {
     while(!isVsync()) asm("nop");
 
     // startup complete
-    PMIC.CTRL = 0x40; // enable high-level interrupts
+    PMIC.CTRL = 0x06u; // enable high-level interrupts
     DMA.CTRL = 0x83u; // enable DMA
     ledOff();
 
@@ -75,11 +75,15 @@ void initDMA(void) {
     DMA.CH0.DESTADDR1 = DMA_ADDR1(&lineMeta);
     DMA.CH0.DESTADDR2 = DMA_ADDR2(&lineMeta);
     DMA.CH0.TRFCNT = sizeof(lineMeta);
-    DMA.CH0.REPCNT = 0; // unlimited repeat
+    DMA.CH0.REPCNT = 1;
     DMA.CH0.TRIGSRC = 0x02u; // event channel 1 trigger
     DMA.CH0.ADDRCTRL = 0x05u; // fixed source address, reset destination after each block
-    DMA.CH0.CTRLB = 0x00u;
-    DMA.CH0.CTRLA = 0xa0u; // enabled, repeat mode
+    DMA.CH0.CTRLB = 0x02u; // mid-level interrupt
+    DMA.CH0.CTRLA = 0x80u; // enabled
+}
+
+ISR(DMA_CH0_vect) {
+    DMA.CH0.CTRLA = 0x80u; // enabled
 }
 
 ISR(PORTE_INT0_vect) {

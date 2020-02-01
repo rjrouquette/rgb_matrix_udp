@@ -20,14 +20,14 @@ void initGpio() {
     // configure hsync input (PE1, PE2)
     HSYNC_PORT.DIRCLR = 0x06u;
     // falling-edge interrupt end event
-    HSYNC_PORT.PIN2CTRL = 0x02u; // falling edge
-    HSYNC_PORT.INT0MASK = 0x04u; // interrupt on pin 2
+    HSYNC_PORT.PIN2CTRL = 0x01u; // falling edge
+    //HSYNC_PORT.INT0MASK = 0x04u; // interrupt on pin 2
     EVSYS.CH0MUX = 0x72u; // event channel 0
     // rising edge interrupt
-    HSYNC_PORT.PIN1CTRL = 0x01u; // rising edge
-    HSYNC_PORT.INT1MASK = 0x02u; // interrupt on pin 1
+    //HSYNC_PORT.PIN1CTRL = 0x02u; // rising edge
+    //HSYNC_PORT.INT1MASK = 0x02u; // interrupt on pin 1
     // enable both port interrupts
-    HSYNC_PORT.INTCTRL = 0x0fu; // port interrupt 0+1, high level
+    //HSYNC_PORT.INTCTRL = 0x0fu; // port interrupt 0+1, high level
 
     // configure row select outputs
     // disable input sensing

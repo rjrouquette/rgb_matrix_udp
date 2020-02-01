@@ -34,9 +34,9 @@ int main(void) {
         // wait for H-sync
         while(!HSYNC_PORT.INTFLAGS & 0x01u);
 
+        ROWSEL_PORT.OUT = rowSelect;
         PWM_TIMER.CCA = pulseWidth;
         PWM_TIMER.CNT = 0;
-        ROWSEL_PORT.OUT = rowSelect;
 
         // capture leading bytes
         buffer[0] = PORTD.IN;

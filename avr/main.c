@@ -30,18 +30,14 @@ int main(void) {
     ledOff();
 
     // infinite loop
-    uint8_t prev = 0;
     for(;;) {
-        uint8_t curr = HSYNC_PORT.IN;
-        uint8_t edge = curr ^ prev;
-        prev = curr;
-
-        if(!(edge & 0x04u)) continue;
-        if(curr & 0x04u) {
+        if(HSYNC_PORT.INTFLAGS & 0x01u) {
             ROWSEL_PORT.OUT = rowSelect;
             PWM_TIMER.CCA = pulseWidth;
             PWM_TIMER.CNT = 0;
-        } else {
+            continue;
+        }
+        if(HSYNC_PORT.INTFLAGS & 0x02u) {
             ledToggle();
 
             // capture leading bytes

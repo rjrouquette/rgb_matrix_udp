@@ -31,14 +31,17 @@ int main(void) {
 
     // infinite loop
     for(;;) {
+        if(!HSYNC_PORT.INTFLAGS & 0x03u)
+            continue;
+
         if(HSYNC_PORT.INTFLAGS & 0x01u) {
-            ledToggle();
             ROWSEL_PORT.OUT = rowSelect;
             PWM_TIMER.CCA = pulseWidth;
             PWM_TIMER.CNT = 0;
             HSYNC_PORT.INTFLAGS |= 0x01u;
             continue;
         }
+
         if(HSYNC_PORT.INTFLAGS & 0x02u) {
             ledToggle();
 

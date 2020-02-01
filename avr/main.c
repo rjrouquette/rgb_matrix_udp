@@ -30,7 +30,8 @@ int main(void) {
     ledOff();
 
     // infinite loop
-    asm("rjmp -2");
+    asm("rjloop:\n"
+        "rjmp rjloop");
 
     return 0;
 }

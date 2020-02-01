@@ -41,7 +41,6 @@ int main(void) {
             ROWSEL_PORT.OUT = rowSelect;
             PWM_TIMER.CCA = pulseWidth;
             PWM_TIMER.CNT = 0;
-            ledToggle();
         } else {
             ledToggle();
 
@@ -60,8 +59,8 @@ int main(void) {
             }
 
             // extract line config
-            pulseWidth = *(uint16_t*)(buffer + i);
-            rowSelect = *(uint8_t*)(buffer + i + 2);
+            //pulseWidth = *(uint16_t*)(buffer + i);
+            //rowSelect = *(uint8_t*)(buffer + i + 2);
         }
     }
 

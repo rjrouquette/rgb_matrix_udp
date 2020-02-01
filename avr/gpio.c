@@ -5,6 +5,10 @@
 #include "gpio.h"
 
 void initGpio() {
+    // clk input is inverted
+    PORTR.DIRCLR = 0x02u;
+    PORTR.PIN2CTRL = 0x40u;
+
     // configure LED pin (PC1)
     // disable input sensing
     LED_PORT.DIRSET = LED_MASK;

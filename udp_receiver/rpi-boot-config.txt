@@ -15,7 +15,7 @@ display_default_lcd=1
 
 # use DPI 24-bit RGB output
 # standard polarity on timing signals
-dpi_output_format=0x00217
+dpi_output_format=0x00017
 
 # 4 chains with four 64x64 panels each
 # use custom DPI mode

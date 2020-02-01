@@ -68,12 +68,11 @@ ISR(OSC_OSCF_vect) {
 ISR(PORTE_INT0_vect) {
     //PWM_TIMER.CCA = pulseWidth;
     //ROWSEL_PORT.OUT = rowSelect;
-    //ledToggle();
+    ledToggle();
 }
 
 // capture line config
 ISR(PORTE_INT1_vect) {
-    ledToggle();
     /*
     // capture leading bytes
     buffer[0] = PORTD.IN;

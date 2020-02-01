@@ -8,8 +8,8 @@ void initSysClock(void);
 
 uint8_t buffer[6];
 
-uint16_t pulseWidth;
-uint8_t rowSelect;
+uint16_t pulseWidth = 64;
+uint8_t rowSelect = 0xa0u;
 
 int main(void) {
     cli();
@@ -30,8 +30,40 @@ int main(void) {
     ledOff();
 
     // infinite loop
-    asm("rjloop:\n"
-        "rjmp rjloop");
+    uint8_t prev = 0;
+    for(;;) {
+        uint8_t curr = HSYNC_PORT.IN;
+        uint8_t edge = curr ^ prev;
+        prev = curr;
+
+        if(!(edge & 0x04u)) continue;
+        if(curr & 0x04u) {
+            ROWSEL_PORT.OUT = rowSelect;
+            PWM_TIMER.CCA = pulseWidth;
+            PWM_TIMER.CNT = 0;
+            ledToggle();
+        } else {
+            ledToggle();
+
+            // capture leading bytes
+            buffer[0] = PORTD.IN;
+            buffer[1] = PORTD.IN;
+            buffer[2] = PORTD.IN;
+            buffer[3] = PORTD.IN;
+            buffer[4] = PORTD.IN;
+            buffer[5] = PORTD.IN;
+
+            // locate line header
+            uint8_t i = 0;
+            while(i < 3) {
+                if(buffer[i++] == 0xffu) break;
+            }
+
+            // extract line config
+            pulseWidth = *(uint16_t*)(buffer + i);
+            rowSelect = *(uint8_t*)(buffer + i + 2);
+        }
+    }
 
     return 0;
 }
@@ -64,18 +96,18 @@ ISR(OSC_OSCF_vect) {
     ledOff();
     RST.CTRL = RST_SWRST_bm;
 }
-
+/*
 // hsync leading edge
 ISR(PORTE_INT0_vect) {
-    //PWM_TIMER.CCA = pulseWidth;
-    //ROWSEL_PORT.OUT = rowSelect;
+    PWM_TIMER.CCA = pulseWidth;
+    ROWSEL_PORT.OUT = rowSelect;
     ledToggle();
 }
 
 // capture line config
 ISR(PORTE_INT1_vect) {
     ledToggle();
-    /*
+
     // capture leading bytes
     buffer[0] = PORTD.IN;
     buffer[1] = PORTD.IN;
@@ -93,5 +125,5 @@ ISR(PORTE_INT1_vect) {
     // extract line config
     pulseWidth = *(uint16_t*)(buffer + i);
     rowSelect = *(uint8_t*)(buffer + i + 2);
-     */
 }
+*/

@@ -32,9 +32,11 @@ int main(void) {
     // infinite loop
     for(;;) {
         if(HSYNC_PORT.INTFLAGS & 0x01u) {
+            ledToggle();
             ROWSEL_PORT.OUT = rowSelect;
             PWM_TIMER.CCA = pulseWidth;
             PWM_TIMER.CNT = 0;
+            HSYNC_PORT.INTFLAGS |= 0x01u;
             continue;
         }
         if(HSYNC_PORT.INTFLAGS & 0x02u) {
@@ -47,6 +49,7 @@ int main(void) {
             buffer[3] = PORTD.IN;
             buffer[4] = PORTD.IN;
             buffer[5] = PORTD.IN;
+            HSYNC_PORT.INTFLAGS |= 0x02u;
 
             // locate line header
             uint8_t i = 0;

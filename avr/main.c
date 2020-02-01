@@ -74,6 +74,7 @@ ISR(PORTE_INT0_vect) {
 
 // capture line config
 ISR(PORTE_INT1_vect) {
+    ledToggle();
     /*
     // capture leading bytes
     buffer[0] = PORTD.IN;

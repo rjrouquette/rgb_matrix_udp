@@ -22,7 +22,7 @@ dpi_output_format=0x00017
 # 256 x 480 x 24
 # 256 = 256 pixels per row
 # 480 = 32 scan rows x 15 pwm planes
-# 24-bit depth = 24 panels
+# 24-bit depth = 4 panels
 dpi_group=2
 dpi_mode=87
 dpi_timings=256 0 0 8 0 480 0 0 1 0 0 0 0 252 0 32000000 3

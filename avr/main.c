@@ -66,13 +66,15 @@ ISR(OSC_OSCF_vect) {
 
 // hsync leading edge
 ISR(PORTE_INT0_vect) {
-    PWM_TIMER.CCA = pulseWidth;
-    ROWSEL_PORT.OUT = rowSelect;
-    ledToggle();
+    //PWM_TIMER.CCA = pulseWidth;
+    //ROWSEL_PORT.OUT = rowSelect;
+    //ledToggle();
 }
 
 // capture line config
 ISR(PORTE_INT1_vect) {
+    ledToggle();
+    /*
     // capture leading bytes
     buffer[0] = PORTD.IN;
     buffer[1] = PORTD.IN;
@@ -90,4 +92,5 @@ ISR(PORTE_INT1_vect) {
     // extract line config
     pulseWidth = *(uint16_t*)(buffer + i);
     rowSelect = *(uint8_t*)(buffer + i + 2);
+     */
 }

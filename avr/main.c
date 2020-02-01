@@ -31,13 +31,13 @@ int main(void) {
 
     // infinite loop
     for(;;) {
+        // wait for H-sync
         while(!HSYNC_PORT.INTFLAGS & 0x01u);
+
         PWM_TIMER.CCA = pulseWidth;
         PWM_TIMER.CNT = 0;
         ROWSEL_PORT.OUT = rowSelect;
-        HSYNC_PORT.INTFLAGS = 0x01u;
 
-        while(!(HSYNC_PORT.INTFLAGS & 0x02u));
         // capture leading bytes
         buffer[0] = PORTD.IN;
         buffer[1] = PORTD.IN;
@@ -57,6 +57,7 @@ int main(void) {
         // extract line config
         //pulseWidth = *(uint16_t*)(buffer + i);
         rowSelect = *(uint8_t*)(buffer + i + 2);
+        HSYNC_PORT.INTFLAGS = 0x01u;
     }
 
     return 0;

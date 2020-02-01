@@ -35,7 +35,7 @@ int main(void) {
             ROWSEL_PORT.OUT = rowSelect;
             PWM_TIMER.CCA = pulseWidth;
             PWM_TIMER.CNT = 0;
-            HSYNC_PORT.INTFLAGS |= 0x01u;
+            HSYNC_PORT.INTFLAGS = 0x01u;
             continue;
         }
 
@@ -47,7 +47,7 @@ int main(void) {
             buffer[3] = PORTD.IN;
             buffer[4] = PORTD.IN;
             buffer[5] = PORTD.IN;
-            HSYNC_PORT.INTFLAGS |= 0x02u;
+            HSYNC_PORT.INTFLAGS = 0x02u;
             ledToggle();
 
             // locate line header

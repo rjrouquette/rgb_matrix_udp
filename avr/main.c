@@ -31,9 +31,6 @@ int main(void) {
 
     // infinite loop
     for(;;) {
-        if(!HSYNC_PORT.INTFLAGS & 0x03u)
-            continue;
-
         if(HSYNC_PORT.INTFLAGS & 0x01u) {
             ROWSEL_PORT.OUT = rowSelect;
             PWM_TIMER.CCA = pulseWidth;
@@ -43,8 +40,6 @@ int main(void) {
         }
 
         if(HSYNC_PORT.INTFLAGS & 0x02u) {
-            ledToggle();
-
             // capture leading bytes
             buffer[0] = PORTD.IN;
             buffer[1] = PORTD.IN;
@@ -53,6 +48,7 @@ int main(void) {
             buffer[4] = PORTD.IN;
             buffer[5] = PORTD.IN;
             HSYNC_PORT.INTFLAGS |= 0x02u;
+            ledToggle();
 
             // locate line header
             uint8_t i = 0;
@@ -62,7 +58,7 @@ int main(void) {
 
             // extract line config
             //pulseWidth = *(uint16_t*)(buffer + i);
-            //rowSelect = *(uint8_t*)(buffer + i + 2);
+            rowSelect = *(uint8_t*)(buffer + i + 2);
         }
     }
 

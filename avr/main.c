@@ -60,6 +60,7 @@ ISR(OSC_OSCF_vect) {
 // hsync leading edge
 ISR(PORTE_INT0_vect, ISR_NAKED) {
     uint8_t buffer[8];
+    ledToggle();
     buffer[0] = META_PORT.IN;
     buffer[1] = META_PORT.IN;
     buffer[2] = META_PORT.IN;

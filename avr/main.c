@@ -72,11 +72,9 @@ ISR(PORTE_INT0_vect, ISR_NAKED) {
     ROWSEL_PORT.OUT = rowSelect;
     PWM_TIMER.CCA = pulseWidth;
     PWM_TIMER.CNT = 0;
-    asm volatile("reti");
-}
 
-// capture line config
-ISR(PORTE_INT1_vect, ISR_NAKED) {
+    ledToggle();
+
     // capture leading bytes
     buffer[0] = PORTD.IN;
     buffer[1] = PORTD.IN;

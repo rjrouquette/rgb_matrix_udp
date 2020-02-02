@@ -30,7 +30,7 @@
 #define PWM_MAX (8)
 #define PWM_ROWS (15)
 
-#define HEADER_OFFSET (6)
+#define HEADER_OFFSET (3)
 #define ROW_PADDING (32)
 #define PANEL_STRING_LENGTH (4)
 

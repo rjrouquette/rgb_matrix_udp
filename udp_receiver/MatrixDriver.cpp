@@ -49,7 +49,7 @@ uint8_t mapRGB[8][3] = {
 };
 
 static uint8_t encodeRow(uint8_t row) {
-    return ((row & 0xfu) << 1u) | ((row >> 4u) & 1u);
+    return ~(((row & 0xfu) << 1u) | ((row >> 4u) & 1u));
 }
 
 MatrixDriver::MatrixDriver() :
@@ -206,7 +206,7 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     uint16_t B = pwmMapping[b];
 
     // set pixel bits
-    auto pixel = nextFrame + rowBlock + (yoff * pwmBlock) + ROW_PADDING + xoff;
+    auto pixel = nextFrame + (yoff * pwmBlock) + ROW_PADDING + xoff;
     for(uint8_t i = 0; i < pwmBits; i++) {
         uint32_t rep = 1;
         if(i > PWM_MAX) rep <<= unsigned(i - PWM_MAX);

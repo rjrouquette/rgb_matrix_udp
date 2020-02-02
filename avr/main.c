@@ -9,15 +9,8 @@ void initSysClock(void);
 int main(void) {
     cli();
     initGpio();
-    initSysClock();
-
-    // wait for raspberry pi startup
     ledOn();
-    for(uint8_t i = 0u; i < 16u; i++) {
-        while(!isVsync()) nop1();
-        while(isVsync()) nop1();
-    }
-    while(!isVsync()) nop1();
+    initSysClock();
 
     // startup complete
     PMIC.CTRL = 0x04u; // enable high-level interrupts

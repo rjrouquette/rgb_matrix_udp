@@ -163,10 +163,12 @@ void MatrixDriver::clearFrame() {
             int row = (r * PWM_ROWS) + p + 1;
             auto header = nextFrame + (row * rowBlock) + HEADER_OFFSET;
             header[0] = 0xff0000ffu;
-            header[2] = 0xff000000u | unsigned(r << 3u);
+            header[1] = 0xff000000u | unsigned(r << 3u);
 
             uint8_t pw = (p > PWM_MAX) ? PWM_MAX : p;
-            header[1] = 0xff000000u | (1u << pw);
+            uint16_t pulse = 1u << pw;
+            header[2] = 0xff000000u | unsigned(pulse & 0xffu);
+            header[3] = 0xff000000u | unsigned(pulse >> 8u);
         }
     }
 }

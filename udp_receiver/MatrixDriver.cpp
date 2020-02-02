@@ -30,7 +30,7 @@
 #define PWM_MAX (8)
 #define PWM_ROWS (15)
 
-#define HEADER_OFFSET (4)
+#define HEADER_OFFSET (2)
 #define ROW_PADDING (32)
 #define PANEL_STRING_LENGTH (4)
 
@@ -158,17 +158,22 @@ void MatrixDriver::clearFrame() {
 
     // set can headers
     nextFrame[HEADER_OFFSET] |= 0xff0000u;
+    nextFrame[HEADER_OFFSET+1] |= 0xff0000u;
     for(uint8_t r = 0; r < scanRowCnt; r++) {
         for(uint8_t p = 0; p < PWM_ROWS; p++) {
             int row = (r * PWM_ROWS) + p + 1;
             auto header = nextFrame + (row * rowBlock) + HEADER_OFFSET;
             header[0] |= 0xff0000u;
-            header[1] |= unsigned(r << 3u) << 16u;
+            header[1] = header[0];
+            header[2] |= unsigned(r << 3u) << 16u;
+            header[3] = header[2];
 
             uint8_t pw = (p > PWM_MAX) ? PWM_MAX : p;
             uint16_t pulse = 1u << pw;
-            header[2] |= unsigned(pulse & 0xffu) << 16u;
-            header[3] |= unsigned(pulse >> 8u) << 16u;
+            header[4] |= unsigned(pulse & 0xffu) << 16u;
+            header[5] = header[4];
+            header[6] |= unsigned(pulse >> 8u) << 16u;
+            header[7] = header[6];
         }
     }
 }

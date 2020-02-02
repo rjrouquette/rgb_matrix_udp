@@ -72,6 +72,7 @@ ISR(PORTE_INT0_vect, ISR_NAKED) {
     ROWSEL_PORT.OUT = rowSelect;
     PWM_TIMER.CCA = pulseWidth;
     PWM_TIMER.CNT = 0;
+    asm volatile("reti");
 }
 
 // capture line config
@@ -95,4 +96,5 @@ ISR(PORTE_INT1_vect, ISR_NAKED) {
     // extract line config
     pulseWidth = *(uint16_t*)(buffer + i);
     rowSelect = *(uint8_t*)(buffer + i + 2);
+    asm volatile("reti");
 }

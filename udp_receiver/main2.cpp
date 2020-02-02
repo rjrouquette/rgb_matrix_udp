@@ -107,6 +107,7 @@ int main(int argc, char **argv) {
     // configure rgb matrix panel driver
     matrix = new MatrixDriver();
     createPwmLutCie1931(PWM_BITS, brightness, matrix->getPwmMapping());
+    log("instantiated matrix driver");
 
     usleep(250000);
     matrix->enumeratePanels();

@@ -157,12 +157,12 @@ void MatrixDriver::clearFrame() {
     }
 
     // set can headers
-    nextFrame[HEADER_OFFSET] |= 0xffu << 16u;
+    nextFrame[HEADER_OFFSET] |= 0xff0000u;
     for(uint8_t r = 0; r < scanRowCnt; r++) {
         for(uint8_t p = 0; p < PWM_ROWS; p++) {
             int row = (r * PWM_ROWS) + p + 1;
             auto header = nextFrame + (row * rowBlock) + HEADER_OFFSET;
-            header[0] |= 0xffu << 16u;
+            header[0] |= 0xff0000u;
             header[1] |= unsigned(r << 3u) << 16u;
 
             uint8_t pw = (p > PWM_MAX) ? PWM_MAX : p;

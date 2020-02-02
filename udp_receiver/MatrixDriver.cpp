@@ -209,7 +209,7 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     auto pixel = nextFrame + (yoff * PWM_ROWS) + xoff + ROW_PADDING;
     for(uint8_t i = 0; i < pwmBits; i++) {
         uint32_t rep = 1;
-        if(i > PWM_MAX) i = 1u << unsigned(i - PWM_MAX);
+        if(i > PWM_MAX) rep = 1u << unsigned(i - PWM_MAX);
         for(uint32_t j = 0; j < rep; j++) {
             if (R & 1u) *pixel |= maskRedHi;
             else *pixel &= maskRedLo;

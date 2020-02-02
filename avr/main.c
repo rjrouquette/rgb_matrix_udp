@@ -6,11 +6,6 @@
 
 void initSysClock(void);
 
-volatile uint8_t buffer[8];
-
-volatile uint16_t pulseWidth = 64;
-volatile uint8_t rowSelect = 0xa0u;
-
 int main(void) {
     cli();
     initGpio();
@@ -73,26 +68,22 @@ ISR(PORTE_INT0_vect, ISR_NAKED) {
     //PWM_TIMER.CCA = pulseWidth;
     //PWM_TIMER.CNT = 0;
 
-    ledToggle();
-
-    // capture leading bytes
+    uint8_t buffer[3];
     buffer[0] = PORTD.IN;
     buffer[1] = PORTD.IN;
     buffer[2] = PORTD.IN;
-    buffer[3] = PORTD.IN;
-    buffer[4] = PORTD.IN;
-    buffer[5] = PORTD.IN;
-    buffer[6] = PORTD.IN;
-    buffer[7] = PORTD.IN;
+    ledToggle();
 
-    // locate line header
-    uint8_t i = 0;
-    while(i < 4) {
-        if(buffer[i++] == 0xffu) break;
+    if(buffer[0] == 0xffu) {
+        ROWSEL_PORT.OUT = buffer[1];
+        PWM_TIMER.CCAL = buffer[2];
+    } else {
+        ROWSEL_PORT.OUT = buffer[0];
+        PWM_TIMER.CCAL = buffer[1];
     }
+    PWM_TIMER.CCAH = 0;
+    PWM_TIMER.CNTL = 0;
+    PWM_TIMER.CNTH = 0;
 
-    // extract line config
-    //pulseWidth = *(uint16_t*)(buffer + i);
-    rowSelect = *(uint8_t*)(buffer + i + 2);
     asm volatile("reti");
 }

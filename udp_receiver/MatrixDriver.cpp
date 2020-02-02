@@ -161,7 +161,7 @@ void MatrixDriver::clearFrame() {
     }
 
     // set scan headers
-    nextFrame[HEADER_OFFSET] |= 0xff0000u;
+    nextFrame[HEADER_OFFSET+0] |= 0xff0000u;
     nextFrame[HEADER_OFFSET+1] |= 0xff0000u;
     nextFrame[HEADER_OFFSET+2] |= 0xf80000u;
     nextFrame[HEADER_OFFSET+3] |= 0xf80000u;

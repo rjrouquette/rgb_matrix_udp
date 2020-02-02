@@ -69,9 +69,9 @@ ISR(OSC_OSCF_vect) {
 
 // hsync leading edge
 ISR(PORTE_INT0_vect, ISR_NAKED) {
-    ROWSEL_PORT.OUT = rowSelect;
-    PWM_TIMER.CCA = pulseWidth;
-    PWM_TIMER.CNT = 0;
+    //ROWSEL_PORT.OUT = rowSelect;
+    //PWM_TIMER.CCA = pulseWidth;
+    //PWM_TIMER.CNT = 0;
 
     ledToggle();
 

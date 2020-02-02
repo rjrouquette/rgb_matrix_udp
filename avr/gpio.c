@@ -6,8 +6,9 @@
 
 void initGpio() {
     // clk input is inverted
-    PORTR.DIRCLR = 0x02u;
-    PORTR.PIN2CTRL = 0x40u;
+    PORTR.DIRCLR = 0x03u;
+    PORTR.PIN0CTRL = 0x40u;
+    PORTR.PIN1CTRL = 0x40u;
 
     // configure LED pin (PC1)
     // disable input sensing

@@ -113,6 +113,7 @@ int main(int argc, char **argv) {
     usleep(250000);
     matrix->enumeratePanels();
     sleep(3);
+    pause();
 
     log("waiting for frames");
     uint32_t startOffset = 0;

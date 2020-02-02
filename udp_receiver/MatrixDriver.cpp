@@ -4,13 +4,25 @@
 
 #include "MatrixDriver.h"
 
-#include <SDL/SDL.h>
+#include <cerrno>
 #include <cstring>
 #include <cstdlib>
 #include <cmath>
 #include <sys/mman.h>
 #include <sched.h>
 #include <cstdarg>
+#include <cstdio>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/kd.h>
+#include <fcntl.h>
+
+#define DEV_FB ("/dev/fb0")
+#define DEV_TTY ("/dev/tty1")
+
+#define FB_WIDTH (288)
+#define FB_HEIGHT (481)
+#define FB_DEPTH (32)
 
 #define PANEL_ROWS (64)
 #define PANEL_COLS (64)
@@ -39,29 +51,59 @@ uint8_t mapRGB[8][3] = {
 MatrixDriver::MatrixDriver() :
         panelRows(PANEL_ROWS), panelCols(PANEL_COLS), scanRowCnt(PANEL_ROWS / 2), pwmBits(PWM_BITS),
         threadOutput{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
-        pwmMapping{}
+        pwmMapping{}, finfo{}, vinfo{}
 {
-    SDL_Init(SDL_INIT_VIDEO);
-    auto videoInfo = SDL_GetVideoInfo();
+    auto ttyfd = open(DEV_TTY, O_RDWR);
+    if(ttyfd < 0)
+        die("failed to open tty device: %s", DEV_TTY);
+    if(ioctl(ttyfd, KDSETMODE, KD_GRAPHICS) != 0)
+        die("failed to set %s to graphics mode: %s", DEV_TTY, strerror(errno));
 
-    // create SDL canvas
-    screen = SDL_SetVideoMode(
-            videoInfo->current_w,
-            videoInfo->current_h,
-            32,
-            SDL_DOUBLEBUF | SDL_FULLSCREEN
-    );
-    if(screen == nullptr)
-        die("SDL_SetVideoMode failed: %d x %d x %d", videoInfo->current_w, videoInfo->current_h, 32);
-    if(screen->format->BytesPerPixel != 4)
-        die("SDL_Surface is not 32-bit color");
+    fbfd = open(DEV_FB, O_RDWR);
+    if(fbfd < 0)
+        die("failed to open fb device: %s", DEV_FB);
 
-    rowBlock = (panelCols * PANEL_STRING_LENGTH) + ROW_PADDING;
-    pwmBlock = rowBlock * PWM_ROWS;
+    if(ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) != 0)
+        die("failed to get variable screen info: %s",strerror(errno));
 
-    frameSize = (pwmBlock * scanRowCnt) + 1;
-    currFrame = new uint32_t[frameSize];
-    nextFrame = new uint32_t[frameSize];
+    // abort if framebuffer is not configured correctly
+    if(vinfo.xres != FB_WIDTH)
+        die("framebuffer width is unexpected: %d != %d", vinfo.xres, FB_WIDTH);
+    if(vinfo.yres != FB_HEIGHT)
+        die("framebuffer height is unexpected: %d != %d", vinfo.yres, FB_HEIGHT);
+    if(vinfo.bits_per_pixel != FB_DEPTH)
+        die("framebuffer depth is unexpected: %d != %d", vinfo.bits_per_pixel, FB_DEPTH);
+
+    // configure virtual framebuffer for flipping
+    vinfo.xoffset = 0;
+    vinfo.yoffset = 0;
+    vinfo.xres_virtual = vinfo.xres;
+    vinfo.yres_virtual = vinfo.yres * 3;
+    if(ioctl(fbfd, FBIOPUT_VSCREENINFO, &vinfo) != 0)
+        die("failed to set variable screen info: %s",strerror(errno));
+
+    if(ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) != 0)
+        die("failed to get fixed screen info: %s",strerror(errno));
+
+    // get pointer to raw frame buffer data
+    frameRaw = (uint8_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
+    if(frameRaw == MAP_FAILED)
+        die("failed to map raw screen buffer data: %s",strerror(errno));
+
+    // configure frame pointers
+    currOffset = 0;
+    frameSize = vinfo.yres * finfo.line_length;
+    currFrame = (uint32_t *) (frameRaw + frameSize);
+    nextFrame = (uint32_t *) (frameRaw + frameSize * 2);
+
+    printf("pixels: %d\n", vinfo.yres * vinfo.xres);
+    printf("frame size: %ld\n", frameSize);
+    printf("left margin: %d\n", vinfo.left_margin);
+    printf("right margin: %d\n", vinfo.right_margin);
+    printf("x offset: %d\n", vinfo.xoffset);
+    printf("x virt res: %d\n", vinfo.xres_virtual);
+
+    pwmBlock = finfo.line_length * PWM_ROWS;
 
     // display off by default
     bzero(pwmMapping, sizeof(pwmMapping));
@@ -84,7 +126,6 @@ MatrixDriver::~MatrixDriver() {
 
     delete[] currFrame;
     delete[] nextFrame;
-    SDL_FreeSurface(screen);
 }
 
 void MatrixDriver::flipBuffer() {
@@ -110,7 +151,7 @@ void MatrixDriver::clearFrame() {
     for(uint8_t r = 0; r < scanRowCnt; r++) {
         for(uint8_t p = 0; p < PWM_ROWS; p++) {
             int row = (r * pwmBits) + p + 1;
-            auto header = nextFrame + (row * rowBlock) + 10;
+            auto header = nextFrame + (row * finfo.line_length) + 10;
             header[0] = 0xff0000ffu;
             header[2] = 0xff000000u | r;
 
@@ -158,7 +199,7 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
         R >>= 1u;
         G >>= 1u;
         B >>= 1u;
-        pixel += pwmBlock;
+        pixel += finfo.line_length;
     }
 }
 
@@ -181,18 +222,15 @@ void MatrixDriver::setPixels(int &panel, int &x, int &y, uint8_t *rgb, size_t pi
 }
 
 void MatrixDriver::blitFrame() {
-    SDL_LockSurface(screen);
-    auto srow = (uint8_t *) screen->pixels;
-    auto prow = currFrame;
-    for(int x = 0; x < scanRowCnt; x++) {
-        for(int p = 0; p < pwmBits; p++) {
-            memcpy(srow, prow, rowBlock * sizeof(uint32_t));
-            srow += screen->pitch;
-            prow += rowBlock;
-        }
-    }
-    SDL_UnlockSurface(screen);
-    SDL_Flip(screen);
+    fb_var_screeninfo temp = vinfo;
+    temp.yoffset = (currOffset + 1) * vinfo.yres;
+    temp.xoffset = 0;
+
+    if(ioctl(fbfd, FBIOPAN_DISPLAY, &temp) != 0)
+        die("failed to pan frame buffer: %s", strerror(errno));
+
+    if(ioctl(fbfd, FBIO_WAITFORVSYNC, nullptr) != 0)
+        die("failed to wait for vsync: %s", strerror(errno));
 }
 
 void* MatrixDriver::doRefresh(void *obj) {

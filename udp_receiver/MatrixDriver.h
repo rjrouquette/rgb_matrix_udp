@@ -8,7 +8,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <pthread.h>
-#include <SDL/SDL_video.h>
+#include <linux/fb.h>
 
 class MatrixDriver {
 public:
@@ -29,10 +29,12 @@ public:
 
 private:
     const int panelRows, panelCols, scanRowCnt, pwmBits;
-    size_t pixBlock, rowBlock, pwmBlock;
+    size_t pwmBlock;
+    uint8_t currOffset;
     bool isRunning;
 
     size_t frameSize;
+    uint8_t *frameRaw;
     uint32_t *currFrame;
     uint32_t *nextFrame;
     pthread_t threadOutput;
@@ -40,7 +42,11 @@ private:
     pthread_cond_t condBuffer;
 
     pwm_lut pwmMapping;
-    SDL_Surface *screen;
+
+    // frame buffer
+    int fbfd;
+    fb_fix_screeninfo finfo;
+    fb_var_screeninfo vinfo;
 
     void blitFrame();
     static void* doRefresh(void *obj);

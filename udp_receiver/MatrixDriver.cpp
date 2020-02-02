@@ -195,7 +195,7 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     uint16_t B = pwmMapping[b];
 
     // set pixel bits
-    auto pixel = nextFrame + (yoff * pwmBlock) + xoff;
+    auto pixel = nextFrame + (yoff * pwmBlock) + xoff + ROW_PADDING;
     for(uint8_t i = 0; i < pwmBits; i++) {
         if(R & 1u)  *pixel |= maskRedHi;
         else        *pixel &= maskRedLo;

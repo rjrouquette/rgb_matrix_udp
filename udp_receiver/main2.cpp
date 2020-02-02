@@ -8,6 +8,7 @@
 #include <csignal>
 #include <cstring>
 #include <sys/time.h>
+#include <cstdio>
 
 #include "logging.h"
 #include "MatrixDriver.h"

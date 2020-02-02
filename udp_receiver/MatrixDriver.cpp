@@ -151,7 +151,6 @@ void MatrixDriver::flipBuffer() {
     pthread_mutex_unlock(&mutexBuffer);
 }
 
-static bool debugPrint = true;
 void MatrixDriver::clearFrame() {
     for(size_t i = 0; i < frameSize; i++) {
         nextFrame[i] = 0xff000000u;
@@ -172,17 +171,6 @@ void MatrixDriver::clearFrame() {
             header[3] |= unsigned(pulse >> 8u) << 16u;
         }
     }
-    if(debugPrint) {
-        for(int i = 0; i < vinfo.yres; i++) {
-            auto header = nextFrame + (i * rowBlock);
-            for(int j = 0; j < ROW_PADDING; j++) {
-                fprintf(stdout, "%08x ", header[j]);
-            }
-            fprintf(stdout, "\n");
-        }
-        fflush(stdout);
-    }
-    debugPrint = false;
 }
 
 void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8_t b) {

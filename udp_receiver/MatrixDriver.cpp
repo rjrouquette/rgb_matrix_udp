@@ -474,7 +474,6 @@ void MatrixDriver::enumeratePanels() {
     for(uint8_t p = 0; p < 16; p++) {
         drawHex(p, 0, 0, p >> 3u, 0xffffff, 0);
         drawHex(p, 6, 0, p & 7u, 0xffffff, 0);
-        break;
     }
     flipBuffer();
 }

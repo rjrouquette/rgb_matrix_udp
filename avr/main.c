@@ -15,7 +15,6 @@ int main(void) {
     cli();
     initGpio();
     initSysClock();
-    sei();
 
     // wait for raspberry pi startup
     ledOn();
@@ -30,6 +29,7 @@ int main(void) {
     ledOff();
 
     // infinite loop
+    sei();
     asm(
         "rjloop:\n"
         "rjmp rjloop"

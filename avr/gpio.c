@@ -27,7 +27,7 @@ void initGpio() {
     HSYNC_PORT.PIN1CTRL = 0x02u; // rising edge
     HSYNC_PORT.INT1MASK = 0x02u; // interrupt on pin 1
     // enable both port interrupts
-    //HSYNC_PORT.INTCTRL = 0x0fu; // port interrupt 0+1, high level
+    HSYNC_PORT.INTCTRL = 0x0fu; // port interrupt 0+1, high level
 
     // configure row select outputs
     // disable input sensing

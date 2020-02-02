@@ -6,10 +6,10 @@
 
 void initSysClock(void);
 
-uint8_t buffer[6];
+volatile uint8_t buffer[8];
 
-uint16_t pulseWidth = 64;
-uint8_t rowSelect = 0xa0u;
+volatile uint16_t pulseWidth = 64;
+volatile uint8_t rowSelect = 0xa0u;
 
 int main(void) {
     cli();
@@ -30,35 +30,10 @@ int main(void) {
     ledOff();
 
     // infinite loop
-    for(;;) {
-        // wait for H-sync
-        while(!HSYNC_PORT.INTFLAGS & 0x01u);
-
-        ROWSEL_PORT.OUT = rowSelect;
-        PWM_TIMER.CCA = pulseWidth;
-        PWM_TIMER.CNT = 0;
-
-        // capture leading bytes
-        buffer[0] = PORTD.IN;
-        buffer[1] = PORTD.IN;
-        buffer[2] = PORTD.IN;
-        buffer[3] = PORTD.IN;
-        buffer[4] = PORTD.IN;
-        buffer[5] = PORTD.IN;
-        HSYNC_PORT.INTFLAGS = 0x02u;
-        ledToggle();
-
-        // locate line header
-        uint8_t i = 0;
-        while(i < 3) {
-            if(buffer[i++] == 0xffu) break;
-        }
-
-        // extract line config
-        //pulseWidth = *(uint16_t*)(buffer + i);
-        rowSelect = *(uint8_t*)(buffer + i + 2);
-        HSYNC_PORT.INTFLAGS = 0x01u;
-    }
+    asm(
+        "rjloop:\n"
+        "rjmp rjloop"
+    );
 
     return 0;
 }
@@ -91,18 +66,16 @@ ISR(OSC_OSCF_vect) {
     ledOff();
     RST.CTRL = RST_SWRST_bm;
 }
-/*
+
 // hsync leading edge
-ISR(PORTE_INT0_vect) {
-    PWM_TIMER.CCA = pulseWidth;
+ISR(PORTE_INT0_vect, ISR_NAKED) {
     ROWSEL_PORT.OUT = rowSelect;
-    ledToggle();
+    PWM_TIMER.CCA = pulseWidth;
+    PWM_TIMER.CNT = 0;
 }
 
 // capture line config
-ISR(PORTE_INT1_vect) {
-    ledToggle();
-
+ISR(PORTE_INT1_vect, ISR_NAKED) {
     // capture leading bytes
     buffer[0] = PORTD.IN;
     buffer[1] = PORTD.IN;
@@ -110,10 +83,12 @@ ISR(PORTE_INT1_vect) {
     buffer[3] = PORTD.IN;
     buffer[4] = PORTD.IN;
     buffer[5] = PORTD.IN;
+    buffer[6] = PORTD.IN;
+    buffer[7] = PORTD.IN;
 
     // locate line header
     uint8_t i = 0;
-    while(i < 3) {
+    while(i < 4) {
         if(buffer[i++] == 0xffu) break;
     }
 
@@ -121,4 +96,3 @@ ISR(PORTE_INT1_vect) {
     pulseWidth = *(uint16_t*)(buffer + i);
     rowSelect = *(uint8_t*)(buffer + i + 2);
 }
-*/

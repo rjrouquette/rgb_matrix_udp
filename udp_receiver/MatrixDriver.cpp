@@ -30,9 +30,9 @@
 #define PWM_MAX (8)
 #define PWM_ROWS (15)
 
+#define HEADER_OFFSET (6)
 #define ROW_PADDING (32)
 #define PANEL_STRING_LENGTH (4)
-#define PANEL_STRINGS (4)
 
 // xmega to panel rgb bit mapping
 // bit offsets are in octal notation
@@ -157,11 +157,11 @@ void MatrixDriver::clearFrame() {
     }
 
     // set can headers
-    nextFrame[10] = 0xff0000ffu;
+    nextFrame[HEADER_OFFSET] = 0xff0000ffu;
     for(uint8_t r = 0; r < scanRowCnt; r++) {
         for(uint8_t p = 0; p < PWM_ROWS; p++) {
             int row = (r * PWM_ROWS) + p + 1;
-            auto header = nextFrame + (row * rowBlock) + 10;
+            auto header = nextFrame + (row * rowBlock) + HEADER_OFFSET;
             header[0] = 0xff0000ffu;
             header[2] = 0xff000000u | unsigned(r << 3u);
 

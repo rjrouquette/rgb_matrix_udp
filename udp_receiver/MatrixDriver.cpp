@@ -111,9 +111,12 @@ MatrixDriver::MatrixDriver() :
 
     // display off by default
     bzero(pwmMapping, sizeof(pwmMapping));
+
     // clear frame buffers
-    bzero(currFrame, sizeof(uint32_t) * frameSize);
-    bzero(nextFrame, sizeof(uint32_t) * frameSize);
+    clearFrame();
+    flipBuffer();
+    clearFrame();
+    flipBuffer();
 
     // start output thread
     isRunning = true;
@@ -134,6 +137,9 @@ MatrixDriver::~MatrixDriver() {
 
 void MatrixDriver::flipBuffer() {
     pthread_mutex_lock(&mutexBuffer);
+
+    // move frame offset
+    currOffset = (currOffset + 1u) % 2u;
 
     // swap buffer pointers
     auto temp = currFrame;

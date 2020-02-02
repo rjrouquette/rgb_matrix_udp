@@ -90,11 +90,17 @@ MatrixDriver::MatrixDriver() :
     if(frameRaw == MAP_FAILED)
         die("failed to map raw screen buffer data: %s",strerror(errno));
 
+    // determine block sizes
+    rowBlock = finfo.line_length / sizeof(uint32_t);
+    pwmBlock = finfo.line_length * PWM_ROWS;
+    if(rowBlock * sizeof(uint32_t) != finfo.line_length)
+        die("row size is not integer multiple of uint32_t: %d", finfo.line_length);
+
     // configure frame pointers
     currOffset = 0;
-    frameSize = vinfo.yres * finfo.line_length;
-    currFrame = (uint32_t *) (frameRaw + frameSize);
-    nextFrame = (uint32_t *) (frameRaw + frameSize * 2);
+    frameSize = vinfo.yres * rowBlock;
+    currFrame = ((uint32_t *) frameRaw) + frameSize;
+    nextFrame = ((uint32_t *) frameRaw) + frameSize * 2;
 
     printf("pixels: %d\n", vinfo.yres * vinfo.xres);
     printf("frame size: %ld\n", frameSize);
@@ -102,9 +108,6 @@ MatrixDriver::MatrixDriver() :
     printf("right margin: %d\n", vinfo.right_margin);
     printf("x offset: %d\n", vinfo.xoffset);
     printf("x virt res: %d\n", vinfo.xres_virtual);
-
-    rowBlock = finfo.line_length / sizeof(uint32_t);
-    pwmBlock = finfo.line_length * PWM_ROWS;
 
     // display off by default
     bzero(pwmMapping, sizeof(pwmMapping));

@@ -188,7 +188,7 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     if(x >= panelCols || y >= panelRows) return;
 
     // compute pixel offset
-    const auto yoff = (y % scanRowCnt) + 1;
+    const auto yoff = y % scanRowCnt;
     const auto xoff = x + ((panel % PANEL_STRING_LENGTH) * panelCols);
 
     const auto rgbOff = ((panel / PANEL_STRING_LENGTH) * 2) + (y / scanRowCnt);
@@ -206,10 +206,11 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     uint16_t B = pwmMapping[b];
 
     // set pixel bits
-    auto pixel = nextFrame + (yoff * PWM_ROWS) + xoff + ROW_PADDING;
+    auto pixel = nextFrame + (yoff * PWM_ROWS) + xoff + ROW_PADDING + rowBlock;
     for(uint8_t i = 0; i < pwmBits; i++) {
         uint32_t rep = 1;
-        if(i > PWM_MAX) rep = 1u << unsigned(i - PWM_MAX);
+        if(i > PWM_MAX) rep <<= unsigned(i - PWM_MAX);
+
         for(uint32_t j = 0; j < rep; j++) {
             if (R & 1u) *pixel |= maskRedHi;
             else *pixel &= maskRedLo;
@@ -222,6 +223,7 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
 
             pixel += rowBlock;
         }
+
         R >>= 1u;
         G >>= 1u;
         B >>= 1u;

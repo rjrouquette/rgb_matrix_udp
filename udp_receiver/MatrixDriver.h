@@ -29,7 +29,7 @@ public:
 
 private:
     const int panelRows, panelCols, scanRowCnt, pwmBits;
-    size_t pwmBlock;
+    size_t rowBlock, pwmBlock;
     uint8_t currOffset;
     bool isRunning;
 

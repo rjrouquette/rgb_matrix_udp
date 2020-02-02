@@ -103,6 +103,7 @@ MatrixDriver::MatrixDriver() :
     printf("x offset: %d\n", vinfo.xoffset);
     printf("x virt res: %d\n", vinfo.xres_virtual);
 
+    rowBlock = finfo.line_length / sizeof(uint32_t);
     pwmBlock = finfo.line_length * PWM_ROWS;
 
     // display off by default
@@ -151,7 +152,7 @@ void MatrixDriver::clearFrame() {
     for(uint8_t r = 0; r < scanRowCnt; r++) {
         for(uint8_t p = 0; p < PWM_ROWS; p++) {
             int row = (r * pwmBits) + p + 1;
-            auto header = nextFrame + (row * finfo.line_length) + 10;
+            auto header = nextFrame + (row * rowBlock) + 10;
             header[0] = 0xff0000ffu;
             header[2] = 0xff000000u | r;
 
@@ -199,7 +200,7 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
         R >>= 1u;
         G >>= 1u;
         B >>= 1u;
-        pixel += finfo.line_length;
+        pixel += rowBlock;
     }
 }
 

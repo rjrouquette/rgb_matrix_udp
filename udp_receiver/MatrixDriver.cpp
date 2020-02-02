@@ -96,7 +96,7 @@ MatrixDriver::MatrixDriver() :
 
     // determine block sizes
     rowBlock = finfo.line_length / sizeof(uint32_t);
-    pwmBlock = finfo.line_length * PWM_ROWS;
+    pwmBlock = rowBlock * PWM_ROWS;
     if(rowBlock * sizeof(uint32_t) != finfo.line_length)
         die("row size is not integer multiple of uint32_t: %d", finfo.line_length);
 

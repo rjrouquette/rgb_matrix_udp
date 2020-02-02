@@ -52,6 +52,8 @@ void initSysClock(void) {
 ISR(OSC_OSCF_vect) {
     // reset xmega
     ledOff();
+    cli();
+    CCP = 0xD8;
     RST.CTRL = RST_SWRST_bm;
 }
 

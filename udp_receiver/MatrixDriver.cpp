@@ -206,7 +206,7 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     uint16_t B = pwmMapping[b];
 
     // set pixel bits
-    auto pixel = nextFrame + (yoff * pwmBlock) + xoff + ROW_PADDING + rowBlock;
+    auto pixel = nextFrame + rowBlock + (yoff * pwmBlock) + ROW_PADDING + xoff;
     for(uint8_t i = 0; i < pwmBits; i++) {
         uint32_t rep = 1;
         if(i > PWM_MAX) rep <<= unsigned(i - PWM_MAX);
@@ -474,6 +474,7 @@ void MatrixDriver::enumeratePanels() {
     for(uint8_t p = 0; p < 16; p++) {
         drawHex(p, 0, 0, p >> 3u, 0xffffff, 0);
         drawHex(p, 6, 0, p & 7u, 0xffffff, 0);
+        break;
     }
     flipBuffer();
 }

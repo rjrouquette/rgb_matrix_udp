@@ -19,17 +19,17 @@ dpi_output_format=0x00017
 
 # 4 chains with four 64x64 panels each
 # use custom DPI mode
-# 288 x 480 x 24
+# 288 x 481 x 24
 # 288 = 32 header + 256 pixels per row
-# 480 = 32 scan rows x 15 pwm planes
+# 481 = 32 scan rows x 15 pwm planes + 1 dead scan
 # 24-bit depth = 4 panels
 dpi_group=2
 dpi_mode=87
-dpi_timings=288 0 0 8 0 480 0 0 1 0 0 0 0 225 0 32000000 3
+dpi_timings=288 0 0 8 0 481 0 0 1 0 0 0 0 225 0 32000000 3
 
 # linux framebuffer
 framebuffer_width=288
-framebuffer_height=480
+framebuffer_height=481
 framebuffer_depth=32
 framebuffer_ignore_alpha=1
 overscan_left=0

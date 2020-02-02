@@ -38,14 +38,14 @@
 // bit offsets are in octal notation
 uint8_t mapRGB[8][3] = {
 //       RED  GRN  BLU
-        {001, 000, 002}, // string 0, y-plane 0
-        {004, 003, 005}, // string 0, y-plane 1
-        {011, 010, 012}, // string 1, y-plane 0
-        {014, 013, 015}, // string 1, y-plane 1
-        {021, 020, 022}, // string 2, y-plane 0
-        {024, 023, 025}, // string 2, y-plane 1
-        {006, 007, 016}, // string 3, y-plane 0
-        {017, 026, 027}  // string 3, y-plane 1
+        {027, 015, 016}, // p0r0 -> r7, p0g0 -> g5, p0b0 -> g6
+        {013, 000, 012}, // p0r1 -> g3, p0g1 -> b0, p0b1 -> g2
+        {015, 025, 006}, // p1r0 -> b5, p1g0 -> r5, p1b0 -> b6
+        {024, 022, 023}, // p1r1 -> r4, p1g1 -> r2, p1b1 -> r3
+        {011, 014, 017}, // p2r0 -> g1, p2g0 -> g4, p2b0 -> g7
+        {026, 020, 021}, // p2r1 -> r6, p2g1 -> r0, p2b1 -> r1
+        {007, 004, 003}, // p3r0 -> b7, p3g0 -> b4, p3b0 -> b3
+        {010, 001, 002}, // p3r1 -> g0, p3g1 -> b1, p3b1 -> b2
 };
 
 static uint8_t encodeRow(uint8_t row) {

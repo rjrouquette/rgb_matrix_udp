@@ -94,7 +94,7 @@ ISR(PORTE_INT1_vect, ISR_NAKED) {
     }
 
     // extract line config
-    pulseWidth = *(uint16_t*)(buffer + i);
+    //pulseWidth = *(uint16_t*)(buffer + i);
     rowSelect = *(uint8_t*)(buffer + i + 2);
     asm volatile("reti");
 }

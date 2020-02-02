@@ -12,29 +12,32 @@
 #include <sched.h>
 #include <cstdarg>
 
+#define PANEL_ROWS (64)
+#define PANEL_COLS (64)
+#define PWM_BITS (11)
+#define PWM_MAX (8)
+#define PWM_ROWS (15)
+
+#define ROW_PADDING (32)
+#define PANEL_STRING_LENGTH (4)
+#define PANEL_STRINGS (4)
+
 // xmega to panel rgb bit mapping
 // bit offsets are in octal notation
-int mapRGB[8][3] = {
+uint8_t mapRGB[8][3] = {
 //       RED  GRN  BLU
-        {001, 000, 002}, // x = 0, y = 0
-        {004, 003, 005}, // x = 0, y = 1
-        {011, 010, 012}, // x = 1, y = 0
-        {014, 013, 015}, // x = 1, y = 1
-        {021, 020, 022}, // x = 2, y = 0
-        {024, 023, 025}, // x = 2, y = 1
-        {006, 007, 016}, // x = 3, y = 0
-        {017, 026, 027}  // x = 3, y = 1
+        {001, 000, 002}, // string 0, y-plane 0
+        {004, 003, 005}, // string 0, y-plane 1
+        {011, 010, 012}, // string 1, y-plane 0
+        {014, 013, 015}, // string 1, y-plane 1
+        {021, 020, 022}, // string 2, y-plane 0
+        {024, 023, 025}, // string 2, y-plane 1
+        {006, 007, 016}, // string 3, y-plane 0
+        {017, 026, 027}  // string 3, y-plane 1
 };
 
-// panel channels are enumerated in octal notation
-uint8_t mapPanel[24] = {
-        000, 001, 002, 003, 004, 005, 006, 007, // Panel 00 - 07
-        010, 011, 012, 013, 014, 015, 016, 017, // Panel 10 - 17
-        020, 021, 022, 023, 024, 025, 026, 027  // Panel 20 - 27
-};
-
-MatrixDriver::MatrixDriver(int cols, int rows, int pwm) :
-        panelRows(rows), panelCols(cols), scanRowCnt(rows / 2), pwmBits(pwm),
+MatrixDriver::MatrixDriver() :
+        panelRows(PANEL_ROWS), panelCols(PANEL_COLS), scanRowCnt(PANEL_ROWS / 2), pwmBits(PWM_BITS),
         threadOutput{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
         pwmMapping{}
 {
@@ -53,13 +56,12 @@ MatrixDriver::MatrixDriver(int cols, int rows, int pwm) :
     if(screen->format->BytesPerPixel != 4)
         die("SDL_Surface is not 32-bit color");
 
-    frameSize = panelRows * panelCols * pwmBits * 3;
+    rowBlock = (panelCols * PANEL_STRING_LENGTH) + ROW_PADDING;
+    pwmBlock = rowBlock * PWM_ROWS;
+
+    frameSize = (pwmBlock * scanRowCnt) + 1;
     currFrame = new uint32_t[frameSize];
     nextFrame = new uint32_t[frameSize];
-
-    pixBlock = 24;
-    rowBlock = panelCols * 6;
-    pwmBlock = rowBlock * pwmBits;
 
     // display off by default
     bzero(pwmMapping, sizeof(pwmMapping));
@@ -102,6 +104,20 @@ void MatrixDriver::clearFrame() {
     for(size_t i = 0; i < frameSize; i++) {
         nextFrame[i] = 0xff000000u;
     }
+
+    // set can headers
+    nextFrame[10] = 0xff0000ffu;
+    for(uint8_t r = 0; r < scanRowCnt; r++) {
+        for(uint8_t p = 0; p < PWM_ROWS; p++) {
+            int row = (r * pwmBits) + p + 1;
+            auto header = nextFrame + (row * rowBlock) + 10;
+            header[0] = 0xff0000ffu;
+            header[2] = 0xff000000u | r;
+
+            uint8_t pw = (p > PWM_MAX) ? PWM_MAX : p;
+            header[1] = 0xff000000u | (1u << pw);
+        }
+    }
 }
 
 void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8_t b) {
@@ -109,39 +125,40 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     if(x < 0 || y < 0) return;
     if(x >= panelCols || y >= panelRows) return;
 
+    // compute pixel offset
+    const auto yoff = y % scanRowCnt;
+    const auto xoff = x + ((panel % PANEL_STRING_LENGTH) * panelCols);
+
+    const auto rgbOff = ((panel / PANEL_STRING_LENGTH) * 2) + (y / scanRowCnt);
+    const uint32_t maskRedHi = 1u << mapRGB[rgbOff][0];
+    const uint32_t maskGrnHi = 1u << mapRGB[rgbOff][1];
+    const uint32_t maskBluHi = 1u << mapRGB[rgbOff][2];
+
+    const uint32_t maskRedLo = ~maskRedHi;
+    const uint32_t maskGrnLo = ~maskGrnHi;
+    const uint32_t maskBluLo = ~maskBluHi;
+
     // get pwm values
     uint16_t R = pwmMapping[r];
     uint16_t G = pwmMapping[g];
     uint16_t B = pwmMapping[b];
 
-    const uint32_t maskPanelHi = 1u << mapPanel[panel];
-    const uint32_t maskPanelLo = ~maskPanelHi;
-
-    auto boff = (x * 2 + (y / scanRowCnt)) % 8;
-    auto poff = (x / 4) * pixBlock;
-    poff += (y % scanRowCnt) * pwmBlock;
-
     // set pixel bits
-    const auto &rgbMap = mapRGB[boff];
-    auto pixel = nextFrame + poff;
+    auto pixel = nextFrame + (yoff * pwmBlock) + xoff;
     for(uint8_t i = 0; i < pwmBits; i++) {
-        auto &rBit = pixel[rgbMap[0]];
-        auto &gBit = pixel[rgbMap[1]];
-        auto &bBit = pixel[rgbMap[2]];
+        if(R & 1u)  *pixel |= maskRedHi;
+        else        *pixel &= maskRedLo;
 
-        if(R & 1u)  rBit |= maskPanelHi;
-        else        rBit &= maskPanelLo;
+        if(G & 1u)  *pixel |= maskGrnHi;
+        else        *pixel &= maskGrnLo;
 
-        if(G & 1u)  gBit |= maskPanelHi;
-        else        gBit &= maskPanelLo;
-
-        if(B & 1u)  bBit |= maskPanelHi;
-        else        bBit &= maskPanelLo;
+        if(B & 1u)  *pixel |= maskBluHi;
+        else        *pixel &= maskBluLo;
 
         R >>= 1u;
         G >>= 1u;
         B >>= 1u;
-        pixel += rowBlock;
+        pixel += pwmBlock;
     }
 }
 

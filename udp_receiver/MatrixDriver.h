@@ -12,7 +12,7 @@
 
 class MatrixDriver {
 public:
-    MatrixDriver(int panelCols, int panelRows, int pwmBits);
+    MatrixDriver();
     ~MatrixDriver();
 
     void flipBuffer();

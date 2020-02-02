@@ -14,7 +14,7 @@
 
 #define UNUSED __attribute__((unused))
 
-#define PANEL_COUNT (24)
+#define PANEL_COUNT (16)
 #define PANEL_WIDTH (64)
 #define PANEL_HEIGHT (64)
 #define PWM_BITS (11)
@@ -105,7 +105,7 @@ int main(int argc, char **argv) {
     pthread_create(&threadUdpRx, nullptr, doUdpRx, nullptr);
 
     // configure rgb matrix panel driver
-    matrix = new MatrixDriver(PANEL_WIDTH, PANEL_HEIGHT, PWM_BITS);
+    matrix = new MatrixDriver();
     createPwmLutCie1931(PWM_BITS, brightness, matrix->getPwmMapping());
 
     usleep(250000);

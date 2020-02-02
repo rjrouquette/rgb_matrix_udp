@@ -220,11 +220,11 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
             if (B & 1u) *pixel |= maskBluHi;
             else *pixel &= maskBluLo;
 
-            R >>= 1u;
-            G >>= 1u;
-            B >>= 1u;
             pixel += rowBlock;
         }
+        R >>= 1u;
+        G >>= 1u;
+        B >>= 1u;
     }
 }
 

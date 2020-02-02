@@ -160,14 +160,14 @@ void MatrixDriver::clearFrame() {
         nextFrame[i] = 0xff000000u;
     }
 
-    // set can headers
+    // set scan headers
     nextFrame[HEADER_OFFSET] |= 0xff0000u;
     nextFrame[HEADER_OFFSET+1] |= 0xff0000u;
     nextFrame[HEADER_OFFSET+2] |= 0xf80000u;
     nextFrame[HEADER_OFFSET+3] |= 0xf80000u;
+    int row = 1;
     for(uint8_t r = 0; r < scanRowCnt; r++) {
         for(uint8_t p = 0; p < PWM_ROWS; p++) {
-            int row = (r * PWM_ROWS) + p + 1;
             auto header = nextFrame + (row * rowBlock) + HEADER_OFFSET;
             header[0] |= 0xff0000u;
             header[1] = header[0];
@@ -180,6 +180,8 @@ void MatrixDriver::clearFrame() {
             header[5] = header[4];
             header[6] |= unsigned(pulse >> 8u) << 16u;
             header[7] = header[6];
+
+            row++;
         }
     }
 }
@@ -214,14 +216,16 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
         if(i > PWM_MAX) rep <<= unsigned(i - PWM_MAX);
 
         for(uint32_t j = 0; j < rep; j++) {
-            if (R & 1u) *pixel |= maskRedHi;
-            else *pixel &= maskRedLo;
+            auto &p = *pixel;
 
-            if (G & 1u) *pixel |= maskGrnHi;
-            else *pixel &= maskGrnLo;
+            if (R & 1u) p |= maskRedHi;
+            else        p &= maskRedLo;
 
-            if (B & 1u) *pixel |= maskBluHi;
-            else *pixel &= maskBluLo;
+            if (G & 1u) p |= maskGrnHi;
+            else        p &= maskGrnLo;
+
+            if (B & 1u) p |= maskBluHi;
+            else        p &= maskBluLo;
 
             pixel += rowBlock;
         }

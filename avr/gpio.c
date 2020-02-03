@@ -50,7 +50,7 @@ void initGpio() {
     // disable input sensing
     // event channel 0 as output value
     LAT_PORT.DIRSET = LAT_MASK;
-    LAT_PORT.PIN7CTRL = 0x47u;
+    LAT_PORT.PIN7CTRL = 0x07u;
     PORTCFG.CLKEVOUT = 0x10u;
     PORTCFG.EVOUTSEL = 0x00u;
 

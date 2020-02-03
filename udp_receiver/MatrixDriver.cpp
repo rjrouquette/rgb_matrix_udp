@@ -219,13 +219,13 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
             auto &p = *pixel;
 
             if (R & 1u) p |= maskRedHi;
-            //else        p &= maskRedLo;
+            else        p &= maskRedLo;
 
             if (G & 1u) p |= maskGrnHi;
-            //else        p &= maskGrnLo;
+            else        p &= maskGrnLo;
 
             if (B & 1u) p |= maskBluHi;
-            //else        p &= maskBluLo;
+            else        p &= maskBluLo;
 
             pixel += rowBlock;
         }

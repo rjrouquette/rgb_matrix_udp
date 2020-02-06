@@ -171,9 +171,9 @@ void MatrixDriver::clearFrame() {
     nextFrame[HEADER_OFFSET+1] |= 0xff0000u;
     nextFrame[HEADER_OFFSET+2] |= 0xf80000u;
     nextFrame[HEADER_OFFSET+3] |= 0xf80000u;
-    int row = 1;
-    for(uint8_t r = 0; r < scanRowCnt; r++) {
-        for(uint8_t p = 0; p < PWM_ROWS; p++) {
+    unsigned row = 1;
+    for(unsigned r = 0; r < scanRowCnt; r++) {
+        for(unsigned p = 0; p < PWM_ROWS; p++) {
             auto header = nextFrame + (row * rowBlock) + HEADER_OFFSET;
             header[0] |= 0xff0000u;
             header[1] = header[0];

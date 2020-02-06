@@ -201,7 +201,7 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     if(x >= panelCols || y >= panelRows) return;
 
     // compute pixel offset
-    const auto yoff = y % scanRowCnt;
+    const auto yoff = 0;//y % scanRowCnt;
     const auto xoff = x + ((panel % PANEL_STRING_LENGTH) * panelCols);
 
     const auto rgbOff = ((panel / PANEL_STRING_LENGTH) * 2) + (y / scanRowCnt);

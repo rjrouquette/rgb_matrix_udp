@@ -52,14 +52,14 @@ uint8_t mapRGB[8][3] = {
         {010, 001, 002}, // p3r1 -> g0, p3g1 -> b1, p3b1 -> b2
 };
 
-uint16_t mapPulseWidth[PWM_ROWS] = {
+unsigned mapPulseWidth[PWM_ROWS] = {
         0x0001u, 0x0002u, 0x0004u, 0x0008u,
         0x0010u, 0x0020u, 0x0040u, 0x0080u,
         0x0100u, 0x0100u, 0x0100u, 0x0100u,
         0x0100u, 0x0100u, 0x0100u
 };
 
-uint8_t mapPwmBit[PWM_ROWS] = {
+unsigned mapPwmBit[PWM_ROWS] = {
          0,  1,  2,  3,
          4,  5,  6,  7,
          8,  9,  9, 10,
@@ -198,11 +198,10 @@ void MatrixDriver::clearFrame() {
             header[2] |= (encodeRow(r) << 3u) << 16u;
             header[3] = header[2];
 
-            uint8_t pw = (p > PWM_MAX) ? PWM_MAX : p;
-            uint16_t pulse = 1u << pw;
-            header[4] |= unsigned(pulse & 0xffu) << 16u;
+            unsigned pulse = mapPulseWidth[p];
+            header[4] |= (pulse & 0xffu) << 16u;
             header[5] = header[4];
-            header[6] |= unsigned(pulse >> 8u) << 16u;
+            header[6] |= (pulse >> 8u) << 16u;
             header[7] = header[6];
 
             row++;

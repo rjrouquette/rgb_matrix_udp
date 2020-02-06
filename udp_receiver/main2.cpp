@@ -116,11 +116,17 @@ int main(int argc, char **argv) {
     for(;;) {
         //matrix->enumeratePanels();
         matrix->clearFrame();
-        for (int c = 0; c < 64; c++) {
-            matrix->setPixel(3, r, c, 0xffu, 0xffu, 0xffu);
+        if(r > 63) {
+            for (int c = 0; c < 64; c++) {
+                matrix->setPixel(3, c, r % 64, 0xffu, 0xffu, 0xffu);
+            }
+        } else {
+            for (int c = 0; c < 64; c++) {
+                matrix->setPixel(3, r % 64, c, 0xffu, 0xffu, 0xffu);
+            }
         }
         matrix->flipBuffer();
-        r = (r+1)%64;
+        r = (r+1)%128;
         usleep(100000);
     }
     sleep(3);

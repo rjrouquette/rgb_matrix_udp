@@ -219,7 +219,7 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     auto pixel = nextFrame + (yoff * pwmBlock) + ROW_PADDING + xoff;
     for(uint8_t i = 0; i < pwmBits; i++) {
         uint32_t rep = 1;
-        if(i > PWM_MAX) rep <<= unsigned(i - PWM_MAX);
+        //if(i > PWM_MAX) rep <<= unsigned(i - PWM_MAX);
 
         for(uint32_t j = 0; j < rep; j++) {
             auto &p = *pixel;

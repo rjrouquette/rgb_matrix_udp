@@ -115,6 +115,7 @@ int main(int argc, char **argv) {
     int r = 0;
     for(;;) {
         matrix->testPattern();
+        usleep(100000);
         continue;
         //matrix->enumeratePanels();
         matrix->clearFrame();

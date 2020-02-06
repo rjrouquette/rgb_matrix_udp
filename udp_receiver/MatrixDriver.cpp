@@ -505,18 +505,9 @@ void MatrixDriver::testPattern() {
     }
     flipBuffer();
 }
-
-inline void clearGpio(uint32_t *base, uint8_t gpio) {
-   *(base + (gpio / 10u)) &= ~(7u << ((gpio % 10u) * 3u));
-}
-
-inline void setGpioOut(uint32_t *base, uint8_t gpio) {
-    *(base + (gpio / 10u)) |=  (1u << (( gpio % 10u) * 3u));
-}
-
-inline void setGpioAlt(uint32_t *base, uint8_t gpio, uint8_t alt) {
-    *(base + ((gpio / 10u))) |= (((gpio <= 3u) ? (alt + 4u) : (alt == 4u ? 3u : 2u)) << ((gpio % 10u) * 3u));
-}
+#define INP_GPIO(g) *(gpio+((g)/10)) &= ~(7<<(((g)%10)*3))
+#define OUT_GPIO(g) *(gpio+((g)/10)) |=  (1<<(((g)%10)*3))
+#define SET_GPIO_ALT(g,a) *(gpio+(((g)/10))) |= (((a)<=3?(a)+4:(a)==4?3:2)<<(((g)%10)*3))
 
 void MatrixDriver::initGpio(PeripheralBase peripheralBase) {
     // mmap gpio memory
@@ -526,7 +517,7 @@ void MatrixDriver::initGpio(PeripheralBase peripheralBase) {
         abort();
     }
 
-    auto gpioReg = (uint32_t*) mmap(
+    auto gpio = (uint32_t*) mmap(
             nullptr,
             REGISTER_BLOCK_SIZE,
             PROT_READ | PROT_WRITE,
@@ -534,17 +525,16 @@ void MatrixDriver::initGpio(PeripheralBase peripheralBase) {
             memfd,
             peripheralBase + GPIO_REGISTER_OFFSET
     );
-    if(gpioReg == MAP_FAILED) {
+    if(gpio == MAP_FAILED) {
         fprintf(stderr, "failed to mmap gpio registers");
         abort();
     }
     close(memfd);
 
     for(int i = 0; i < 28; i++) {
-        clearGpio(gpioReg, i);
-        setGpioOut(gpioReg, i);
-        setGpioAlt(gpioReg, i, 2);
+        INP_GPIO(i);
+        SET_GPIO_ALT(i, 2);
     }
 
-    munmap(gpioReg, REGISTER_BLOCK_SIZE);
+    munmap(gpio, REGISTER_BLOCK_SIZE);
 }

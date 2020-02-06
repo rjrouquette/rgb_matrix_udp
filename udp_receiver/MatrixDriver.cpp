@@ -31,7 +31,6 @@
 #define PANEL_ROWS (64)
 #define PANEL_COLS (64)
 #define PWM_BITS (11)
-#define PWM_MAX (8)
 #define PWM_ROWS (15)
 
 #define HEADER_OFFSET (2)
@@ -51,10 +50,17 @@ uint8_t mapRGB[8][3] = {
         {007, 004, 003}, // p3r0 -> b7, p3g0 -> b4, p3b0 -> b3
         {010, 001, 002}, // p3r1 -> g0, p3g1 -> b1, p3b1 -> b2
 };
-
+/*
 unsigned mapPulseWidth[PWM_ROWS] = {
         0x0001u, 0x0002u, 0x0004u, 0x0008u,
         0x0010u, 0x0020u, 0x0040u, 0x0080u,
+        0x0100u, 0x0100u, 0x0100u, 0x0100u,
+        0x0100u, 0x0100u, 0x0100u
+};
+*/
+unsigned mapPulseWidth[PWM_ROWS] = {
+        0x0100u, 0x0100u, 0x0100u, 0x0100u,
+        0x0100u, 0x0100u, 0x0100u, 0x0100u,
         0x0100u, 0x0100u, 0x0100u, 0x0100u,
         0x0100u, 0x0100u, 0x0100u
 };
@@ -69,8 +75,6 @@ unsigned mapPwmBit[PWM_ROWS] = {
 static unsigned encodeRow(unsigned row) {
     return (~(((row & 0xfu) << 1u) | ((row >> 4u) & 1u))) & 0x1fu;;
 }
-
-static unsigned dummy = 0;
 
 MatrixDriver::MatrixDriver() :
         panelRows(PANEL_ROWS), panelCols(PANEL_COLS), scanRowCnt(PANEL_ROWS / 2), pwmBits(PWM_BITS),
@@ -207,7 +211,6 @@ void MatrixDriver::clearFrame() {
             row++;
         }
     }
-    dummy = (dummy+1) % 32;
 }
 
 void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8_t b) {

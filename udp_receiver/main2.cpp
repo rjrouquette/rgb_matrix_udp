@@ -114,7 +114,8 @@ int main(int argc, char **argv) {
     usleep(250000);
     int r = 0;
     for(;;) {
-        //matrix->testPattern();
+        matrix->testPattern();
+        continue;
         //matrix->enumeratePanels();
         matrix->clearFrame();
         for (int c = 0; c < 64; c++) {

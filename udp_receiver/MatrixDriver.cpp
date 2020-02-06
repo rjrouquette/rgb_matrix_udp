@@ -189,7 +189,7 @@ void MatrixDriver::clearFrame() {
     header[3] |= 0xf80000u;
 
     for(unsigned r = 0; r < scanRowCnt; r++) {
-        for(unsigned p = 0; p < PWM_ROWS; p++) {
+        for(auto pulseWidth : mapPulseWidth) {
             // advance header row
             header += rowBlock;
 
@@ -202,10 +202,9 @@ void MatrixDriver::clearFrame() {
             header[3] = header[2];
 
             // pulse width
-            unsigned pulse = mapPulseWidth[p];
-            header[4] |= (pulse & 0xffu) << 16u;
+            header[4] |= (pulseWidth & 0xffu) << 16u;
             header[5] = header[4];
-            header[6] |= (pulse >> 8u) << 16u;
+            header[6] |= (pulseWidth >> 8u) << 16u;
             header[7] = header[6];
         }
     }
@@ -230,15 +229,15 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     const uint32_t maskBluLo = ~maskBluHi;
 
     // get pwm values
-    unsigned R = 0x7ffu; //pwmMapping[r];
-    unsigned G = 0x7ffu; //pwmMapping[g];
-    unsigned B = 0x7ffu; //pwmMapping[b];
+    unsigned R = pwmMapping[r];
+    unsigned G = pwmMapping[g];
+    unsigned B = pwmMapping[b];
 
     // set pixel bits
     auto pixel = nextFrame + (yoff * pwmBlock) + ROW_PADDING + xoff;
-    for(int i = 0; i < PWM_ROWS; i++) {
-        const unsigned bit = mapPwmBit[i];
+    for(auto bit : mapPwmBit) {
         auto &p = *pixel;
+        pixel += rowBlock;
 
         if ((R >> bit) & 1u)
             p |= maskRedHi;
@@ -254,8 +253,6 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
             p |= maskBluHi;
         else
             p &= maskBluLo;
-
-        pixel += rowBlock;
     }
 }
 
@@ -520,9 +517,9 @@ void MatrixDriver::testPattern() {
     flipBuffer();
 }
 
-#define INP_GPIO(g) *(gpio+((g)/10)) &= ~(7<<(((g)%10)*3))
-#define OUT_GPIO(g) *(gpio+((g)/10)) |=  (1<<(((g)%10)*3))
-#define SET_GPIO_ALT(g,a) *(gpio+(((g)/10))) |= (((a)<=3?(a)+4:(a)==4?3:2)<<(((g)%10)*3))
+#define INP_GPIO(g) *(gpio+((g)/10u)) &= ~(7u<<(((g)%10u)*3u))
+//#define OUT_GPIO(g) *(gpio+((g)/10u)) |=  (1<<(((g)%10)*3))
+#define SET_GPIO_ALT(g,a) *(gpio+(((g)/10u))) |= (((a)<=3u?(a)+4u:(a)==4u?3u:2u)<<(((g)%10u)*3u))
 
 void MatrixDriver::initGpio(PeripheralBase peripheralBase) {
     // mmap gpio memory

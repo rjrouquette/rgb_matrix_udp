@@ -505,6 +505,7 @@ void MatrixDriver::testPattern() {
     }
     flipBuffer();
 }
+
 #define INP_GPIO(g) *(gpio+((g)/10)) &= ~(7<<(((g)%10)*3))
 #define OUT_GPIO(g) *(gpio+((g)/10)) |=  (1<<(((g)%10)*3))
 #define SET_GPIO_ALT(g,a) *(gpio+(((g)/10))) |= (((a)<=3?(a)+4:(a)==4?3:2)<<(((g)%10)*3))
@@ -534,6 +535,7 @@ void MatrixDriver::initGpio(PeripheralBase peripheralBase) {
     for(int i = 0; i < 28; i++) {
         INP_GPIO(i);
         SET_GPIO_ALT(i, 2);
+        OUT_GPIO(i);
     }
 
     munmap(gpio, REGISTER_BLOCK_SIZE);

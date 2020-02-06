@@ -118,6 +118,8 @@ MatrixDriver::MatrixDriver() :
     printf("right margin: %d\n", vinfo.right_margin);
     printf("x offset: %d\n", vinfo.xoffset);
     printf("x virt res: %d\n", vinfo.xres_virtual);
+    printf("row block: %ld\n", rowBlock);
+    printf("pwm block: %ld\n", pwmBlock);
 
     // display off by default
     bzero(pwmMapping, sizeof(pwmMapping));

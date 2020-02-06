@@ -187,15 +187,21 @@ void MatrixDriver::clearFrame() {
     header[1] |= 0xff0000u;
     header[2] |= 0xf80000u;
     header[3] |= 0xf80000u;
+
     for(unsigned r = 0; r < scanRowCnt; r++) {
         for(unsigned p = 0; p < PWM_ROWS; p++) {
+            // advance header row
             header += rowBlock;
 
+            // preamble
             header[0] |= 0xff0000u;
             header[1] = header[0];
+
+            // row select
             header[2] |= (encodeRow(r) << 3u) << 16u;
             header[3] = header[2];
 
+            // pulse width
             unsigned pulse = mapPulseWidth[p];
             header[4] |= (pulse & 0xffu) << 16u;
             header[5] = header[4];

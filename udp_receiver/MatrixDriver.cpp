@@ -52,6 +52,20 @@ uint8_t mapRGB[8][3] = {
         {010, 001, 002}, // p3r1 -> g0, p3g1 -> b1, p3b1 -> b2
 };
 
+uint16_t mapPulseWidth[PWM_ROWS] = {
+        0x0001u, 0x0002u, 0x0004u, 0x0008u,
+        0x0010u, 0x0020u, 0x0040u, 0x0080u,
+        0x0100u, 0x0100u, 0x0100u, 0x0100u,
+        0x0100u, 0x0100u, 0x0100u
+};
+
+uint8_t mapPwmBit[PWM_ROWS] = {
+         0,  1,  2,  3,
+         4,  5,  6,  7,
+         8,  9,  9, 10,
+        10, 10, 10
+};
+
 static unsigned encodeRow(unsigned row) {
     return (~(((row & 0xfu) << 1u) | ((row >> 4u) & 1u))) & 0x1fu;;
 }
@@ -216,34 +230,32 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     const uint32_t maskBluLo = ~maskBluHi;
 
     // get pwm values
-    uint16_t R = 0x7ffu; //pwmMapping[r];
-    uint16_t G = 0x7ffu; //pwmMapping[g];
-    uint16_t B = 0x7ffu; //pwmMapping[b];
+    unsigned R = 0x7ffu; //pwmMapping[r];
+    unsigned G = 0x7ffu; //pwmMapping[g];
+    unsigned B = 0x7ffu; //pwmMapping[b];
 
     // set pixel bits
     auto pixel = nextFrame + (yoff * pwmBlock) + ROW_PADDING + xoff;
-    for(uint8_t i = 0; i < pwmBits; i++) {
-        uint32_t rep = 1;
-        if(i > PWM_MAX) rep <<= unsigned(i - PWM_MAX);
+    for(int i = 0; i < PWM_ROWS; i++) {
+        const unsigned bit = mapPwmBit[i];
+        auto &p = *pixel;
 
-        for(uint32_t j = 0; j < rep; j++) {
-            auto &p = *pixel;
+        if ((R >> bit) & 1u)
+            p |= maskRedHi;
+        else
+            p &= maskRedLo;
 
-            if (R & 1u) p |= maskRedHi;
-            else        p &= maskRedLo;
+        if ((G >> bit) & 1u)
+            p |= maskGrnHi;
+        else
+            p &= maskGrnLo;
 
-            if (G & 1u) p |= maskGrnHi;
-            else        p &= maskGrnLo;
+        if ((B >> bit) & 1u)
+            p |= maskBluHi;
+        else
+            p &= maskBluLo;
 
-            if (B & 1u) p |= maskBluHi;
-            else        p &= maskBluLo;
-
-            pixel += rowBlock;
-        }
-
-        R >>= 1u;
-        G >>= 1u;
-        B >>= 1u;
+        pixel += rowBlock;
     }
 }
 

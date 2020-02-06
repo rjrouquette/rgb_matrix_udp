@@ -50,17 +50,10 @@ uint8_t mapRGB[8][3] = {
         {007, 004, 003}, // p3r0 -> b7, p3g0 -> b4, p3b0 -> b3
         {010, 001, 002}, // p3r1 -> g0, p3g1 -> b1, p3b1 -> b2
 };
-/*
+
 unsigned mapPulseWidth[PWM_ROWS] = {
         0x0001u, 0x0002u, 0x0004u, 0x0008u,
         0x0010u, 0x0020u, 0x0040u, 0x0080u,
-        0x0100u, 0x0100u, 0x0100u, 0x0100u,
-        0x0100u, 0x0100u, 0x0100u
-};
-*/
-unsigned mapPulseWidth[PWM_ROWS] = {
-        0x0100u, 0x0100u, 0x0100u, 0x0100u,
-        0x0100u, 0x0100u, 0x0100u, 0x0100u,
         0x0100u, 0x0100u, 0x0100u, 0x0100u,
         0x0100u, 0x0100u, 0x0100u
 };
@@ -73,7 +66,7 @@ unsigned mapPwmBit[PWM_ROWS] = {
 };
 
 static unsigned encodeRow(unsigned row) {
-    return (~(((row & 0xfu) << 1u) | ((row >> 4u) & 1u))) & 0x1fu;;
+    return (~(((row & 0xfu) << 1u) | ((row >> 4u) & 1u))) & 0x1fu;
 }
 
 MatrixDriver::MatrixDriver() :
@@ -512,16 +505,12 @@ void MatrixDriver::enumeratePanels() {
 void MatrixDriver::testPattern() {
     auto index = testIndex++;
 
-    int off = index % 24;
-    uint32_t mask = 1u << unsigned(off);
+    int off = index % (PWM_ROWS * scanRowCnt);
 
     clearFrame();
-    auto p = nextFrame;
-    for(int r = 0; r < scanRowCnt * PWM_ROWS; r++) {
-        auto row = p + (r * rowBlock) + ROW_PADDING;
-        for(size_t i = 0; i < panelCols * PANEL_STRING_LENGTH; i++) {
-            row[i] = 0xff000000u | mask;
-        }
+    auto row = nextFrame + (off * rowBlock) + ROW_PADDING;
+    for(size_t i = 0; i < panelCols * PANEL_STRING_LENGTH; i++) {
+        row[i] = 0xffffffffu;
     }
     flipBuffer();
 }

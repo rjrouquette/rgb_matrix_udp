@@ -535,7 +535,6 @@ void MatrixDriver::initGpio(PeripheralBase peripheralBase) {
     for(int i = 0; i < 28; i++) {
         INP_GPIO(i);
         SET_GPIO_ALT(i, 2);
-        OUT_GPIO(i);
     }
 
     munmap(gpio, REGISTER_BLOCK_SIZE);

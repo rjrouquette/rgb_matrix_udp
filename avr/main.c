@@ -68,12 +68,12 @@ ISR(PORTE_INT0_vect, ISR_NAKED) {
     ledToggle();
 
     if(buffer[0] == 0xffu) {
-        ROWSEL_PORT.OUT = buffer[1];
+        ROWSEL_PORT.OUT = 0xf8u; //buffer[1];
         PWM_TIMER.CCAL = buffer[2];
         PWM_TIMER.CCAH = buffer[3];
     }
     else if(buffer[1] == 0xffu) {
-        ROWSEL_PORT.OUT = buffer[2];
+        ROWSEL_PORT.OUT = 0xf8u; //buffer[2];
         PWM_TIMER.CCAL = buffer[3];
         PWM_TIMER.CCAH = buffer[4];
     } else {

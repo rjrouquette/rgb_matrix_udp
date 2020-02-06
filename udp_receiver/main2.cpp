@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
         }
         matrix->flipBuffer();
         r = (r+1)%64;
-        usleep(200000);
+        usleep(100000);
     }
     sleep(3);
     pause();

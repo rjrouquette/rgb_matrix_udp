@@ -112,16 +112,18 @@ int main(int argc, char **argv) {
     log("instantiated matrix driver");
 
     usleep(250000);
-    int r = 0;
+    //int r = 0;
     for(;;) {
         //matrix->testPattern();
         //matrix->enumeratePanels();
         matrix->clearFrame();
-        for (int c = 0; c < 64; c++) {
-            matrix->setPixel(3, c, r, 0xffu, 0xffu, 0xffu);
+        for(int r = 0; r < 64; r++) {
+            for (int c = 0; c < 64; c++) {
+                matrix->setPixel(3, c, r, 0xffu, 0xffu, 0xffu);
+            }
         }
         matrix->flipBuffer();
-        r = (r+1)%64;
+        //r = (r+1)%64;
         usleep(500000);
     }
     sleep(3);

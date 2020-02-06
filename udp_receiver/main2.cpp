@@ -117,10 +117,8 @@ int main(int argc, char **argv) {
         //matrix->testPattern();
         //matrix->enumeratePanels();
         matrix->clearFrame();
-        for(int p = 0; p < 16; p++) {
-            for (int c = 0; c < 64; c++) {
-                matrix->setPixel(p, c, r, 0xffu, 0xffu, 0xffu);
-            }
+        for (int c = 0; c < 64; c++) {
+            matrix->setPixel(4, c, r, 0xffu, 0xffu, 0xffu);
         }
         matrix->flipBuffer();
         r = (r+1)%64;

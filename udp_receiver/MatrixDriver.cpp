@@ -186,10 +186,10 @@ void MatrixDriver::clearFrame() {
     nextFrame[HEADER_OFFSET+1] |= 0xff0000u;
     nextFrame[HEADER_OFFSET+2] |= 0xf80000u;
     nextFrame[HEADER_OFFSET+3] |= 0xf80000u;
-    unsigned row = 1;
     for(unsigned r = 0; r < scanRowCnt; r++) {
+        auto block = nextFrame + rowBlock + (r * pwmBlock);
         for(unsigned p = 0; p < PWM_ROWS; p++) {
-            auto header = nextFrame + (row * rowBlock) + HEADER_OFFSET;
+            auto header = block + (p * rowBlock) + HEADER_OFFSET;
             header[0] |= 0xff0000u;
             header[1] = header[0];
             header[2] |= (encodeRow(r) << 3u) << 16u;
@@ -200,8 +200,6 @@ void MatrixDriver::clearFrame() {
             header[5] = header[4];
             header[6] |= (pulse >> 8u) << 16u;
             header[7] = header[6];
-
-            row++;
         }
     }
 }

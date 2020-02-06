@@ -17,6 +17,10 @@
 #include <linux/kd.h>
 #include <fcntl.h>
 
+#define GPIO_REGISTER_OFFSET    0x200000    // start of gpio registers
+#define REGISTER_BLOCK_SIZE     4096        // 4 kiB block size
+
+#define DEV_MEM ("/dev/mem")
 #define DEV_FB ("/dev/fb0")
 #define DEV_TTY ("/dev/tty1")
 
@@ -500,4 +504,47 @@ void MatrixDriver::testPattern() {
         }
     }
     flipBuffer();
+}
+
+inline void clearGpio(uint32_t *base, uint8_t gpio) {
+   *(base + (gpio / 10u)) &= ~(7u << ((gpio % 10u) * 3u));
+}
+
+inline void setGpioOut(uint32_t *base, uint8_t gpio) {
+    *(base + (gpio / 10u)) |=  (1u << (( gpio % 10u) * 3u));
+}
+
+inline void setGpioAlt(uint32_t *base, uint8_t gpio, uint8_t alt) {
+    *(base + ((gpio / 10u))) |= (((gpio <= 3u) ? (alt + 4u) : (alt == 4u ? 3u : 2u)) << ((gpio % 10u) * 3u));
+}
+
+void MatrixDriver::initGpio(PeripheralBase peripheralBase) {
+    // mmap gpio memory
+    auto memfd = open(DEV_MEM, O_RDWR | O_SYNC);
+    if(memfd < 0) {
+        fprintf(stderr, "failed to open %s", DEV_MEM);
+        abort();
+    }
+
+    auto gpioReg = (uint32_t*) mmap(
+            nullptr,
+            REGISTER_BLOCK_SIZE,
+            PROT_READ | PROT_WRITE,
+            MAP_SHARED,
+            memfd,
+            peripheralBase + GPIO_REGISTER_OFFSET
+    );
+    if(gpioReg == MAP_FAILED) {
+        fprintf(stderr, "failed to mmap gpio registers");
+        abort();
+    }
+    close(memfd);
+
+    for(int i = 0; i < 28; i++) {
+        clearGpio(gpioReg, i);
+        setGpioOut(gpioReg, i);
+        setGpioAlt(gpioReg, i, 2);
+    }
+
+    munmap(gpioReg, REGISTER_BLOCK_SIZE);
 }

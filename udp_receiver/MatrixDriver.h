@@ -28,6 +28,14 @@ public:
     typedef uint16_t pwm_lut[256];
     pwm_lut& getPwmMapping() { return pwmMapping; }
 
+    enum PeripheralBase : uint32_t {
+        gpio_rpi1 = 0x20000000, // BCM2708
+        gpio_rpi2 = 0x3F000000, // BCM2709
+        gpio_rpi3 = 0x3F000000, // BCM2709
+        gpio_rpi4 = 0xFE000000, // BCM2711
+    };
+    static void initGpio(PeripheralBase peripheralBase);
+
 private:
     const int panelRows, panelCols, scanRowCnt, pwmBits;
     size_t rowBlock, pwmBlock;

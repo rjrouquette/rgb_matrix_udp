@@ -122,6 +122,7 @@ int main(int argc, char **argv) {
                 matrix->setPixel(p, c, r, 0xffu, 0xffu, 0xffu);
             }
         }
+        matrix->flipBuffer();
         r = (r+1)%64;
     }
     sleep(3);

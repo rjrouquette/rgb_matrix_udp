@@ -77,7 +77,7 @@ ISR(PORTE_INT0_vect, ISR_NAKED) {
         PWM_TIMER.CCAL = buffer[3];
         PWM_TIMER.CCAH = buffer[4];
     } else {
-        //ROWSEL_PORT.OUT = 0xffu;
+        ROWSEL_PORT.OUT = 0xf8u;
         PWM_TIMER.CCAL = 0;
         PWM_TIMER.CCAH = 0;
     }

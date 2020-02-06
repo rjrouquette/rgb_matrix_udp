@@ -113,7 +113,8 @@ int main(int argc, char **argv) {
 
     usleep(250000);
     for(;;) {
-        matrix->testPattern();
+        //matrix->testPattern();
+        matrix->enumeratePanels();
     }
     sleep(3);
     pause();

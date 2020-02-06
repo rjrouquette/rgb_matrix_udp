@@ -216,9 +216,9 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     const uint32_t maskBluLo = ~maskBluHi;
 
     // get pwm values
-    uint16_t R = pwmMapping[r];
-    uint16_t G = pwmMapping[g];
-    uint16_t B = pwmMapping[b];
+    uint16_t R = 0x7ffu; //pwmMapping[r];
+    uint16_t G = 0x7ffu; //pwmMapping[g];
+    uint16_t B = 0x7ffu; //pwmMapping[b];
 
     // set pixel bits
     auto pixel = nextFrame + (yoff * pwmBlock) + ROW_PADDING + xoff;

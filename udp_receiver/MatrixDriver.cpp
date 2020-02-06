@@ -53,7 +53,7 @@ uint8_t mapRGB[8][3] = {
 };
 
 static unsigned encodeRow(unsigned row) {
-    return (~(((row & 0xfu) << 1u) | ((row >> 4u) & 1u))) & 0xffu;
+    return (~(((row & 0xfu) << 1u) | ((row >> 4u) & 1u))) & 0x1fu;
 }
 
 MatrixDriver::MatrixDriver() :
@@ -189,7 +189,7 @@ void MatrixDriver::clearFrame() {
 
             row++;
         }
-        fprintf(stdout, "%d %x %x\n", r, encodeRow(r), encodeRow(r) << 3u);
+        fprintf(stdout, "%d %x\n", r, encodeRow(r) << 3u);
         fflush(stdout);
     }
 }

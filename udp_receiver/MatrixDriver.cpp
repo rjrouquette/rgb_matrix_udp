@@ -509,8 +509,8 @@ void MatrixDriver::testPattern() {
 
     clearFrame();
     auto row = nextFrame + (off * rowBlock) + ROW_PADDING;
-    for(size_t i = 0; i < panelCols * PANEL_STRING_LENGTH; i++) {
-        row[i] = 0xffffffffu;
+    for(size_t i = 0; i < panelCols; i++) {
+        row[i+192] = 0xffffffffu;
     }
     flipBuffer();
 }

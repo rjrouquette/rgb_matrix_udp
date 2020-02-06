@@ -53,7 +53,8 @@ uint8_t mapRGB[8][3] = {
 };
 
 static uint8_t encodeRow(uint8_t row) {
-    return ~(((row & 0xfu) << 1u) | ((row >> 4u) & 1u));
+    //return ~(((row & 0xfu) << 1u) | ((row >> 4u) & 1u));
+    return uint8_t(~row) << 3u;
 }
 
 MatrixDriver::MatrixDriver() :

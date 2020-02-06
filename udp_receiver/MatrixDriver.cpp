@@ -189,8 +189,6 @@ void MatrixDriver::clearFrame() {
 
             row++;
         }
-        fprintf(stdout, "%d %x\n", r, encodeRow(r) << 3u);
-        fflush(stdout);
     }
 }
 

@@ -206,8 +206,7 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     const auto yoff = 0;//y % scanRowCnt;
     const auto xoff = x + ((panel % PANEL_STRING_LENGTH) * panelCols);
 
-    const auto rgbOff = ((panel / PANEL_STRING_LENGTH) * 2) + (y / scanRowCnt);
-    fprintf(stdout, "%d\n", rgbOff);
+    const auto rgbOff = 0;//((panel / PANEL_STRING_LENGTH) * 2) + (y / scanRowCnt);
     const uint32_t maskRedHi = 1u << mapRGB[rgbOff][0];
     const uint32_t maskGrnHi = 1u << mapRGB[rgbOff][1];
     const uint32_t maskBluHi = 1u << mapRGB[rgbOff][2];

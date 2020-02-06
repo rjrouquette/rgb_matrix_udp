@@ -52,8 +52,8 @@ uint8_t mapRGB[8][3] = {
         {010, 001, 002}, // p3r1 -> g0, p3g1 -> b1, p3b1 -> b2
 };
 
-static uint8_t encodeRow(uint8_t row) {
-    return (~(((row & 0xfu) << 1u) | (unsigned(row >> 4u) & 1u))) & 0xffu;
+static unsigned encodeRow(unsigned row) {
+    return (~(((row & 0xfu) << 1u) | ((row >> 4u) & 1u))) & 0xffu;
 }
 
 MatrixDriver::MatrixDriver() :
@@ -177,7 +177,7 @@ void MatrixDriver::clearFrame() {
             auto header = nextFrame + (row * rowBlock) + HEADER_OFFSET;
             header[0] |= 0xff0000u;
             header[1] = header[0];
-            header[2] |= (uint32_t(encodeRow(r)) << 3u) << 16u;
+            header[2] |= (encodeRow(r) << 3u) << 16u;
             header[3] = header[2];
 
             uint8_t pw = (p > PWM_MAX) ? PWM_MAX : p;

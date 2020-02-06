@@ -56,6 +56,8 @@ static unsigned encodeRow(unsigned row) {
     return (~(((row & 0xfu) << 1u) | ((row >> 4u) & 1u))) & 0x1fu;;
 }
 
+static unsigned dummy = 0;
+
 MatrixDriver::MatrixDriver() :
         panelRows(PANEL_ROWS), panelCols(PANEL_COLS), scanRowCnt(PANEL_ROWS / 2), pwmBits(PWM_BITS),
         threadOutput{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER),
@@ -177,7 +179,7 @@ void MatrixDriver::clearFrame() {
             auto header = nextFrame + (row * rowBlock) + HEADER_OFFSET;
             header[0] |= 0xff0000u;
             header[1] = header[0];
-            header[2] |= (encodeRow(r) << 3u) << 16u;
+            header[2] |= (encodeRow(dummy) << 3u) << 16u;
             header[3] = header[2];
 
             uint8_t pw = (p > PWM_MAX) ? PWM_MAX : p;
@@ -190,6 +192,7 @@ void MatrixDriver::clearFrame() {
             row++;
         }
     }
+    dummy = (dummy+1) % 32;
 }
 
 void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8_t b) {

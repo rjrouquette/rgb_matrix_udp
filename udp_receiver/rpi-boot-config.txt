@@ -14,8 +14,8 @@ enable_dpi_lcd=1
 display_default_lcd=1
 
 # use DPI 24-bit RGB output
-# standard polarity on timing signals, invert pixel clock
-dpi_output_format=0x00217
+# standard polarity on timing signals, invert pixel clock and data enable
+dpi_output_format=0x40217
 
 # 4 chains with four 64x64 panels each
 # use custom DPI mode

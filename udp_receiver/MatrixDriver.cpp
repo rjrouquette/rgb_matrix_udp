@@ -182,14 +182,15 @@ void MatrixDriver::clearFrame() {
     }
 
     // set scan headers
-    nextFrame[HEADER_OFFSET+0] |= 0xff0000u;
-    nextFrame[HEADER_OFFSET+1] |= 0xff0000u;
-    nextFrame[HEADER_OFFSET+2] |= 0xf80000u;
-    nextFrame[HEADER_OFFSET+3] |= 0xf80000u;
+    auto header = nextFrame + HEADER_OFFSET;
+    header[0] |= 0xff0000u;
+    header[1] |= 0xff0000u;
+    header[2] |= 0xf80000u;
+    header[3] |= 0xf80000u;
     for(unsigned r = 0; r < scanRowCnt; r++) {
-        auto block = nextFrame + rowBlock + (r * pwmBlock);
         for(unsigned p = 0; p < PWM_ROWS; p++) {
-            auto header = block + (p * rowBlock) + HEADER_OFFSET;
+            header += rowBlock;
+
             header[0] |= 0xff0000u;
             header[1] = header[0];
             header[2] |= (encodeRow(r) << 3u) << 16u;

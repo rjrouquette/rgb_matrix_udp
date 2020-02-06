@@ -125,6 +125,8 @@ MatrixDriver::MatrixDriver() :
     // start output thread
     isRunning = true;
     pthread_create(&threadOutput, nullptr, doRefresh, this);
+
+    testIndex = 0;
 }
 
 MatrixDriver::~MatrixDriver() {
@@ -480,6 +482,22 @@ void MatrixDriver::enumeratePanels() {
     for(uint8_t p = 0; p < 16; p++) {
         drawHex(p, 0, 32, p >> 3u, 0xffffff, 0);
         drawHex(p, 6, 32, p & 7u, 0xffffff, 0);
+    }
+    flipBuffer();
+}
+
+void MatrixDriver::testPattern() {
+    auto index = testIndex++;
+
+    int off = index % 24;
+    uint32_t mask = 1u << unsigned(off);
+
+    clearFrame();
+    auto p = nextFrame;
+    for(int r = 0; r < scanRowCnt * PWM_ROWS; r++) {
+        for(size_t i = 0; i < rowBlock; i++) {
+            *(p++) = mask;
+        }
     }
     flipBuffer();
 }

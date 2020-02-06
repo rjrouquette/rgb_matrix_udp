@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
 
     usleep(250000);
     for(;;) {
-        matrix->enumeratePanels();
+        matrix->testPattern();
     }
     sleep(3);
     pause();

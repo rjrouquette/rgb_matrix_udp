@@ -33,7 +33,7 @@
 #define PWM_BITS (11)
 #define PWM_ROWS (15)
 
-#define HEADER_OFFSET (2)
+#define HEADER_OFFSET (1)
 #define ROW_PADDING (32)
 #define PANEL_STRING_LENGTH (4)
 
@@ -183,29 +183,23 @@ void MatrixDriver::clearFrame() {
 
     // set scan headers
     auto header = nextFrame + HEADER_OFFSET;
-    header[0] |= 0xff0000u;
-    header[1] |= 0xff0000u;
-    header[2] |= 0xf80000u;
-    header[3] |= 0xf80000u;
+    header[0] |= 0xf80000u;
+    header[1] |= 0xf80000u;
 
     for(unsigned r = 0; r < scanRowCnt; r++) {
         for(auto pulseWidth : mapPulseWidth) {
             // advance header row
             header += rowBlock;
 
-            // preamble
-            header[0] |= 0xff0000u;
+            // row select
+            header[0] |= (encodeRow(r) << 3u) << 16u;
             header[1] = header[0];
 
-            // row select
-            header[2] |= (encodeRow(r) << 3u) << 16u;
-            header[3] = header[2];
-
             // pulse width
-            header[4] |= (pulseWidth & 0xffu) << 16u;
+            header[2] |= (pulseWidth & 0xffu) << 16u;
+            header[3] = header[2];
+            header[4] |= (pulseWidth >> 8u) << 16u;
             header[5] = header[4];
-            header[6] |= (pulseWidth >> 8u) << 16u;
-            header[7] = header[6];
         }
     }
 }

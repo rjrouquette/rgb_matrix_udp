@@ -183,9 +183,6 @@ void MatrixDriver::clearFrame() {
 
     // set scan headers
     auto header = nextFrame + HEADER_OFFSET;
-    header[0] |= 0xf80000u;
-    header[1] |= 0xf80000u;
-
     for(unsigned r = 0; r < scanRowCnt; r++) {
         for(auto pulseWidth : mapPulseWidth) {
             // advance header row

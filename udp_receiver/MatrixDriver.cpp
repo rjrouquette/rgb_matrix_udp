@@ -498,19 +498,6 @@ void MatrixDriver::enumeratePanels() {
     flipBuffer();
 }
 
-void MatrixDriver::testPattern() {
-    auto index = testIndex++;
-
-    int off = index % (PWM_ROWS * scanRowCnt);
-
-    clearFrame();
-    auto row = nextFrame + (off * rowBlock) + ROW_PADDING;
-    for(size_t i = 0; i < panelCols; i++) {
-        row[i+192] = 0xffffffffu;
-    }
-    flipBuffer();
-}
-
 #define INP_GPIO(g) *(gpio+((g)/10u)) &= ~(7u<<(((g)%10u)*3u))
 //#define OUT_GPIO(g) *(gpio+((g)/10u)) |=  (1<<(((g)%10)*3))
 #define SET_GPIO_ALT(g,a) *(gpio+(((g)/10u))) |= (((a)<=3u?(a)+4u:(a)==4u?3u:2u)<<(((g)%10u)*3u))

@@ -66,7 +66,7 @@ unsigned mapPwmBit[PWM_ROWS] = {
 };
 
 static unsigned encodeRow(unsigned row) {
-    return (~(((row & 0xfu) << 1u) | ((row >> 4u) & 1u))) & 0x1fu;
+    return ((((row & 0xfu) << 1u) | ((row >> 4u) & 1u))) & 0x1fu;
 }
 
 MatrixDriver::MatrixDriver() :

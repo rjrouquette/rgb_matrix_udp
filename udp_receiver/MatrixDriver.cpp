@@ -66,19 +66,17 @@ unsigned mapPwmBit[PWM_ROWS] = {
 };
 
 unsigned mapRowSelect[5] = {
-        4, 0, 1, 2, 3
+        3, 2, 1, 0, 4
 };
 
 static unsigned rtest = 0;
 static unsigned encodeRow(unsigned row) {
     unsigned result = 0;
-    for(int i = 0; i < 5; i++) {
-        auto b = mapRowSelect[4 - i];
+    for(auto b : mapRowSelect) {
         result <<= 1u;
         result |= (row >> b) & 1u;
     }
-    //return result;
-    return rtest;
+    return result;
 }
 
 MatrixDriver::MatrixDriver() :

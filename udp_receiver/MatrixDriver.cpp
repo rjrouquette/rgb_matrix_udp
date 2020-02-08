@@ -69,6 +69,7 @@ unsigned mapRowSelect[5] = {
         4, 2, 1, 0, 3
 };
 
+static unsigned rtest = 0;
 static unsigned encodeRow(unsigned row) {
     unsigned result = 0;
     for(int i = 0; i < 5; i++) {
@@ -76,7 +77,8 @@ static unsigned encodeRow(unsigned row) {
         result <<= 1u;
         result |= (row >> b) & 1u;
     }
-    return result;
+    //return result;
+    return rtest;
 }
 
 MatrixDriver::MatrixDriver() :
@@ -209,6 +211,8 @@ void MatrixDriver::clearFrame() {
             header[5] = header[4];
         }
     }
+
+    rtest = (rtest + 1u) % 32u;
 }
 
 void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8_t b) {

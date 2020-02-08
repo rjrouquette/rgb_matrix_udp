@@ -199,7 +199,8 @@ void MatrixDriver::clearFrame() {
             header += rowBlock;
 
             // row select
-            header[0] |= (encodeRow(r) << 3u) << 16u;
+            //header[0] |= (encodeRow(r) << 3u) << 16u;
+            header[0] |= (rtest << 3u) << 16u;
             header[1] = header[0];
 
             // pulse width

@@ -74,27 +74,46 @@ unsigned mapPwmBit[PWM_ROWS] = {
  * E => EN1
  */
 
+unsigned mapRowAdvance[32][4] = {
+        { 0b11001, 0b11011, 0b01100, 0b01110 }, // 0
+        { 0b01000, 0b01010, 0b01000, 0b01000 }, // 1
+        { 0b01000, 0b01010, 0b01000, 0b01000 }, // 2
+        { 0b01000, 0b01010, 0b01000, 0b01000 }, // 3
+        { 0b01000, 0b01010, 0b01000, 0b01000 }, // 4
+        { 0b01000, 0b01010, 0b01000, 0b01000 }, // 5
+        { 0b01000, 0b01010, 0b01000, 0b01000 }, // 6
+        { 0b01000, 0b01010, 0b01000, 0b01000 }, // 7
+        { 0b01000, 0b01010, 0b11100, 0b11110 }, // 8
+        { 0b11000, 0b11010, 0b11000, 0b11000 }, // 9
+        { 0b11000, 0b11010, 0b11000, 0b11000 }, // 10
+        { 0b11000, 0b11010, 0b11000, 0b11000 }, // 11
+        { 0b11000, 0b11010, 0b11000, 0b11000 }, // 12
+        { 0b11000, 0b11010, 0b11000, 0b11000 }, // 13
+        { 0b11000, 0b11010, 0b11000, 0b11000 }, // 14
+        { 0b11000, 0b11010, 0b11000, 0b11000 }, // 15
+        { 0b11000, 0b11010, 0b01101, 0b01111 }, // 16
+        { 0b01001, 0b01011, 0b01001, 0b01001 }, // 17
+        { 0b01001, 0b01011, 0b01001, 0b01001 }, // 18
+        { 0b01001, 0b01011, 0b01001, 0b01001 }, // 19
+        { 0b01001, 0b01011, 0b01001, 0b01001 }, // 20
+        { 0b01001, 0b01011, 0b01001, 0b01001 }, // 21
+        { 0b01001, 0b01011, 0b01001, 0b01001 }, // 22
+        { 0b01001, 0b01011, 0b01001, 0b01001 }, // 23
+        { 0b01001, 0b01011, 0b11101, 0b11111 }, // 24
+        { 0b11001, 0b11011, 0b11001, 0b11001 }, // 25
+        { 0b11001, 0b11011, 0b11001, 0b11001 }, // 26
+        { 0b11001, 0b11011, 0b11001, 0b11001 }, // 27
+        { 0b11001, 0b11011, 0b11001, 0b11001 }, // 28
+        { 0b11001, 0b11011, 0b11001, 0b11001 }, // 29
+        { 0b11001, 0b11011, 0b11001, 0b11001 }, // 30
+        { 0b11001, 0b11011, 0b11001, 0b11001 }, // 31
+};
+
 static void setHeaderRowAdvance(uint32_t *header, unsigned row) {
-    unsigned code;
-
-    code = 0;
-    code |= 0u; code <<= 1u;
-    code |= 1u; code <<= 1u;
-    code |= (row % 8) == 0; code <<= 1u;
-    code |= 1u; code <<= 1u;
-    code |= 0u;
-    header[0] |= code << 19u;
-    header[1] = header[0];
-
-    unsigned nrow = (row + 1) & 0x1fu;
-    code = 0;
-    code |= 0u; code <<= 1u;
-    code |= 1u; code <<= 1u;
-    code |= (nrow % 8) == 0; code <<= 1u;
-    code |= 1u; code <<= 1u;
-    code |= 0u;
-    header[2] |= (code & ~0x02u) << 19u;
-    header[3] = header[2];
+    for(int i = 0; i < 4; i++) {
+        header[i*2+0] |= mapRowAdvance[row][i] << 19u;
+        header[i*2+1] = header[i*2+0];
+    }
 }
 
 static void setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth) {
@@ -167,7 +186,7 @@ MatrixDriver::MatrixDriver() :
     auto header = frameHeader + ROW_PADDING + HEADER_OFFSET;
     for(unsigned r = 0; r < scanRowCnt; r++) {
         for (auto pulseWidth : mapPulseWidth) {
-            setHeaderPulseWidth(header + 4, pulseWidth);
+            setHeaderPulseWidth(header + 8, pulseWidth);
             header += ROW_PADDING;
         }
     }

@@ -77,8 +77,8 @@ unsigned mapPwmBit[PWM_ROWS] = {
 static void setHeaderRowAdvance(uint32_t *header, unsigned row) {
     unsigned code = 0;
     code |= (row >> 3u) & 1u; code <<= 1u;
-    code |= (row % 8) == 0; code <<= 1u;
     code |= 1u; code <<= 1u;
+    code |= (row % 8) == 0; code <<= 1u;
     code |= 1u; code <<= 1u;
     code |= (row >> 4u) & 1u;
 

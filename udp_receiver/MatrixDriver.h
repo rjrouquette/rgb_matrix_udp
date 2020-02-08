@@ -46,6 +46,7 @@ private:
     uint8_t *frameRaw;
     uint32_t *currFrame;
     uint32_t *nextFrame;
+    uint32_t *frameHeader;
     pthread_t threadOutput;
     pthread_mutex_t mutexBuffer;
     pthread_cond_t condBuffer;

@@ -65,18 +65,34 @@ unsigned mapPwmBit[PWM_ROWS] = {
         10, 10, 10
 };
 
-unsigned mapRowSelect[5] = {
-        3, 2, 1, 0, 4
-};
+/*
+ * Qiangli Q3E
+ * A => CLK
+ * B => DATA
+ * C => BLANK
+ * D => EN0
+ * E => EN1
+ */
 
-static unsigned rtest = 0;
-static unsigned encodeRow(unsigned row) {
-    unsigned result = 0;
-    for(auto b : mapRowSelect) {
-        result <<= 1u;
-        result |= (row >> b) & 1u;
-    }
-    return result;
+static void setHeaderRowAdvance(uint32_t *header, unsigned row) {
+    unsigned code = 0;
+    code |= (row >> 3u) & 1u; code <<= 1u;
+    code |= (row % 8) == 0; code <<= 1u;
+    code |= 1u; code <<= 1u;
+    code |= 1u; code <<= 1u;
+    code |= (row >> 4u) & 1u;
+
+    header[0] |= code << 19u;
+    header[1] = header[0];
+    header[2] |= (code & 0xfeu) << 19u;
+    header[3] = header[2];
+}
+
+static void setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth) {
+    header[0] |= (pulseWidth & 0xffu) << 16u;
+    header[1] = header[0];
+    header[2] |= (pulseWidth >> 8u) << 16u;
+    header[3] = header[1];
 }
 
 MatrixDriver::MatrixDriver() :
@@ -132,6 +148,26 @@ MatrixDriver::MatrixDriver() :
     frameSize = vinfo.yres * rowBlock;
     currFrame = ((uint32_t *) frameRaw) + frameSize;
     nextFrame = ((uint32_t *) frameRaw) + frameSize * 2;
+
+    frameHeader = new uint32_t[(PWM_ROWS * scanRowCnt + 1) * ROW_PADDING];
+    // clear header cells
+    for(size_t i = 0; i < (PWM_ROWS * scanRowCnt + 1) * ROW_PADDING; i++) {
+        frameHeader[i] = 0xff000000u;
+    }
+    // set pulse width header
+    auto header = frameHeader + ROW_PADDING + HEADER_OFFSET;
+    for(unsigned r = 0; r < scanRowCnt; r++) {
+        for (auto pulseWidth : mapPulseWidth) {
+            setHeaderPulseWidth(header + 4, pulseWidth);
+            header += ROW_PADDING;
+        }
+    }
+    // set row advance markers
+    header = frameHeader + ROW_PADDING + HEADER_OFFSET;
+    for(unsigned r = 0; r < scanRowCnt; r++) {
+        setHeaderRowAdvance(header, r);
+        header += ROW_PADDING * PWM_ROWS;
+    }
 
     printf("pixels: %d\n", vinfo.yres * vinfo.xres);
     printf("frame size: %ld\n", frameSize);
@@ -191,28 +227,15 @@ void MatrixDriver::clearFrame() {
         nextFrame[i] = 0xff000000u;
     }
 
-    // set scan headers
-    auto header = nextFrame + HEADER_OFFSET;
-    for(unsigned r = 0; r < scanRowCnt; r++) {
-        for(auto pulseWidth : mapPulseWidth) {
-            // advance header row
-            header += rowBlock;
-
-            // row select
-            //header[0] |= (encodeRow(r) << 3u) << 16u;
-            header[0] |= (rtest << 3u) << 16u;
-            header[1] = header[0];
-
-            // pulse width
-            header[2] |= (pulseWidth & 0xffu) << 16u;
-            header[3] = header[2];
-            header[4] |= (pulseWidth >> 8u) << 16u;
-            header[5] = header[4];
-        }
+    // set row headers
+    size_t rcnt = (PWM_ROWS * scanRowCnt) + 1;
+    auto header = frameHeader;
+    auto row = nextFrame;
+    for(size_t r = 0; r < rcnt; r++) {
+        memcpy(row, header, ROW_PADDING * sizeof(uint32_t));
+        header += ROW_PADDING;
+        row += rowBlock;
     }
-
-    fprintf(stdout,"%d\n", rtest);
-    rtest = (rtest + 1u) % 32u;
 }
 
 void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8_t b) {

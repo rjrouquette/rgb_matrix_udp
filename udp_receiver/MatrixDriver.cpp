@@ -86,11 +86,11 @@ static void setHeaderRowAdvance(uint32_t *header, unsigned row) {
     header[0] |= code << 19u;
     header[1] = header[0];
 
-    row = (row + 1) & 0x1fu;
+    unsigned nrow = (row + 1) & 0x1fu;
     code = 0;
     code |= (row >> 3u) & 1u; code <<= 1u;
     code |= 1u; code <<= 1u;
-    code |= (row % 8) == 0; code <<= 1u;
+    code |= (nrow % 8) == 0; code <<= 1u;
     code |= 1u; code <<= 1u;
     code |= (row >> 4u) & 1u;
     header[2] |= (code & ~0x02u) << 19u;

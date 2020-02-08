@@ -59,15 +59,17 @@ ISR(OSC_OSCF_vect) {
 
 // hsync leading edge
 ISR(PORTE_INT0_vect, ISR_NAKED) {
-    uint8_t buffer[3];
+    uint8_t buffer[4];
     buffer[0] = META_PORT.IN;
     buffer[1] = META_PORT.IN;
     buffer[2] = META_PORT.IN;
+    buffer[3] = META_PORT.IN;
     ledToggle();
 
     ROWSEL_PORT.OUT = buffer[0];
-    PWM_TIMER.CCAL = buffer[1];
-    PWM_TIMER.CCAH = buffer[2];
+    ROWSEL_PORT.OUT = buffer[1];
+    PWM_TIMER.CCAL = buffer[2];
+    PWM_TIMER.CCAH = buffer[3];
     PWM_TIMER.CNTL = 0;
     PWM_TIMER.CNTH = 0;
 

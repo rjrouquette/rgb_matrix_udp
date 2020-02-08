@@ -33,7 +33,7 @@
 #define PWM_BITS (11)
 #define PWM_ROWS (15)
 
-#define HEADER_OFFSET (1)
+#define HEADER_OFFSET (2)
 #define ROW_PADDING (32)
 #define PANEL_STRING_LENGTH (4)
 

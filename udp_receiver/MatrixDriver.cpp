@@ -212,6 +212,7 @@ void MatrixDriver::clearFrame() {
         }
     }
 
+    fprintf(stdout,"%d\n", rtest);
     rtest = (rtest + 1u) % 32u;
 }
 

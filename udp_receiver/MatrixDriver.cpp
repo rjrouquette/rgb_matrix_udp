@@ -73,7 +73,7 @@ static unsigned encodeRow(unsigned row) {
     unsigned result = 0;
     for(int i = 0; i < 5; i++) {
         auto b = mapRowSelect[4 - i];
-        result <<= 1;
+        result <<= 1u;
         result |= (row >> b) & 1u;
     }
     return result;

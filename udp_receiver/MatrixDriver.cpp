@@ -66,7 +66,7 @@ unsigned mapPwmBit[PWM_ROWS] = {
 };
 
 unsigned mapRowSelect[5] = {
-        4, 2, 1, 0, 3
+        4, 0, 1, 2, 3
 };
 
 static unsigned rtest = 0;

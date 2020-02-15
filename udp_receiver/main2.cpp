@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
 
     // configure rgb matrix panel driver
     MatrixDriver::initGpio(MatrixDriver::gpio_rpi3);
-    matrix = new MatrixDriver();
+    matrix = new MatrixDriver(MatrixDriver::RowFormat_Qiangli32);
     createPwmLutLinear(PWM_BITS, brightness, matrix->getPwmMapping());
     log("instantiated matrix driver");
 

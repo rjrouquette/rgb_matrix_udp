@@ -66,7 +66,7 @@ unsigned mapPwmBit[PWM_ROWS] = {
 };
 
 MatrixDriver::MatrixDriver(RowEncoder encoder) :
-        panelRows(PANEL_ROWS), panelCols(PANEL_COLS), scanRowCnt(PANEL_ROWS / 2), pwmBits(PWM_BITS),
+        panelRows(PANEL_ROWS), panelCols(PANEL_COLS), scanRowCnt(PANEL_ROWS / 2), pwmBits(PWM_BITS), pwmRows(PWM_ROWS),
         rowEncoder(encoder), threadOutput{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER),
         condBuffer(PTHREAD_COND_INITIALIZER), pwmMapping{}, finfo{}, vinfo{}
 {
@@ -127,10 +127,10 @@ MatrixDriver::MatrixDriver(RowEncoder encoder) :
     // set pulse width header
     auto header = frameHeader + ROW_PADDING + HEADER_OFFSET;
     for(unsigned r = 0; r < scanRowCnt; r++) {
-        for (unsigned p = 0; p < PWM_ROWS; p++) {
+        for (unsigned p = 0; p < pwmRows; p++) {
             setHeaderRowCode(header, r, p);
             setHeaderPulseWidth(header + 4, mapPwmBit[p]);
-            header += ROW_PADDING;
+            header += rowBlock;
         }
     }
 
@@ -555,12 +555,12 @@ void MatrixDriver::setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth) {
  * D => EN0
  * E => EN1
  */
-unsigned MatrixDriver::RowFormat_Qiangli32(unsigned row, unsigned pwm, unsigned idx) {
+unsigned MatrixDriver::RowEncoder_Qiangli32(unsigned row, unsigned pwm, unsigned idx) {
     // chip select bits
     unsigned code = (~row) & 0x18u;
 
     // blank bit
-    //code |= 0x4u;
+    code |= 0x4u;
 
     // data in bit
     if(row % 8 == 0)
@@ -573,10 +573,10 @@ unsigned MatrixDriver::RowFormat_Qiangli32(unsigned row, unsigned pwm, unsigned 
     return code;
 }
 
-unsigned MatrixDriver::RowFormat_Adafruit16(unsigned row, unsigned pwm, unsigned idx) {
+unsigned MatrixDriver::RowEncoder_Adafruit16(unsigned row, unsigned pwm, unsigned idx) {
     return (~row) & 0xfu;
 }
 
-unsigned MatrixDriver::RowFormat_Adafruit32(unsigned row, unsigned pwm, unsigned idx) {
+unsigned MatrixDriver::RowEncoder_Adafruit32(unsigned row, unsigned pwm, unsigned idx) {
     return (~row) & 0x1fu;
 }

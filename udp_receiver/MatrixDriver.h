@@ -13,9 +13,9 @@
 class MatrixDriver {
 public:
     typedef unsigned (*RowEncoder) (unsigned row, unsigned pwm, unsigned idx);
-    static unsigned RowFormat_Qiangli32(unsigned row, unsigned pwm, unsigned idx);
-    static unsigned RowFormat_Adafruit16(unsigned row, unsigned pwm, unsigned idx);
-    static unsigned RowFormat_Adafruit32(unsigned row, unsigned pwm, unsigned idx);
+    static unsigned RowEncoder_Qiangli32(unsigned row, unsigned pwm, unsigned idx);
+    static unsigned RowEncoder_Adafruit16(unsigned row, unsigned pwm, unsigned idx);
+    static unsigned RowEncoder_Adafruit32(unsigned row, unsigned pwm, unsigned idx);
 
     explicit MatrixDriver(RowEncoder encoder);
     ~MatrixDriver();
@@ -41,7 +41,7 @@ public:
     static void initGpio(PeripheralBase peripheralBase);
 
 private:
-    const int panelRows, panelCols, scanRowCnt, pwmBits;
+    const unsigned panelRows, panelCols, scanRowCnt, pwmBits, pwmRows;
     size_t rowBlock, pwmBlock;
     uint8_t currOffset;
     bool isRunning;

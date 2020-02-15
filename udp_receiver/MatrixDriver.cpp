@@ -558,14 +558,18 @@ void MatrixDriver::setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth) {
 unsigned MatrixDriver::RowFormat_Qiangli32(unsigned row, unsigned pwm, unsigned idx) {
     // chip select bits
     unsigned code = (~row) & 0x18u;
+
     // blank bit
     code |= 0x4u;
+
     // data in bit
-    code |= unsigned((row % 8) == 0) << 1u;
+    if(row % 8 == 0)
+        code |= 0x2u;
+
     // clock bit
-    if(pwm == 0) {
-        code |= idx & 1u;
-    }
+    if(!(pwm == 0 && idx == 1))
+        code |= 0x1u;
+
     return code;
 }
 

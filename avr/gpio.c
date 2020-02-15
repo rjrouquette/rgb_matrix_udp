@@ -24,7 +24,7 @@ void initGpio() {
 
     // configure row select outputs
     // disable input sensing
-    ROWSEL_PORT.DIRSET = 0xff;
+    ROWSEL_PORT.DIRSET = 0xf8u;
     ROWSEL_PORT.PIN0CTRL = 0x07u;
     ROWSEL_PORT.PIN1CTRL = 0x07u;
     ROWSEL_PORT.PIN2CTRL = 0x07u;

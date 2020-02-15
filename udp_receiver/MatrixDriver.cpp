@@ -560,7 +560,7 @@ unsigned MatrixDriver::RowFormat_Qiangli32(unsigned row, unsigned pwm, unsigned 
     unsigned code = (~row) & 0x18u;
 
     // blank bit
-    code |= 0x4u;
+    //code |= 0x4u;
 
     // data in bit
     if(row % 8 == 0)

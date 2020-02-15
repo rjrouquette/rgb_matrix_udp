@@ -44,7 +44,7 @@ struct frame_packet {
 frame_packet packetBuffer[FRAME_MASK + 1][SUBFRAME_MASK + 1];
 pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
-uint8_t brightness = 20;
+uint8_t brightness = 100;
 uint8_t currBrightness = 100;
 MatrixDriver *matrix;
 

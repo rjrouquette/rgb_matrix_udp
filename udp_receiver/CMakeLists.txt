@@ -8,16 +8,16 @@ set(CMAKE_CC_STANDARD 11)
 set(CMAKE_CC_FLAGS "${CMAKE_CC_FLAGS} -Wall -ggdb3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -ggdb3")
 
-link_directories(../rpi-rgb-led-matrix/lib)
+#link_directories(../rpi-rgb-led-matrix/lib)
 
-add_executable(
-        udp_receiver
-        main.cpp
-        logging.cpp
-        logging.h
-)
+#add_executable(
+#        udp_receiver
+#        main.cpp
+#        logging.cpp
+#        logging.h
+#)
 
-target_link_libraries(udp_receiver -lrgbmatrix -pthread)
+#target_link_libraries(udp_receiver -lrgbmatrix -pthread)
 
 add_executable(
         udp_receiver2
@@ -28,4 +28,4 @@ add_executable(
         MatrixDriver.h
 )
 
-target_link_libraries(udp_receiver2 -lSDL -pthread)
+target_link_libraries(udp_receiver2 -pthread)

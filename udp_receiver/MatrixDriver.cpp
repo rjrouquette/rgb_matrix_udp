@@ -124,13 +124,16 @@ MatrixDriver::MatrixDriver(RowEncoder encoder) :
     for(size_t i = 0; i < (PWM_ROWS * scanRowCnt + 1) * ROW_PADDING; i++) {
         frameHeader[i] = 0xff000000u;
     }
-    // set pulse width header
+
+    // set scan row headers
+    unsigned srow = 0;
     auto header = frameHeader + ROW_PADDING + HEADER_OFFSET;
+    setHeaderRowCode(header, srow++);
     for(unsigned r = 0; r < scanRowCnt; r++) {
         for (unsigned p = 0; p < pwmRows; p++) {
-            setHeaderRowCode(header, r, p);
+            setHeaderRowCode(header, srow++);
             setHeaderPulseWidth(header + 4, mapPwmBit[p]);
-            header += rowBlock;
+            header += ROW_PADDING;
         }
     }
 
@@ -533,10 +536,10 @@ unsigned MatrixDriver::mangleRowBits(unsigned rowCode) {
     return ((rowCode & 0xfu) << 1u) | ((rowCode >> 4u) & 0x1u);
 }
 
-void MatrixDriver::setHeaderRowCode(uint32_t *header, unsigned row, unsigned pwm) const {
-    header[0] |= mangleRowBits((*rowEncoder)(row, pwm, 0)) << 19u;
+void MatrixDriver::setHeaderRowCode(uint32_t *header, const unsigned srow) const {
+    header[0] |= mangleRowBits((*rowEncoder)(*this, srow, 0)) << 19u;
     header[1] = header[0];
-    header[2] |= mangleRowBits((*rowEncoder)(row, pwm, 1)) << 19u;
+    header[2] |= mangleRowBits((*rowEncoder)(*this, srow, 1)) << 19u;
     header[3] = header[2];
 }
 
@@ -555,28 +558,41 @@ void MatrixDriver::setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth) {
  * D => EN0
  * E => EN1
  */
-unsigned MatrixDriver::RowEncoder_Qiangli32(unsigned row, unsigned pwm, unsigned idx) {
-    // chip select bits
-    unsigned code = (~row) & 0x18u;
 
-    // blank bit
-    code |= 0x4u;
+unsigned MatrixDriver::RowEncoder_Qiangli32(const MatrixDriver &matrixDriver, unsigned srow, unsigned idx) {
+    const auto pwmRows = matrixDriver.pwmRows;
+    auto row = srow / pwmRows;
+    auto step = srow % pwmRows;
 
-    // data in bit
-    if(row % 8 == 0)
-        code |= 0x2u;
+    unsigned code = 0x05u;
 
-    // clock bit
-    if(!(pwm == 0 && idx == 1))
-        code |= 0x1u;
+    // shift in set bit for row block
+    if((row % 8) == 0)
+        code |= 0x02u;
+
+    // perform clock transition
+    if(step == 1 && idx == 1)
+        code &= 0xfeu;
+
+    // chip selects
+    if(srow > (0 * pwmRows)  && srow <= (8 * pwmRows))
+        code |= 0x00u;
+    else if(srow > (8 * pwmRows)  && srow <= (16 * pwmRows))
+        code |= 0x08u;
+    else if(srow > (16 * pwmRows)  && srow <= (24 * pwmRows))
+        code |= 0x10u;
+    else if(srow > (24 * pwmRows)  && srow <= (32 * pwmRows))
+        code |= 0x18u;
 
     return code;
 }
 
-unsigned MatrixDriver::RowEncoder_Adafruit16(unsigned row, unsigned pwm, unsigned idx) {
+unsigned MatrixDriver::RowEncoder_Adafruit16(const MatrixDriver &matrixDriver, unsigned srow, unsigned idx) {
+    auto row = (srow - 1) / matrixDriver.pwmRows;
     return (~row) & 0xfu;
 }
 
-unsigned MatrixDriver::RowEncoder_Adafruit32(unsigned row, unsigned pwm, unsigned idx) {
+unsigned MatrixDriver::RowEncoder_Adafruit32(const MatrixDriver &matrixDriver, unsigned srow, unsigned idx) {
+    auto row = (srow - 1) / matrixDriver.pwmRows;
     return (~row) & 0x1fu;
 }

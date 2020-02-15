@@ -12,10 +12,10 @@
 
 class MatrixDriver {
 public:
-    typedef unsigned (*RowEncoder) (unsigned row, unsigned pwm, unsigned idx);
-    static unsigned RowEncoder_Qiangli32(unsigned row, unsigned pwm, unsigned idx);
-    static unsigned RowEncoder_Adafruit16(unsigned row, unsigned pwm, unsigned idx);
-    static unsigned RowEncoder_Adafruit32(unsigned row, unsigned pwm, unsigned idx);
+    typedef unsigned (*RowEncoder) (const MatrixDriver &matrixDriver, unsigned srow, unsigned idx);
+    static unsigned RowEncoder_Qiangli32(const MatrixDriver &matrixDriver, unsigned srow, unsigned idx);
+    static unsigned RowEncoder_Adafruit16(const MatrixDriver &matrixDriver, unsigned srow, unsigned idx);
+    static unsigned RowEncoder_Adafruit32(const MatrixDriver &matrixDriver, unsigned srow, unsigned idx);
 
     explicit MatrixDriver(RowEncoder encoder);
     ~MatrixDriver();
@@ -64,7 +64,7 @@ private:
     fb_var_screeninfo vinfo;
 
     static unsigned mangleRowBits(unsigned rowCode);
-    void setHeaderRowCode(uint32_t *header, unsigned row, unsigned pwm) const;
+    void setHeaderRowCode(uint32_t *header, unsigned srow) const;
     static void setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth);
 
     void blitFrame();

@@ -116,8 +116,10 @@ MatrixDriver::MatrixDriver(RowEncoder encoder) :
     // configure frame pointers
     currOffset = 0;
     frameSize = vinfo.yres * rowBlock;
-    currFrame = ((uint32_t *) frameRaw) + frameSize;
-    nextFrame = ((uint32_t *) frameRaw) + frameSize * 2;
+    //currFrame = ((uint32_t *) frameRaw) + frameSize;
+    //nextFrame = ((uint32_t *) frameRaw) + frameSize * 2;
+    currFrame = new uint32_t[frameSize];
+    nextFrame = new uint32_t[frameSize];
 
     frameHeader = new uint32_t[(PWM_ROWS * scanRowCnt + 1) * ROW_PADDING];
     // clear header cells
@@ -269,15 +271,17 @@ void MatrixDriver::setPixels(int &panel, int &x, int &y, uint8_t *rgb, size_t pi
 }
 
 void MatrixDriver::blitFrame() {
-    fb_var_screeninfo temp = vinfo;
-    temp.yoffset = (currOffset + 1) * vinfo.yres;
-    temp.xoffset = 0;
+    //fb_var_screeninfo temp = vinfo;
+    //temp.yoffset = (currOffset + 1) * vinfo.yres;
+    //temp.xoffset = 0;
 
-    if(ioctl(fbfd, FBIOPAN_DISPLAY, &temp) != 0)
-        die("failed to pan frame buffer: %s", strerror(errno));
+    //if(ioctl(fbfd, FBIOPAN_DISPLAY, &temp) != 0)
+    //    die("failed to pan frame buffer: %s", strerror(errno));
 
     if(ioctl(fbfd, FBIO_WAITFORVSYNC, nullptr) != 0)
         die("failed to wait for vsync: %s", strerror(errno));
+
+    memcpy(frameRaw, currFrame, frameSize * sizeof(uint32_t));
 }
 
 void* MatrixDriver::doRefresh(void *obj) {

@@ -24,7 +24,7 @@
 #define DEV_FB ("/dev/fb0")
 #define DEV_TTY ("/dev/tty1")
 
-#define FB_WIDTH (288)
+#define FB_WIDTH (1632)
 #define FB_HEIGHT (241)
 #define FB_DEPTH (32)
 

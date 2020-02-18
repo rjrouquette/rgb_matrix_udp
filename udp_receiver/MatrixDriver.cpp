@@ -504,8 +504,8 @@ void MatrixDriver::drawHex(int panel, int xoff, int yoff, uint8_t hexValue, uint
 void MatrixDriver::enumeratePanels() {
     clearFrame();
     for(uint8_t p = 0; p < 100; p++) {
-        drawHex(p, 0, 0, p >> 3u, 0xffffff, 0);
-        drawHex(p, 6, 0, p & 7u, 0xffffff, 0);
+        drawHex(p, 0, 0, p >> 4u, 0xffffff, 0);
+        drawHex(p, 6, 0, p & 0xfu, 0xffffff, 0);
     }
     flipBuffer();
 }

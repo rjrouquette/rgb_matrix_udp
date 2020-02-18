@@ -112,7 +112,7 @@ int main(int argc, char **argv) {
     log("instantiated matrix driver");
 
     usleep(250000);
-
+/*
     int r = 0;
     for(;;) {
         //matrix->enumeratePanels();
@@ -133,6 +133,7 @@ int main(int argc, char **argv) {
         r = (r+1)%96;
         usleep(50000);
     }
+    */
     matrix->enumeratePanels();
     sleep(3);
     pause();

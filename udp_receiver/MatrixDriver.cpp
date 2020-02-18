@@ -35,7 +35,7 @@
 
 #define HEADER_OFFSET (2)
 #define ROW_PADDING (32)
-#define PANEL_STRING_LENGTH (4)
+#define PANEL_STRING_LENGTH (25)
 
 // xmega to panel rgb bit mapping
 // bit offsets are in octal notation
@@ -205,7 +205,7 @@ void MatrixDriver::clearFrame() {
 }
 
 void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8_t b) {
-    if(panel < 0 || panel >= 24) return;
+    if(panel < 0 || panel >= 100) return;
     if(x < 0 || y < 0) return;
     if(x >= panelCols || y >= panelRows) return;
 
@@ -491,7 +491,7 @@ void MatrixDriver::drawHex(int panel, int xoff, int yoff, uint8_t hexValue, uint
 
 void MatrixDriver::enumeratePanels() {
     clearFrame();
-    for(uint8_t p = 0; p < 16; p++) {
+    for(uint8_t p = 0; p < 100; p++) {
         drawHex(p, 0, 0, p >> 3u, 0xffffff, 0);
         drawHex(p, 6, 0, p & 7u, 0xffffff, 0);
     }

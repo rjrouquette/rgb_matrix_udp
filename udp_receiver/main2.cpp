@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
     for(;;) {
         //matrix->enumeratePanels();
         matrix->clearFrame();
-        for (int p = 0; p < 16; p++) {
+        for (int p = 0; p < 100; p++) {
             for (int c = 0; c < 64; c++) {
 //                if(r > 63) {
 //                    matrix->setPixel(p, c, r % 64, 0xffu, 0xffu, 0xffu);

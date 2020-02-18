@@ -601,8 +601,7 @@ unsigned MatrixDriver::RowEncoder_Qiangli32(const MatrixDriver &matrixDriver, un
 
 unsigned MatrixDriver::RowEncoder_Adafruit16(const MatrixDriver &matrixDriver, unsigned srow, unsigned idx) {
     auto row = (srow - 1) / matrixDriver.pwmRows;
-    row ^= 0x08u;
-    return (~row) & 0x0fu;
+    return (row) & 0x0fu;
 }
 
 unsigned MatrixDriver::RowEncoder_Adafruit32(const MatrixDriver &matrixDriver, unsigned srow, unsigned idx) {

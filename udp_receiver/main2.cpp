@@ -113,24 +113,24 @@ int main(int argc, char **argv) {
 
     usleep(250000);
 
-    //int r = 0;
+    int r = 0;
     for(;;) {
         //matrix->enumeratePanels();
         matrix->clearFrame();
         for (int p = 0; p < 100; p++) {
             for (int c = 0; c < 64; c++) {
-//                if(r > 63) {
-//                    matrix->setPixel(p, c, r % 64, 0xffu, 0xffu, 0xffu);
-//                } else {
-//                    matrix->setPixel(p, r % 64, c, 0xffu, 0xffu, 0xffu);
-//                }
-                for(int r = 0; r < 32; r++) {
+                if(r > 63) {
+                    matrix->setPixel(p, c, r % 64, 0xffu, 0xffu, 0xffu);
+                } else {
                     matrix->setPixel(p, r % 64, c, 0xffu, 0xffu, 0xffu);
                 }
+//                for(int r = 0; r < 32; r++) {
+//                    matrix->setPixel(p, r % 64, c, 0xffu, 0xffu, 0xffu);
+//                }
             }
         }
         matrix->flipBuffer();
-        //r = (r+1)%128;
+        r = (r+1)%92;
         usleep(50000);
     }
     matrix->enumeratePanels();

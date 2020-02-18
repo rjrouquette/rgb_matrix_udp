@@ -50,20 +50,12 @@ uint8_t mapRGB[8][3] = {
         {007, 004, 003}, // p3r0 -> b7, p3g0 -> b4, p3b0 -> b3
         {010, 001, 002}, // p3r1 -> g0, p3g1 -> b1, p3b1 -> b2
 };
-/*
+
 unsigned mapPulseWidth[PWM_ROWS] = {
         0x0001u, 0x0002u, 0x0004u, 0x0008u,
         0x0010u, 0x0020u, 0x0040u, 0x0080u,
         0x0100u, 0x0100u, 0x0100u, 0x0100u,
         0x0100u, 0x0100u, 0x0100u
-};
-*/
-
-unsigned mapPulseWidth[PWM_ROWS] = {
-        0x0001u * 6, 0x0002u * 6, 0x0004u * 6, 0x0008u * 6,
-        0x0010u * 6, 0x0020u * 6, 0x0040u * 6, 0x0080u * 6,
-        0x0100u * 6, 0x0100u * 6, 0x0100u * 6, 0x0100u * 6,
-        0x0100u * 6, 0x0100u * 6, 0x0100u * 6
 };
 
 unsigned mapPwmBit[PWM_ROWS] = {
@@ -136,13 +128,14 @@ MatrixDriver::MatrixDriver(RowEncoder encoder) :
     }
 
     // set scan row headers
+    unsigned pwFact = (FB_WIDTH - ROW_PADDING) / 256;
     unsigned srow = 0;
     auto header = frameHeader + ROW_PADDING + HEADER_OFFSET;
     setHeaderRowCode(header, srow++);
     for(unsigned r = 0; r < scanRowCnt; r++) {
         for (unsigned p = 0; p < pwmRows; p++) {
             setHeaderRowCode(header, srow++);
-            setHeaderPulseWidth(header + 4, mapPulseWidth[p]);
+            setHeaderPulseWidth(header + 4, mapPulseWidth[p] * pwFact);
             header += ROW_PADDING;
         }
     }

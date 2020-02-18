@@ -142,7 +142,7 @@ MatrixDriver::MatrixDriver(RowEncoder encoder) :
     for(unsigned r = 0; r < scanRowCnt; r++) {
         for (unsigned p = 0; p < pwmRows; p++) {
             setHeaderRowCode(header, srow++);
-            setHeaderPulseWidth(header + 4, mapPwmBit[p]);
+            setHeaderPulseWidth(header + 4, mapPulseWidth[p]);
             header += ROW_PADDING;
         }
     }

@@ -107,7 +107,7 @@ int main(int argc, char **argv) {
 
     // configure rgb matrix panel driver
     MatrixDriver::initGpio(MatrixDriver::gpio_rpi3);
-    matrix = new MatrixDriver(MatrixDriver::RowEncoder_Adafruit32);
+    matrix = new MatrixDriver(MatrixDriver::RowEncoder_Adafruit16);
     createPwmLutLinear(PWM_BITS, brightness, matrix->getPwmMapping());
     log("instantiated matrix driver");
 
@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
 //                } else {
 //                    matrix->setPixel(p, r % 64, c, 0xffu, 0xffu, 0xffu);
 //                }
-                for(int r = 0; r < 64; r++) {
+                for(int r = 0; r < 32; r++) {
                     matrix->setPixel(p, r % 64, c, 0xffu, 0xffu, 0xffu);
                 }
             }

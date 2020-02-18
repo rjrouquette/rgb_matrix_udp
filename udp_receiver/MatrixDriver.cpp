@@ -25,10 +25,10 @@
 #define DEV_TTY ("/dev/tty1")
 
 #define FB_WIDTH (288)
-#define FB_HEIGHT (481)
+#define FB_HEIGHT (241)
 #define FB_DEPTH (32)
 
-#define PANEL_ROWS (64)
+#define PANEL_ROWS (32)
 #define PANEL_COLS (64)
 #define PWM_BITS (11)
 #define PWM_ROWS (15)

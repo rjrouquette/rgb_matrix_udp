@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
     auto ethAddrInt = ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr);
     auto x = matrix->getWidth() - 90;
     for(int i = 0; i < 4; i++) {
-        auto octet = ethAddrInt >> ((3u - i) * 8u);
+        auto octet = (ethAddrInt >> ((3u - i) * 8u)) & 0xffu;
         unsigned pow = 100;
         for(int j = 0; j < 3; j++) {
             auto digit = (octet / pow) % 10;

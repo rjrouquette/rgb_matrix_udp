@@ -51,8 +51,7 @@ private:
 
     const unsigned matrixWidth, matrixHeight, scanRowCnt, pwmRows, *mapPwmBit;
     const size_t rowBlock, pwmBlock;
-    uint8_t currOffset;
-    bool isRunning, freeFrame;
+    bool isRunning;
 
     size_t frameSize;
     uint8_t *frameRaw;
@@ -61,7 +60,6 @@ private:
     uint32_t *frameHeader;
     pthread_t threadOutput;
     pthread_mutex_t mutexBuffer;
-    pthread_cond_t condBuffer;
 
     pwm_lut pwmMapping;
 

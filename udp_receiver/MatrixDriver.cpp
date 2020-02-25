@@ -129,8 +129,6 @@ MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowForma
 
     // configure frame pointers
     driver->frameSize = vinfo.yres * rowBlock;
-    //currFrame = ((uint32_t *) frameRaw) + frameSize;
-    //nextFrame = ((uint32_t *) frameRaw) + frameSize * 2;
     driver->currFrame = new uint32_t[driver->frameSize];
     driver->nextFrame = new uint32_t[driver->frameSize];
 
@@ -184,13 +182,11 @@ MatrixDriver::MatrixDriver(
 ) :
     matrixWidth(_rowBlock - ROW_PADDING), matrixHeight(_scanRowCnt * 8), scanRowCnt(_scanRowCnt), pwmRows(_pwmRows),
     mapPwmBit(_mapPwmBit), rowBlock(_rowBlock), pwmBlock(_pwmBlock), threadOutput{},
-    mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER), pwmMapping{}, finfo{}, vinfo{}
+    mutexBuffer(PTHREAD_MUTEX_INITIALIZER), pwmMapping{}, finfo{}, vinfo{}
 {
-    freeFrame = false;
     isRunning = false;
     ttyfd = -1;
     fbfd = -1;
-    currOffset = 0;
     frameSize = 0;
     frameRaw = nullptr;
     frameHeader = nullptr;
@@ -206,10 +202,8 @@ MatrixDriver::~MatrixDriver() {
 
     delete[] mapPwmBit;
     delete[] frameHeader;
-    if(freeFrame) {
-        delete[] currFrame;
-        delete[] nextFrame;
-    }
+    delete[] currFrame;
+    delete[] nextFrame;
     munmap(frameRaw, finfo.smem_len);
     close(fbfd);
     close(ttyfd);
@@ -228,18 +222,11 @@ void MatrixDriver::stop() {
 }
 
 void MatrixDriver::flipBuffer() {
-    pthread_mutex_lock(&mutexBuffer);
-
-    // move frame offset
-    currOffset = (currOffset + 1u) % 2u;
-
     // swap buffer pointers
+    pthread_mutex_lock(&mutexBuffer);
     auto temp = currFrame;
     currFrame = nextFrame;
     nextFrame = temp;
-
-    // wake output thread
-    pthread_cond_signal(&condBuffer);
     pthread_mutex_unlock(&mutexBuffer);
 }
 

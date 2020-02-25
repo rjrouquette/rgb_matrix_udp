@@ -202,8 +202,6 @@ int main(int argc, char **argv) {
     }
 
     // Finished. Shut down the RGB matrix.
-    matrix->clearFrame();
-    matrix->flipBuffer();
     delete matrix;
 
     return 0;

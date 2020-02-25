@@ -119,6 +119,8 @@ MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowForma
             rowBlock,
             pwmBlock
     );
+    driver->ttyfd = ttyfd;
+    driver->fbfd = fbfd;
 
     // get pointer to raw frame buffer data
     driver->frameRaw = (uint8_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
@@ -151,6 +153,7 @@ MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowForma
             header += ROW_PADDING;
         }
     }
+    delete[] mapPulseWidth;
 
     printf("pixels: %d\n", vinfo.yres * vinfo.xres);
     printf("frame size: %ld\n", driver->frameSize);

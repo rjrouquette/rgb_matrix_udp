@@ -52,12 +52,18 @@ pthread_t threadUdpRx;
 void * doUdpRx(void *obj);
 long microtime();
 void sig_ignore(UNUSED int sig) { }
+void sig_exit(UNUSED int sig) { isRunning = false; }
 
 int main(int argc, char **argv) {
     struct sigaction act = {};
     memset(&act, 0, sizeof(act));
     act.sa_handler = sig_ignore;
     sigaction(SIGUSR1, &act, nullptr);
+
+    act.sa_handler = sig_exit;
+    sigaction(SIGINT, &act, nullptr);
+    sigaction(SIGTERM, &act, nullptr);
+    sigaction(SIGKILL, &act, nullptr);
 
     // set cpu affinity
     cpu_set_t cpuset;

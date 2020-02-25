@@ -637,10 +637,5 @@ static bool createPwmMap(unsigned pwmBits, unsigned pwmRows, unsigned *&mapPulse
         }
     }
 
-    for(unsigned i = 0; i < pwmRows; i++) {
-        fprintf(stdout, "%d: %d %d\n", i, mapPwmBit[i], mapPulseWidth[i]);
-    }
-    fflush(stdout);
-
     return true;
 }

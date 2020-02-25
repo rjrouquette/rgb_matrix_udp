@@ -32,6 +32,11 @@ unsigned RowEncoding::Hub75e(unsigned pwmRows, unsigned srow, unsigned idx) {
  */
 
 unsigned RowEncoding::Qiangli_Q3F32(unsigned pwmRows, unsigned srow, unsigned idx) {
+    // skip dead row
+    if(srow == 0)
+        return 0;
+
+    // compute active row and pwm step
     srow -= 1;
     auto row = srow / pwmRows;
     auto step = srow % pwmRows;

@@ -203,7 +203,6 @@ int main(int argc, char **argv) {
 
     // Finished. Shut down the RGB matrix.
     delete matrix;
-
     return 0;
 }
 

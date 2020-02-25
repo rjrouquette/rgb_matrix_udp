@@ -114,7 +114,7 @@ int main(int argc, char **argv) {
     // display ethernet address
     matrix->clearFrame();
     auto ethAddrInt = ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr);
-    int x = 0;
+    auto x = matrix->getWidth() - 64;
     for(int i = 0; i < 4; i++) {
         auto octet = ethAddrInt >> ((3u - i) * 8u);
         unsigned pow = 100;

@@ -216,8 +216,9 @@ void MatrixDriver::start() {
 
 void MatrixDriver::stop() {
     clearFrame();
-    isRunning = false;
     flipBuffer();
+    usleep(10000);
+    isRunning = false;
     pthread_join(threadOutput, nullptr);
 }
 

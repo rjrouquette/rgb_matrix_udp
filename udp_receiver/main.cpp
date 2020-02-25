@@ -53,6 +53,7 @@ void * doUdpRx(void *obj);
 long microtime();
 void sig_ignore(UNUSED int sig) { }
 void sig_exit(UNUSED int sig) { isRunning = false; }
+void displayAddress(uint32_t addr);
 
 int main(int argc, char **argv) {
     struct sigaction act = {};
@@ -117,23 +118,8 @@ int main(int argc, char **argv) {
     usleep(250000);
     matrix->flipBuffer();
 
-    // display ethernet address
-    matrix->clearFrame();
-    auto ethAddrInt = ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr);
-    auto x = matrix->getWidth() - 90;
-    for(int i = 0; i < 4; i++) {
-        auto octet = (ethAddrInt >> ((3u - i) * 8u)) & 0xffu;
-        unsigned pow = 100;
-        for(int j = 0; j < 3; j++) {
-            auto digit = (octet / pow) % 10;
-            pow /= 10;
-
-            matrix->drawHex(x, 0, digit, 0x00ffffu, 0x000000u);
-            x += 6;
-        }
-        x += 6;
-    }
-    matrix->flipBuffer();
+    // display ethernet address on panel
+    displayAddress(ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr));
     sleep(3);
 
     log("waiting for frames");
@@ -265,4 +251,23 @@ long microtime() {
     struct timeval now = {};
     gettimeofday(&now, nullptr);
     return now.tv_sec * 1000000l + now.tv_usec;
+}
+
+void displayAddress(uint32_t addr) {
+    // display ethernet address
+    matrix->clearFrame();
+    auto x = matrix->getWidth() - 90;
+    for(int i = 0; i < 4; i++) {
+        auto octet = (addr >> ((3u - i) * 8u)) & 0xffu;
+        unsigned pow = 100;
+        for(int j = 0; j < 3; j++) {
+            auto digit = (octet / pow) % 10;
+            pow /= 10;
+
+            matrix->drawHex(x, 0, digit, 0x00ffffu, 0x000000u);
+            x += 6;
+        }
+        x += 6;
+    }
+    matrix->flipBuffer();
 }

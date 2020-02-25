@@ -12,12 +12,13 @@
 
 class MatrixDriver {
 public:
-    typedef unsigned (*RowEncoder) (const MatrixDriver &matrixDriver, unsigned srow, unsigned idx);
-    static unsigned RowEncoder_Qiangli32(const MatrixDriver &matrixDriver, unsigned srow, unsigned idx);
-    static unsigned RowEncoder_Adafruit16(const MatrixDriver &matrixDriver, unsigned srow, unsigned idx);
-    static unsigned RowEncoder_Adafruit32(const MatrixDriver &matrixDriver, unsigned srow, unsigned idx);
+    enum RowEncoding {
+        HUB75,          // standard HUB75 4-bit row address
+        HUB75E,         // extended HUB75 5-bit row address
+        QIANGLI_Q3F32   // shift register row selection
+    };
 
-    explicit MatrixDriver(RowEncoder encoder);
+    explicit MatrixDriver(RowEncoding encoding);
     ~MatrixDriver();
 
     void flipBuffer();
@@ -41,11 +42,11 @@ public:
     static void initGpio(PeripheralBase peripheralBase);
 
 private:
+    const RowEncoding rowEncoding;
     const unsigned panelRows, panelCols, scanRowCnt, pwmBits, pwmRows;
     size_t rowBlock, pwmBlock;
     uint8_t currOffset;
     bool isRunning;
-    RowEncoder rowEncoder;
 
     size_t frameSize;
     uint8_t *frameRaw;

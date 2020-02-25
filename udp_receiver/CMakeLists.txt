@@ -26,6 +26,8 @@ add_executable(
         logging.h
         MatrixDriver.cpp
         MatrixDriver.h
-        RowEncoding.cpp RowEncoding.h)
+        RowEncoding.cpp
+        RowEncoding.h
+)
 
 target_link_libraries(udp_receiver2 -pthread)

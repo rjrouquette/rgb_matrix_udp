@@ -4,7 +4,7 @@
 
 #include "RowEncoding.h"
 
-RowEncoding::Encoder encoder[3] = {
+RowEncoding::Encoder RowEncoding::encoder[3] = {
         RowEncoding::Hub75,
         RowEncoding::Hub75e,
         RowEncoding::Qiangli_Q3F32

@@ -88,7 +88,7 @@ MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowForma
     const auto scanRowCnt = mapPanelScanRows[rowFormat];
     unsigned rows = vinfo.yres - 1;
     auto pwmRows = rows / scanRowCnt;
-    auto yfit = pwmRows * scanRowCnt;
+    auto yfit = (pwmRows * scanRowCnt) + 1;
     if(vinfo.yres != yfit)
         die("framebuffer height is invalid: %d != %d", vinfo.yres, yfit);
 

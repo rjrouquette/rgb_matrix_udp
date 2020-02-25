@@ -95,22 +95,16 @@ MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowForma
     if(!createPwmMap(pwmBits, pwmRows, mapPulseWidth, mapPwmBit))
         die("pwm row count is invalid: %d", pwmRows);
 
-    // configure virtual framebuffer for flipping
+    // configure virtual framebuffer for blitting
     vinfo.xoffset = 0;
     vinfo.yoffset = 0;
     vinfo.xres_virtual = vinfo.xres;
-    vinfo.yres_virtual = vinfo.yres * 3;
+    vinfo.yres_virtual = vinfo.yres;
     if(ioctl(fbfd, FBIOPUT_VSCREENINFO, &vinfo) != 0)
         die("failed to set variable screen info: %s",strerror(errno));
 
     if(ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) != 0)
         die("failed to get fixed screen info: %s",strerror(errno));
-
-    if(ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) != 0)
-        die("failed to set variable screen info: %s",strerror(errno));
-
-    if(vinfo.yres_virtual < vinfo.yres * 3)
-        die("failed to set virutal screen size: %s",strerror(errno));
 
     // determine block sizes
     const size_t rowBlock = finfo.line_length / sizeof(uint32_t);

@@ -106,11 +106,6 @@ MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowForma
     if(ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) != 0)
         die("failed to get fixed screen info: %s",strerror(errno));
 
-    // get pointer to raw frame buffer data
-    auto frameRaw = (uint8_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
-    if(frameRaw == MAP_FAILED)
-        die("failed to map raw screen buffer data: %s",strerror(errno));
-
     // determine block sizes
     const size_t rowBlock = finfo.line_length / sizeof(uint32_t);
     const size_t pwmBlock = rowBlock * pwmRows;
@@ -124,6 +119,11 @@ MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowForma
             rowBlock,
             pwmBlock
     );
+
+    // get pointer to raw frame buffer data
+    driver->frameRaw = (uint8_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
+    if(driver->frameRaw == MAP_FAILED)
+        die("failed to map raw screen buffer data: %s",strerror(errno));
 
     // configure frame pointers
     driver->frameSize = vinfo.yres * rowBlock;

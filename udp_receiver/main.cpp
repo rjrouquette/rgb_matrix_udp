@@ -128,9 +128,7 @@ int main(int argc, char **argv) {
         x += 6;
     }
     matrix->flipBuffer();
-
     sleep(3);
-    pause();
 
     log("waiting for frames");
     uint32_t startOffset = 0;

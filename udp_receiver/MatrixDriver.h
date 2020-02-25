@@ -71,7 +71,6 @@ private:
 
     void start();
     void stop();
-    void blitFrame();
     static void* doRefresh(void *obj);
 
     static void die(const char *format, ...) __attribute__ ((__format__ (__printf__, 1, 2)));

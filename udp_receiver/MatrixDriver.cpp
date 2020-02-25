@@ -619,19 +619,20 @@ static bool createPwmMap(unsigned pwmBits, unsigned pwmRows, unsigned *&mapPulse
     mapPulseWidth = new unsigned[pwmRows];
 
     // ordinary pwm bits
+    unsigned ordinaryBits = pwmBits - n;
     for(unsigned i = 0; i < pwmBits - n; i++) {
         mapPwmBit[i] = i;
         mapPulseWidth[i] = 1u << i;
     }
 
     // multi-row pwm bits
-    auto b = mapPwmBit + pwmBits - n;
-    auto w = mapPulseWidth + pwmBits - n;
-    unsigned width = 1u << (pwmBits - n);
+    auto b = mapPwmBit + ordinaryBits;
+    auto w = mapPulseWidth + ordinaryBits;
+    unsigned width = 1u << ordinaryBits;
     for(int i = 0; i < n; i++) {
         auto cnt = 1u << (unsigned)i;
         for(unsigned j = 0; j < cnt; j++) {
-            *(b++) = (unsigned) i;
+            *(b++) = (unsigned) i + ordinaryBits;
             *(w++) = width;
         }
     }

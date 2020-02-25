@@ -8,28 +8,26 @@
 #include <csignal>
 #include <cstring>
 #include <sys/time.h>
+#include <cstdio>
 
 #include "logging.h"
-#include "../rpi-rgb-led-matrix/include/led-matrix.h"
-#include "../rpi-rgb-led-matrix/include/graphics.h"
-
-using namespace rgb_matrix;
+#include "MatrixDriver.h"
 
 #define UNUSED __attribute__((unused))
 
-#define MATRIX_WIDTH (128)
-#define MATRIX_HEIGHT (32)
-
+#define PANEL_COUNT (48)
 #define PANEL_WIDTH (64)
-#define PANEL_HEIGHT (32)
-#define PANEL_CHAIN (2)
+#define PANEL_HEIGHT (64)
+#define PWM_BITS (11)
 
 #define UDP_PORT (1234)
 #define UDP_BUFFER_SIZE (2048)
 #define RECVMMSG_CNT (64)
 
-#define FRAME_MASK (0x3fu)      // 64 frame circular buffer
-#define SUBFRAME_MASK (0xfu)    // 16 sub-frames per frame
+#define FRAME_MASK (0x0fu)      // 16 frame circular buffer
+#define SUBFRAME_MASK (0xffu)   // 256 sub-frames per frame
+#define SUBFRAME_PIXELS (400)   // 400 pixels per sub-frame
+#define SUBFRAME_MATRIX ((PANEL_COUNT * PANEL_WIDTH * PANEL_HEIGHT + SUBFRAME_PIXELS - 1) / SUBFRAME_PIXELS)
 
 bool isRunning = true;
 int socketUdp = -1;
@@ -40,13 +38,15 @@ struct frame_packet {
     uint32_t frameId;
     uint32_t subFrameId;
     uint64_t targetEpochUs;
-    uint8_t pixelData[1200];    // 400 RGB pixels
+    uint8_t pixelData[SUBFRAME_PIXELS * 3];
 };
 
 frame_packet packetBuffer[FRAME_MASK + 1][SUBFRAME_MASK + 1];
 pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
-RGBMatrix *matrix;
+uint8_t brightness = 100;
+uint8_t currBrightness = 100;
+MatrixDriver *matrix;
 
 pthread_t threadUdpRx;
 void * doUdpRx(void *obj);
@@ -64,9 +64,6 @@ int main(int argc, char **argv) {
     CPU_ZERO(&cpuset);
     CPU_SET(1, &cpuset);
     pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
-
-    height = MATRIX_HEIGHT;
-    width = MATRIX_WIDTH;
 
     const uint32_t fsize = height * width * 3;
     const uint32_t fmax = ((fsize + sizeof(frame_packet::pixelData) - 1) / sizeof(frame_packet::pixelData));
@@ -109,32 +106,38 @@ int main(int argc, char **argv) {
     pthread_create(&threadUdpRx, nullptr, doUdpRx, nullptr);
 
     // configure rgb matrix panel driver
-    RGBMatrix::Options matrix_options;
-    rgb_matrix::RuntimeOptions runtime_opt;
+    MatrixDriver::initGpio(MatrixDriver::gpio_rpi3);
+    matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::QIANGLI_Q3F32);
+    createPwmLutLinear(PWM_BITS, brightness, matrix->getPwmMapping());
+    log("instantiated matrix driver");
 
-    matrix_options.rows = PANEL_HEIGHT;
-    matrix_options.cols = PANEL_WIDTH;
-    matrix_options.chain_length = PANEL_CHAIN;
-    matrix_options.pwm_bits = 11;
-    matrix_options.pwm_lsb_nanoseconds = 130;
-    matrix_options.hardware_mapping = "adafruit-hat-pwm";
+    usleep(250000);
 
-    runtime_opt.gpio_slowdown = 2;
+    unsigned r = 0;
+    for(;;) {
+        //matrix->enumeratePanels();
+        matrix->clearFrame();
+        for (unsigned p = 0; p < 48; p++) {
+            auto xoff = (p % 24) * 64;
+            auto yoff = (p / 24) * 64;
+            for (unsigned c = 0; c < 64; c++) {
+                if(r > 63) {
+                    matrix->setPixel(xoff + c, yoff + r - 64, 0xffu, 0xffu, 0xffu);
+                } else {
+                    matrix->setPixel(xoff + r, yoff + c, 0xffu, 0xffu, 0xffu);
+                }
+//                for(unsigned r = 0; r < 32; r++) {
+//                    matrix->setPixel(p, r % 64, c, 0xffu, 0xffu, 0xffu);
+//                }
+            }
+        }
+        matrix->flipBuffer();
+        r = (r+1)%128;
+        usleep(50000);
+    }
 
-    matrix = rgb_matrix::CreateMatrixFromOptions(
-            matrix_options,
-            runtime_opt
-    );
-    matrix->SetBrightness(20);
-    FrameCanvas *offscreen = matrix->CreateFrameCanvas();
-    log("initialized rgb matrix panel driver");
-
-    // display ip address on panel
-    Color color(255, 255, 0);
-    rgb_matrix::Font font;
-    font.LoadFont("5x8.bdf");
-    rgb_matrix::DrawText(offscreen, font, 0, 8, color, nullptr, ethAddrHex, 0);
-    offscreen = matrix->SwapOnVSync(offscreen);
+    sleep(3);
+    pause();
 
     log("waiting for frames");
     uint32_t startOffset = 0;
@@ -171,28 +174,26 @@ int main(int argc, char **argv) {
 
             pthread_rwlock_unlock(&rwlock);
 
+            // adjust matrix brightness
+            if(brightness != currBrightness) {
+                currBrightness = brightness;
+                createPwmLutCie1931(PWM_BITS, brightness, matrix->getPwmMapping());
+            }
+
             // concatenate packets
-            uint32_t sf = 0;
-            int x = 0, y = 0;
-            while(y < height && sf <= SUBFRAME_MASK) {
-                auto data = frame[sf++].pixelData;
-                for(size_t off = 0; off < sizeof(frame_packet::pixelData); off += 3) {
-                    offscreen->SetPixel(x, y, data[off + 0], data[off + 1], data[off + 2]);
-                    if(++x >= width) {
-                        x = 0;
-                        if(++y >= height) break;
-                    }
-                }
+            unsigned x = 0, y = 0;
+            for(size_t sf = 0; sf <= SUBFRAME_MATRIX; sf++) {
+                matrix->setPixels(x, y, frame[sf].pixelData, SUBFRAME_PIXELS);
             }
             frame[0].frameId = 0;
 
+            // wait for scheduled frame boundary
             diff = frame->targetEpochUs - microtime();
             if(diff > 0) {
                 usleep(diff);
             }
-
-            // display frame
-            offscreen = matrix->SwapOnVSync(offscreen);
+            // display new frame
+            matrix->flipBuffer();
 
             startOffset = (f + startOffset + 1) & FRAME_MASK;
             pthread_rwlock_wrlock(&rwlock);
@@ -204,7 +205,8 @@ int main(int argc, char **argv) {
     }
 
     // Finished. Shut down the RGB matrix.
-    matrix->Clear();
+    matrix->clearFrame();
+    matrix->flipBuffer();
     delete matrix;
 
     return 0;
@@ -250,7 +252,7 @@ void * doUdpRx(UNUSED void *obj) {
 
             // brightness packet
             if(dlen == sizeof(uint8_t)) {
-                if(matrix) matrix->SetBrightness(*(uint8_t*)data);
+                brightness = *(uint8_t*)data;
                 continue;
             }
             // ignore packet if size is incorrect

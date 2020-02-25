@@ -15,7 +15,6 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 #make VERBOSE=1
 make -j$CORES
 mv udp_receiver ../dist
-mv udp_receiver2 ../dist
 
 cd ..
 rm -rf build
@@ -25,10 +24,5 @@ if [ ! -f dist/udp_receiver ]; then
     exit 1
 fi
 
-if [ ! -f dist/udp_receiver2 ]; then
-    echo "Failed to build udp_receiver2"
-    exit 1
-fi
-
-echo "Successfully built: udp_receiver udp_receiver2"
+echo "Successfully built: udp_receiver"
 exit 0

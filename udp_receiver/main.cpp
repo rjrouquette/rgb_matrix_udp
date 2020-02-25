@@ -114,12 +114,12 @@ int main(int argc, char **argv) {
     // display ethernet address
     matrix->clearFrame();
     auto ethAddrInt = ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr);
-    auto x = matrix->getWidth() - 64;
+    auto x = matrix->getWidth() - 90;
     for(int i = 0; i < 4; i++) {
         auto octet = ethAddrInt >> ((3u - i) * 8u);
         unsigned pow = 100;
-        for(int j = 0; j < 2; j++) {
-            auto digit = (octet / pow) / 10;
+        for(int j = 0; j < 3; j++) {
+            auto digit = (octet / pow) % 10;
             pow /= 10;
 
             matrix->drawHex(x, 0, digit, 0x00ffffu, 0x000000u);

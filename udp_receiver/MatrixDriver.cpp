@@ -324,20 +324,6 @@ void MatrixDriver::setPixels(unsigned &x, unsigned &y, uint8_t *rgb, size_t pixe
     }
 }
 
-void MatrixDriver::blitFrame() {
-    //fb_var_screeninfo temp = vinfo;
-    //temp.yoffset = (currOffset + 1) * vinfo.yres;
-    //temp.xoffset = 0;
-
-    //if(ioctl(fbfd, FBIOPAN_DISPLAY, &temp) != 0)
-    //    die("failed to pan frame buffer: %s", strerror(errno));
-
-    //if(ioctl(fbfd, FBIO_WAITFORVSYNC, nullptr) != 0)
-        //die("failed to wait for vsync: %s", strerror(errno));
-
-    memcpy(frameRaw, currFrame, frameSize * sizeof(uint32_t));
-}
-
 void* MatrixDriver::doRefresh(void *obj) {
     // set thread name
     pthread_setname_np(pthread_self(), "dpi_out");
@@ -354,12 +340,13 @@ void* MatrixDriver::doRefresh(void *obj) {
 
     // do gpio output
     auto &ctx = *(MatrixDriver *)obj;
-    pthread_mutex_lock(&ctx.mutexBuffer);
     while(ctx.isRunning) {
-        pthread_cond_wait(&ctx.condBuffer, &ctx.mutexBuffer);
-        ctx.blitFrame();
+        // blit frame data
+        pthread_mutex_lock(&ctx.mutexBuffer);
+        memcpy(ctx.frameRaw, ctx.currFrame, ctx.frameSize * sizeof(uint32_t));
+        pthread_mutex_unlock(&ctx.mutexBuffer);
+        usleep(1000);
     }
-    pthread_mutex_unlock(&ctx.mutexBuffer);
 
     return nullptr;
 }

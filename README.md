@@ -1,6 +1,4 @@
 # RGB Matrix Panel Driver using Raspberry Pi
-Uses UDP protocol and a Raspberry Pi with Adafruit RGB Matrix Hat to drive RGB Panels
+Uses UDP protocol and a custom adapter board to drive RGB Panels.  The custom driver board eliminates flickering under high CPU load.
 
 This project makes use of https://github.com/hzeller/rpi-rgb-led-matrix
-
-Currently devloping a custom driver board for RGB matrix panels to eliminate flickering.

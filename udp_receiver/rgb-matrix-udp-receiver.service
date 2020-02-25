@@ -1,7 +1,9 @@
 [Unit]
 Description=RGB Matrix UDP Receiver
-Wants=network-online.target
+Requires=network-online.target
 After=network-online.target
+Requires=getty@tty1.service
+After=getty@tty1.service
 
 [Service]
 Type=simple

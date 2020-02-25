@@ -12,23 +12,22 @@
 
 class MatrixDriver {
 public:
-    enum RowEncoding {
+    enum RowFormat {
         HUB75,          // standard HUB75 4-bit row address
         HUB75E,         // extended HUB75 5-bit row address
         QIANGLI_Q3F32   // shift register row selection
     };
 
-    explicit MatrixDriver(RowEncoding encoding);
+    static MatrixDriver * createInstance(unsigned pwmBits, RowFormat rowFormat);
     ~MatrixDriver();
 
     void flipBuffer();
     void clearFrame();
 
-    void setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8_t b);
-    void setPixel(int panel, int x, int y, uint8_t *rgb);
-    void setPixels(int &panel, int &x, int &y, uint8_t *rgb, size_t pixelCount);
-    void drawHex(int panel, int xoff, int yoff, uint8_t hexValue, uint32_t rgbFore, uint32_t rgbBack);
-    void enumeratePanels();
+    void setPixel(unsigned x, unsigned y, uint8_t r, uint8_t g, uint8_t b);
+    void setPixel(unsigned x, unsigned y, uint8_t *rgb);
+    void setPixels(unsigned &x, unsigned &y, uint8_t *rgb, size_t pixelCount);
+    void drawHex(unsigned xoff, unsigned yoff, uint8_t hexValue, uint32_t rgbFore, uint32_t rgbBack);
 
     typedef uint16_t pwm_lut[256];
     pwm_lut& getPwmMapping() { return pwmMapping; }
@@ -42,11 +41,18 @@ public:
     static void initGpio(PeripheralBase peripheralBase);
 
 private:
-    const RowEncoding rowEncoding;
-    const unsigned panelRows, panelCols, scanRowCnt, pwmBits, pwmRows;
-    size_t rowBlock, pwmBlock;
+    MatrixDriver(
+            unsigned scanRowCnt,
+            unsigned pwmRows,
+            const unsigned *mapPwmBit,
+            size_t rowBlock,
+            size_t pwmBlock
+    );
+
+    const unsigned matrixWidth, matrixHeight, scanRowCnt, pwmRows, *mapPwmBit;
+    const size_t rowBlock, pwmBlock;
     uint8_t currOffset;
-    bool isRunning;
+    bool isRunning, freeFrame;
 
     size_t frameSize;
     uint8_t *frameRaw;
@@ -60,18 +66,21 @@ private:
     pwm_lut pwmMapping;
 
     // frame buffer
+    int ttyfd;
     int fbfd;
     fb_fix_screeninfo finfo;
     fb_var_screeninfo vinfo;
 
-    static unsigned mangleRowBits(unsigned rowCode);
-    void setHeaderRowCode(uint32_t *header, unsigned srow) const;
-    static void setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth);
-
+    void start();
+    void stop();
     void blitFrame();
     static void* doRefresh(void *obj);
 
     static void die(const char *format, ...) __attribute__ ((__format__ (__printf__, 1, 2)));
+
+public:
+    unsigned getWidth() { return matrixWidth; }
+    unsigned getHeight() { return matrixHeight; }
 };
 
 void createPwmLutCie1931(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);

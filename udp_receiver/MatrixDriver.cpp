@@ -25,22 +25,13 @@
 #define DEV_FB ("/dev/fb0")
 #define DEV_TTY ("/dev/tty1")
 
-#define FB_WIDTH (1632)
-#define FB_HEIGHT (241)
 #define FB_DEPTH (32)
-
-#define PANEL_ROWS (32)
-#define PANEL_COLS (64)
-#define PWM_BITS (11)
-#define PWM_ROWS (15)
-
 #define HEADER_OFFSET (2)
 #define ROW_PADDING (32)
-#define PANEL_STRING_LENGTH (25)
 
 // xmega to panel rgb bit mapping
 // bit offsets are in octal notation
-uint8_t mapRGB[8][3] = {
+static const uint8_t mapRGB[8][3] = {
 //       RED  GRN  BLU
         {027, 015, 016}, // p0r0 -> r7, p0g0 -> g5, p0b0 -> g6
         {013, 000, 012}, // p0r1 -> g3, p0g1 -> b0, p0b1 -> g2
@@ -52,46 +43,57 @@ uint8_t mapRGB[8][3] = {
         {010, 001, 002}, // p3r1 -> g0, p3g1 -> b1, p3b1 -> b2
 };
 
-unsigned mapPulseWidth[PWM_ROWS] = {
-        0x0001u, 0x0002u, 0x0004u, 0x0008u,
-        0x0010u, 0x0020u, 0x0040u, 0x0080u,
-        0x0100u, 0x0100u, 0x0100u, 0x0100u,
-        0x0100u, 0x0100u, 0x0100u
+// number of scan rows for each panel type
+static const unsigned mapPanelScanRows[3] = {
+        16,
+        32,
+        32
 };
 
-unsigned mapPwmBit[PWM_ROWS] = {
-         0,  1,  2,  3,
-         4,  5,  6,  7,
-         8,  9,  9, 10,
-        10, 10, 10
-};
+static unsigned mangleRowBits(unsigned rowCode);
+static void setHeaderRowCode(uint32_t *header, unsigned srow, unsigned pwmRows, RowEncoding::Encoder encoder);
+static void setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth);
+static bool createPwmMap(unsigned pwmBits, unsigned pwmRows, unsigned *&mapPulseWidth, unsigned *&mapPwmBit);
 
-MatrixDriver::MatrixDriver(RowEncoding encoding) :
-        rowEncoding(encoding),
-        panelRows(PANEL_ROWS), panelCols(PANEL_COLS), scanRowCnt(PANEL_ROWS / 2), pwmBits(PWM_BITS), pwmRows(PWM_ROWS),
-        threadOutput{}, mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER), pwmMapping{},
-        finfo{}, vinfo{}
-{
+MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowFormat) {
+    unsigned *mapPulseWidth = nullptr, *mapPwmBit = nullptr;
+    fb_fix_screeninfo finfo = {};
+    fb_var_screeninfo vinfo = {};
+
+    // validate pwm bits
+    if(pwmBits > 16)
+        die("invalid number of pwm bits: %d > 16", pwmBits);
+
+    // set tty to graphics mode
     auto ttyfd = open(DEV_TTY, O_RDWR);
     if(ttyfd < 0)
         die("failed to open tty device: %s", DEV_TTY);
     if(ioctl(ttyfd, KDSETMODE, KD_GRAPHICS) != 0)
         die("failed to set %s to graphics mode: %s", DEV_TTY, strerror(errno));
 
-    fbfd = open(DEV_FB, O_RDWR);
+    // access raw framebuffer device
+    auto fbfd = open(DEV_FB, O_RDWR);
     if(fbfd < 0)
         die("failed to open fb device: %s", DEV_FB);
 
     if(ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) != 0)
         die("failed to get variable screen info: %s",strerror(errno));
 
-    // abort if framebuffer is not configured correctly
-    if(vinfo.xres != FB_WIDTH)
-        die("framebuffer width is unexpected: %d != %d", vinfo.xres, FB_WIDTH);
-    if(vinfo.yres != FB_HEIGHT)
-        die("framebuffer height is unexpected: %d != %d", vinfo.yres, FB_HEIGHT);
     if(vinfo.bits_per_pixel != FB_DEPTH)
         die("framebuffer depth is unexpected: %d != %d", vinfo.bits_per_pixel, FB_DEPTH);
+    if(vinfo.xres < ROW_PADDING)
+        die("framebuffer width is unexpected: %d < %d", vinfo.xres, ROW_PADDING);
+
+    // validate row count
+    const auto scanRowCnt = mapPanelScanRows[rowFormat];
+    unsigned rows = vinfo.yres - 1;
+    auto pwmRows = rows / scanRowCnt;
+    auto yfit = pwmRows * scanRowCnt;
+    if(vinfo.yres != yfit)
+        die("framebuffer height is invalid: %d != %d", vinfo.yres, yfit);
+
+    if(!createPwmMap(pwmBits, pwmRows, mapPulseWidth, mapPwmBit))
+        die("pwm row count is invalid: %d", pwmRows);
 
     // configure virtual framebuffer for flipping
     vinfo.xoffset = 0;
@@ -105,45 +107,53 @@ MatrixDriver::MatrixDriver(RowEncoding encoding) :
         die("failed to get fixed screen info: %s",strerror(errno));
 
     // get pointer to raw frame buffer data
-    frameRaw = (uint8_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
+    auto frameRaw = (uint8_t *) mmap(nullptr, finfo.smem_len, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
     if(frameRaw == MAP_FAILED)
         die("failed to map raw screen buffer data: %s",strerror(errno));
 
     // determine block sizes
-    rowBlock = finfo.line_length / sizeof(uint32_t);
-    pwmBlock = rowBlock * PWM_ROWS;
+    const size_t rowBlock = finfo.line_length / sizeof(uint32_t);
+    const size_t pwmBlock = rowBlock * pwmRows;
     if(rowBlock * sizeof(uint32_t) != finfo.line_length)
         die("row size is not integer multiple of uint32_t: %d", finfo.line_length);
 
+    auto driver = new MatrixDriver(
+            scanRowCnt,
+            pwmRows,
+            mapPwmBit,
+            rowBlock,
+            pwmBlock
+    );
+
     // configure frame pointers
-    currOffset = 0;
-    frameSize = vinfo.yres * rowBlock;
+    driver->frameSize = vinfo.yres * rowBlock;
     //currFrame = ((uint32_t *) frameRaw) + frameSize;
     //nextFrame = ((uint32_t *) frameRaw) + frameSize * 2;
-    currFrame = new uint32_t[frameSize];
-    nextFrame = new uint32_t[frameSize];
+    driver->currFrame = new uint32_t[driver->frameSize];
+    driver->nextFrame = new uint32_t[driver->frameSize];
 
-    frameHeader = new uint32_t[(PWM_ROWS * scanRowCnt + 1) * ROW_PADDING];
+    driver->frameHeader = new uint32_t[(pwmRows * scanRowCnt + 1) * ROW_PADDING];
     // clear header cells
-    for(size_t i = 0; i < (PWM_ROWS * scanRowCnt + 1) * ROW_PADDING; i++) {
-        frameHeader[i] = 0xff000000u;
+    for(size_t i = 0; i < (pwmRows * scanRowCnt + 1) * ROW_PADDING; i++) {
+        driver->frameHeader[i] = 0xff000000u;
     }
 
     // set scan row headers
-    unsigned pwFact = (FB_WIDTH - ROW_PADDING) / 256;
+    auto encoder = RowEncoding::encoder[rowFormat];
+    unsigned pwFact = driver->getWidth() / mapPulseWidth[pwmRows-1];
+    auto header = driver->frameHeader + ROW_PADDING + HEADER_OFFSET;
     unsigned srow = 0;
-    auto header = frameHeader + ROW_PADDING + HEADER_OFFSET;
-    setHeaderRowCode(header, srow++);
+    setHeaderRowCode(header, srow++, pwmRows, encoder);
     for(unsigned r = 0; r < scanRowCnt; r++) {
         for (unsigned p = 0; p < pwmRows; p++) {
-            setHeaderRowCode(header, srow++);
+            setHeaderRowCode(header, srow++, pwmRows, encoder);
             setHeaderPulseWidth(header + 4, mapPulseWidth[p] * pwFact);
             header += ROW_PADDING;
         }
     }
 
     printf("pixels: %d\n", vinfo.yres * vinfo.xres);
-    printf("frame size: %ld\n", frameSize);
+    printf("frame size: %ld\n", driver->frameSize);
     printf("left margin: %d\n", vinfo.left_margin);
     printf("right margin: %d\n", vinfo.right_margin);
     printf("x offset: %d\n", vinfo.xoffset);
@@ -151,30 +161,67 @@ MatrixDriver::MatrixDriver(RowEncoding encoding) :
     printf("row block: %ld\n", rowBlock);
     printf("pwm block: %ld\n", pwmBlock);
 
-    // display off by default
-    bzero(pwmMapping, sizeof(pwmMapping));
-
     // clear frame buffers
-    clearFrame();
-    flipBuffer();
-    clearFrame();
-    flipBuffer();
+    driver->clearFrame();
+    driver->flipBuffer();
+    driver->clearFrame();
+    driver->flipBuffer();
 
     // start output thread
+    driver->start();
+    return driver;
+}
+
+MatrixDriver::MatrixDriver(
+        unsigned _scanRowCnt,
+        unsigned _pwmRows,
+        const unsigned *_mapPwmBit,
+        size_t _rowBlock,
+        size_t _pwmBlock
+) :
+    matrixWidth(_rowBlock - ROW_PADDING), matrixHeight(_scanRowCnt * 8), scanRowCnt(_scanRowCnt), pwmRows(_pwmRows),
+    mapPwmBit(_mapPwmBit), rowBlock(_rowBlock), pwmBlock(_pwmBlock), threadOutput{},
+    mutexBuffer(PTHREAD_MUTEX_INITIALIZER), condBuffer(PTHREAD_COND_INITIALIZER), pwmMapping{}, finfo{}, vinfo{}
+{
+    freeFrame = false;
+    isRunning = false;
+    ttyfd = -1;
+    fbfd = -1;
+    currOffset = 0;
+    frameSize = 0;
+    frameRaw = nullptr;
+    frameHeader = nullptr;
+    currFrame = nullptr;
+    nextFrame = nullptr;
+
+    // display off by default
+    bzero(pwmMapping, sizeof(pwmMapping));
+}
+
+MatrixDriver::~MatrixDriver() {
+    stop();
+
+    delete[] mapPwmBit;
+    delete[] frameHeader;
+    if(freeFrame) {
+        delete[] currFrame;
+        delete[] nextFrame;
+    }
+    munmap(frameRaw, finfo.smem_len);
+    close(fbfd);
+    close(ttyfd);
+}
+
+void MatrixDriver::start() {
     isRunning = true;
     pthread_create(&threadOutput, nullptr, doRefresh, this);
 }
 
-MatrixDriver::~MatrixDriver() {
+void MatrixDriver::stop() {
     clearFrame();
-    flipBuffer();
-
-    // stop output thread
     isRunning = false;
+    flipBuffer();
     pthread_join(threadOutput, nullptr);
-
-    delete[] currFrame;
-    delete[] nextFrame;
 }
 
 void MatrixDriver::flipBuffer() {
@@ -199,7 +246,7 @@ void MatrixDriver::clearFrame() {
     }
 
     // set row headers
-    size_t rcnt = (PWM_ROWS * scanRowCnt) + 1;
+    size_t rcnt = (pwmRows * scanRowCnt) + 1;
     auto header = frameHeader;
     auto row = nextFrame;
     for(size_t r = 0; r < rcnt; r++) {
@@ -209,16 +256,13 @@ void MatrixDriver::clearFrame() {
     }
 }
 
-void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8_t b) {
-    if(panel < 0 || panel >= 100) return;
-    if(x < 0 || y < 0) return;
-    if(x >= panelCols || y >= panelRows) return;
+void MatrixDriver::setPixel(unsigned x, unsigned y, uint8_t r, uint8_t g, uint8_t b) {
+    if(x >= matrixWidth || y >= matrixHeight) return;
 
     // compute pixel offset
     const auto yoff = y % scanRowCnt;
-    const auto xoff = x + ((panel % PANEL_STRING_LENGTH) * panelCols);
 
-    const auto rgbOff = ((panel / PANEL_STRING_LENGTH) * 2) + (y / scanRowCnt);
+    const auto rgbOff = y / scanRowCnt;
     const uint32_t maskRedHi = 1u << mapRGB[rgbOff][0];
     const uint32_t maskGrnHi = 1u << mapRGB[rgbOff][1];
     const uint32_t maskBluHi = 1u << mapRGB[rgbOff][2];
@@ -233,8 +277,9 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     unsigned B = pwmMapping[b];
 
     // set pixel bits
-    auto pixel = nextFrame + (yoff * pwmBlock) + ROW_PADDING + xoff;
-    for(auto bit : mapPwmBit) {
+    auto pixel = nextFrame + (yoff * pwmBlock) + ROW_PADDING + x;
+    for(unsigned pwmRow = 0; pwmRow < pwmRows; pwmRow++) {
+        const auto bit = mapPwmBit[pwmRow];
         auto &p = *pixel;
         pixel += rowBlock;
 
@@ -255,20 +300,17 @@ void MatrixDriver::setPixel(int panel, int x, int y, uint8_t r, uint8_t g, uint8
     }
 }
 
-void MatrixDriver::setPixel(int panel, int x, int y, uint8_t *rgb) {
-    setPixel(panel, x, y, rgb[0], rgb[1], rgb[2]);
+void MatrixDriver::setPixel(unsigned x, unsigned y, uint8_t *rgb) {
+    setPixel(x, y, rgb[0], rgb[1], rgb[2]);
 }
 
-void MatrixDriver::setPixels(int &panel, int &x, int &y, uint8_t *rgb, size_t pixelCount) {
+void MatrixDriver::setPixels(unsigned &x, unsigned &y, uint8_t *rgb, size_t pixelCount) {
     for(size_t i = 0; i < pixelCount; i++) {
-        setPixel(panel, x, y, rgb);
+        setPixel(x, y, rgb);
         rgb += 3;
-        if(++x >= panelCols) {
+        if(++x >= matrixWidth) {
             x = 0;
-            if(++y >= panelRows) {
-                y = 0;
-                ++panel;
-            }
+            ++y;
         }
     }
 }
@@ -483,26 +525,17 @@ char hexChars[16][7][6] = {
         }
 };
 
-void MatrixDriver::drawHex(int panel, int xoff, int yoff, uint8_t hexValue, uint32_t fore, uint32_t back) {
+void MatrixDriver::drawHex(unsigned xoff, unsigned yoff, uint8_t hexValue, uint32_t fore, uint32_t back) {
     auto pattern = hexChars[hexValue & 0xfu];
 
     for(int y = 0; y < 7; y++) {
         for(int x = 0; x < 5; x++) {
             if (pattern[y][x] == '#')
-                setPixel(panel, x + xoff, y + yoff, (uint8_t *) &fore);
+                setPixel(x + xoff, y + yoff, (uint8_t *) &fore);
             else
-                setPixel(panel, x + xoff, y + yoff, (uint8_t *) &back);
+                setPixel(x + xoff, y + yoff, (uint8_t *) &back);
         }
     }
-}
-
-void MatrixDriver::enumeratePanels() {
-    clearFrame();
-    for(uint8_t p = 0; p < 100; p++) {
-        drawHex(p, 0, 0, p >> 4u, 0xffffff, 0);
-        drawHex(p, 6, 0, p & 0xfu, 0xffffff, 0);
-    }
-    flipBuffer();
 }
 
 #define INP_GPIO(g) *(gpio+((g)/10u)) &= ~(7u<<(((g)%10u)*3u))
@@ -539,22 +572,74 @@ void MatrixDriver::initGpio(PeripheralBase peripheralBase) {
     munmap(gpio, REGISTER_BLOCK_SIZE);
 }
 
-unsigned MatrixDriver::mangleRowBits(unsigned rowCode) {
+static unsigned mangleRowBits(unsigned rowCode) {
     return ((rowCode & 0xfu) << 1u) | ((rowCode >> 4u) & 0x1u);
 }
 
-void MatrixDriver::setHeaderRowCode(uint32_t *header, const unsigned srow) const {
-    auto encoder = ::RowEncoding::encoder[rowEncoding];
-
+static void setHeaderRowCode(uint32_t *header, unsigned srow, unsigned pwmRows, RowEncoding::Encoder encoder) {
     header[0] |= mangleRowBits((*encoder)(pwmRows, srow, 0)) << 19u;
     header[1] = header[0];
     header[2] |= mangleRowBits((*encoder)(pwmRows, srow, 1)) << 19u;
     header[3] = header[2];
 }
 
-void MatrixDriver::setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth) {
+static void setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth) {
     header[0] |= (pulseWidth & 0xffu) << 16u;
     header[1] = header[0];
     header[2] |= (pulseWidth >> 8u) << 16u;
     header[3] = header[2];
+}
+
+// calculate multi-row pwm bit spreading
+static int getPwmSpread(unsigned pwmBits, unsigned pwmRows) {
+    const unsigned limit = pwmRows - pwmBits + 1;
+    unsigned n, z = 0;
+    for(n = 0; n < 32; n++) {
+        z = (1u << n) - n;
+        if(z >= limit) break;
+    }
+    if(z == limit)
+        return (int) n;
+    else
+        return -1;
+}
+
+// create pwm row mappings
+static bool createPwmMap(unsigned pwmBits, unsigned pwmRows, unsigned *&mapPulseWidth, unsigned *&mapPwmBit) {
+    mapPulseWidth = nullptr;
+    mapPwmBit = nullptr;
+
+    // quick sanity check
+    if(pwmRows < pwmBits) return false;
+
+    auto n = getPwmSpread(pwmBits, pwmRows);
+    if(n < 0) return false;
+
+    mapPwmBit = new unsigned[pwmRows];
+    mapPulseWidth = new unsigned[pwmRows];
+
+    // ordinary pwm bits
+    for(unsigned i = 0; i < pwmBits - n; i++) {
+        mapPwmBit[i] = i;
+        mapPulseWidth[i] = 1u << i;
+    }
+
+    // multi-row pwm bits
+    auto b = mapPwmBit + pwmBits - n;
+    auto w = mapPulseWidth + pwmBits - n;
+    unsigned width = 1u << (pwmBits - n);
+    for(int i = 0; i < n; i++) {
+        auto cnt = 1u << (unsigned)i;
+        for(unsigned j = 0; j < cnt; j++) {
+            *(b++) = (unsigned) i;
+            *(w++) = width;
+        }
+    }
+
+    for(unsigned i = 0; i < pwmRows; i++) {
+        fprintf(stdout, "%d: %d %d\n", i, mapPwmBit[i], mapPulseWidth[i]);
+    }
+    fflush(stdout);
+
+    return true;
 }

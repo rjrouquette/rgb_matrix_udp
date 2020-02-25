@@ -15,7 +15,7 @@
 
 #define UNUSED __attribute__((unused))
 
-#define PANEL_COUNT (16)
+#define PANEL_COUNT (48)
 #define PANEL_WIDTH (64)
 #define PANEL_HEIGHT (64)
 #define PWM_BITS (11)
@@ -27,7 +27,7 @@
 #define FRAME_MASK (0x0fu)      // 16 frame circular buffer
 #define SUBFRAME_MASK (0xffu)   // 256 sub-frames per frame
 #define SUBFRAME_PIXELS (400)   // 400 pixels per sub-frame
-#define SUBFRAME_MATRIX ((PANEL_COUNT * PANEL_WIDTH * PANEL_WIDTH + SUBFRAME_PIXELS - 1) / SUBFRAME_PIXELS)
+#define SUBFRAME_MATRIX ((PANEL_COUNT * PANEL_WIDTH * PANEL_HEIGHT + SUBFRAME_PIXELS - 1) / SUBFRAME_PIXELS)
 
 bool isRunning = true;
 int socketUdp = -1;
@@ -107,34 +107,35 @@ int main(int argc, char **argv) {
 
     // configure rgb matrix panel driver
     MatrixDriver::initGpio(MatrixDriver::gpio_rpi3);
-    matrix = new MatrixDriver(MatrixDriver::QIANGLI_Q3F32);
+    matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::QIANGLI_Q3F32);
     createPwmLutLinear(PWM_BITS, brightness, matrix->getPwmMapping());
     log("instantiated matrix driver");
 
     usleep(250000);
 
-    int r = 0;
+    unsigned r = 0;
     for(;;) {
         //matrix->enumeratePanels();
         matrix->clearFrame();
-        for (int p = 0; p < 100; p++) {
-            for (int c = 0; c < 64; c++) {
+        for (unsigned p = 0; p < 48; p++) {
+            auto xoff = (p % 24) * 64;
+            auto yoff = (p / 24) * 64;
+            for (unsigned c = 0; c < 64; c++) {
                 if(r > 63) {
-                    matrix->setPixel(p, c, r - 64, 0xffu, 0xffu, 0xffu);
+                    matrix->setPixel(xoff + c, yoff + r - 64, 0xffu, 0xffu, 0xffu);
                 } else {
-                    matrix->setPixel(p, r, c, 0xffu, 0xffu, 0xffu);
+                    matrix->setPixel(xoff + r, yoff + c, 0xffu, 0xffu, 0xffu);
                 }
-//                for(int r = 0; r < 32; r++) {
+//                for(unsigned r = 0; r < 32; r++) {
 //                    matrix->setPixel(p, r % 64, c, 0xffu, 0xffu, 0xffu);
 //                }
             }
         }
         matrix->flipBuffer();
-        r = (r+1)%96;
+        r = (r+1)%128;
         usleep(50000);
     }
 
-    matrix->enumeratePanels();
     sleep(3);
     pause();
 
@@ -180,9 +181,9 @@ int main(int argc, char **argv) {
             }
 
             // concatenate packets
-            int p = 0, x = 0, y = 0;
+            unsigned x = 0, y = 0;
             for(size_t sf = 0; sf <= SUBFRAME_MATRIX; sf++) {
-                matrix->setPixels(p, x, y, frame[sf].pixelData, SUBFRAME_PIXELS);
+                matrix->setPixels(x, y, frame[sf].pixelData, SUBFRAME_PIXELS);
             }
             frame[0].frameId = 0;
 

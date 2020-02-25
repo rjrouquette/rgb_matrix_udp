@@ -1,0 +1,34 @@
+# RGB LED matrix driver using DPI
+gpio=0-27=a2
+dtparam=spi=off
+dtparam=i2c_arm=off
+enable_uart=0
+enable_dpi_lcd=1
+display_default_lcd=1
+
+# use DPI 24-bit RGB output
+# standard polarity on timing signals, invert pixel clock and data enable
+dpi_output_format=0x40217
+
+# 4 chains with twelve 64x64 panels each
+# use custom DPI mode
+# 800 x 481 x 24
+# 800 = 32 header + 768 pixels per row
+# 481 = 32 scan rows x 15 pwm planes + 1 dead scan
+# 24-bit depth = 4 panels
+dpi_group=2
+dpi_mode=87
+dpi_timings=800 0 0 8 0 481 0 0 1 0 0 0 0 82 0 32000000 3
+
+# linux framebuffer
+framebuffer_width=800
+framebuffer_height=481
+framebuffer_depth=32
+framebuffer_ignore_alpha=1
+overscan_left=0
+overscan_right=0
+overscan_top=0
+overscan_bottom=0
+
+# memory trimming
+gpu_mem=64

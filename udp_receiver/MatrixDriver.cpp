@@ -106,6 +106,12 @@ MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowForma
     if(ioctl(fbfd, FBIOGET_FSCREENINFO, &finfo) != 0)
         die("failed to get fixed screen info: %s",strerror(errno));
 
+    if(ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo) != 0)
+        die("failed to set variable screen info: %s",strerror(errno));
+
+    if(vinfo.yres_virtual < vinfo.yres * 3)
+        die("failed to set virutal screen size: %s",strerror(errno));
+
     // determine block sizes
     const size_t rowBlock = finfo.line_length / sizeof(uint32_t);
     const size_t pwmBlock = rowBlock * pwmRows;
@@ -326,8 +332,8 @@ void MatrixDriver::blitFrame() {
     //if(ioctl(fbfd, FBIOPAN_DISPLAY, &temp) != 0)
     //    die("failed to pan frame buffer: %s", strerror(errno));
 
-    if(ioctl(fbfd, FBIO_WAITFORVSYNC, nullptr) != 0)
-        die("failed to wait for vsync: %s", strerror(errno));
+    //if(ioctl(fbfd, FBIO_WAITFORVSYNC, nullptr) != 0)
+        //die("failed to wait for vsync: %s", strerror(errno));
 
     memcpy(frameRaw, currFrame, frameSize * sizeof(uint32_t));
 }

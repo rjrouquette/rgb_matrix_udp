@@ -82,14 +82,12 @@ int main(int argc, char **argv) {
 
     // get eth0 address
     char ethAddr[32];
-    char ethAddrHex[16];
     struct ifreq ifr = {};
     bzero(&ifr, sizeof(ifr));
     ifr.ifr_addr.sa_family = AF_INET;
     strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);
     ioctl(socketUdp, SIOCGIFADDR, &ifr);
     strcpy(ethAddr, inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
-    sprintf(ethAddrHex, "%08X", ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr));
     log("eth0 ip: %s", ethAddr);
 
     if (bind(socketUdp, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
@@ -112,28 +110,20 @@ int main(int argc, char **argv) {
     log("instantiated matrix driver");
 
     usleep(250000);
+    // display ethernet address
+    auto ethAddrInt = ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr);
+    int x = 0;
+    for(int i = 0; i < 4; i++) {
+        auto octet = ethAddrInt >> ((3u - i) * 8u);
+        unsigned pow = 100;
+        for(int j = 0; j < 2; j++) {
+            auto digit = (octet / pow) / 10;
+            pow /= 10;
 
-    unsigned r = 0;
-    for(;;) {
-        //matrix->enumeratePanels();
-        matrix->clearFrame();
-        for (unsigned p = 0; p < 48; p++) {
-            auto xoff = (p % 24) * 64;
-            auto yoff = (p / 24) * 64;
-            for (unsigned c = 0; c < 64; c++) {
-                if(r > 63) {
-                    matrix->setPixel(xoff + c, yoff + r - 64, 0xffu, 0xffu, 0xffu);
-                } else {
-                    matrix->setPixel(xoff + r, yoff + c, 0xffu, 0xffu, 0xffu);
-                }
-//                for(unsigned r = 0; r < 32; r++) {
-//                    matrix->setPixel(p, r % 64, c, 0xffu, 0xffu, 0xffu);
-//                }
-            }
+            matrix->drawHex(x, 0, digit, 0x00ffffu, 0x000000u);
+            x += 6;
         }
-        matrix->flipBuffer();
-        r = (r+1)%128;
-        usleep(50000);
+        x += 6;
     }
 
     sleep(3);

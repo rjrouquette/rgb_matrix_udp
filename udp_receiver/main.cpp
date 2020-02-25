@@ -108,9 +108,11 @@ int main(int argc, char **argv) {
     matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::QIANGLI_Q3F32);
     createPwmLutLinear(PWM_BITS, brightness, matrix->getPwmMapping());
     log("instantiated matrix driver");
-
     usleep(250000);
+    matrix->flipBuffer();
+
     // display ethernet address
+    matrix->clearFrame();
     auto ethAddrInt = ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr);
     int x = 0;
     for(int i = 0; i < 4; i++) {
@@ -125,6 +127,7 @@ int main(int argc, char **argv) {
         }
         x += 6;
     }
+    matrix->flipBuffer();
 
     sleep(3);
     pause();

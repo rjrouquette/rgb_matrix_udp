@@ -111,7 +111,8 @@ int main(int argc, char **argv) {
     width = matrix->getWidth();
     height = matrix->getHeight();
     initPacketBuffer(width * height);
-    log("each frame requries %d subframes", matrixSubframes);
+    log("%d subframes per frame", matrixSubframes);
+    log("frame packet buffer is %ld bytes", (FRAME_MASK + 1) * (maskSubframes + 1) * sizeof(frame_packet));
 
     // start udp rx thread
     log("start udp rx thread");

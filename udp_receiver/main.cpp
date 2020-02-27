@@ -287,7 +287,7 @@ void initPacketBuffer(unsigned framePixels) {
     }
 
     if(madvise(packetBuffer, packetBufferSize, MADV_HUGEPAGE) != 0) {
-        log("transparent huge pages not supported");
+        log("transparent huge pages are not available");
     }
 
     bzero(packetBuffer, packetBufferSize);

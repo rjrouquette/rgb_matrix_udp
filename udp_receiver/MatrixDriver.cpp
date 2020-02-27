@@ -69,11 +69,11 @@ static const unsigned mapPanelScanRows[3] = {
 static void setHeaderRowCode(uint32_t *header, unsigned srow, unsigned pwmRows, RowEncoding::Encoder encoder);
 static void setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth);
 static void setHeaderByte(uint32_t &headerCell, unsigned byte);
-static bool createPwmMap(unsigned pwmBits, unsigned pwmRows, unsigned *&mapPulseWidth, unsigned *&mapPwmBit);
+static void createPwmMap(unsigned pwmBits, unsigned pwmRows, unsigned *&mapPulseWidth, unsigned *&mapPwmBit);
 
 static void selfTestRGB();
 static void selfTestHeader();
-static void die(const char *format, ...) __attribute__ ((__format__ (__printf__, 1, 2)));
+static void die(const char *format, ...) __attribute__ ((__format__ (__printf__, 1, 2))) __attribute__((noreturn));
 
 MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowFormat) {
     selfTestRGB();
@@ -115,8 +115,8 @@ MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowForma
     if(vinfo.yres != yfit)
         die("framebuffer height is invalid: %d != %d", vinfo.yres, yfit);
 
-    if(!createPwmMap(pwmBits, pwmRows, mapPulseWidth, mapPwmBit))
-        die("pwm row count is invalid: %d", pwmRows);
+    // create pwm mappings
+    createPwmMap(pwmBits, pwmRows, mapPulseWidth, mapPwmBit);
 
     // configure virtual framebuffer for blitting
     vinfo.xoffset = 0;
@@ -580,7 +580,7 @@ static void setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth) {
 }
 
 // calculate multi-row pwm bit spreading
-static int getPwmSpread(unsigned pwmBits, unsigned pwmRows) {
+static unsigned getPwmSpread(unsigned pwmBits, unsigned pwmRows) {
     const unsigned limit = pwmRows - pwmBits + 1;
     unsigned n, z = 0;
     for(n = 0; n < 32; n++) {
@@ -588,27 +588,26 @@ static int getPwmSpread(unsigned pwmBits, unsigned pwmRows) {
         if(z >= limit) break;
     }
     if(z == limit)
-        return (int) n;
-    else
-        return -1;
+        return n;
+
+    die("pwmRows could not be aligned with pwmBits: %d, %d, %d, %d", pwmRows, pwmBits, limit, z);
 }
 
 // create pwm row mappings
-static bool createPwmMap(unsigned pwmBits, unsigned pwmRows, unsigned *&mapPulseWidth, unsigned *&mapPwmBit) {
+static void createPwmMap(unsigned pwmBits, unsigned pwmRows, unsigned *&mapPulseWidth, unsigned *&mapPwmBit) {
     mapPulseWidth = nullptr;
     mapPwmBit = nullptr;
 
     // quick sanity check
-    if(pwmRows < pwmBits) return false;
+    if(pwmRows < pwmBits)
+        die("pwmRows is less than pwmBits: %d < %d", pwmRows, pwmBits);
 
-    auto n = getPwmSpread(pwmBits, pwmRows);
-    if(n < 0) return false;
-
+    const auto n = getPwmSpread(pwmBits, pwmRows);
     mapPwmBit = new unsigned[pwmRows];
     mapPulseWidth = new unsigned[pwmRows];
 
     // ordinary pwm bits
-    unsigned ordinaryBits = pwmBits - n;
+    const unsigned ordinaryBits = pwmBits - n;
     for(unsigned i = 0; i < pwmBits - n; i++) {
         mapPwmBit[i] = i;
         mapPulseWidth[i] = 1u << i;
@@ -617,16 +616,14 @@ static bool createPwmMap(unsigned pwmBits, unsigned pwmRows, unsigned *&mapPulse
     // multi-row pwm bits
     auto b = mapPwmBit + ordinaryBits;
     auto w = mapPulseWidth + ordinaryBits;
-    unsigned width = 1u << ordinaryBits;
-    for(int i = 0; i < n; i++) {
+    const unsigned width = 1u << ordinaryBits;
+    for(unsigned i = 0; i < n; i++) {
         auto cnt = 1u << (unsigned)i;
         for(unsigned j = 0; j < cnt; j++) {
-            *(b++) = (unsigned) i + ordinaryBits;
+            *(b++) = i + ordinaryBits;
             *(w++) = width;
         }
     }
-
-    return true;
 }
 
 static void setHeaderByte(uint32_t &headerCell, unsigned byte) {

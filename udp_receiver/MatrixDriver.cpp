@@ -46,23 +46,23 @@ static const uint8_t mapRGB[8][3] = {
         {026, 011, 021}, // p3r1 -> r6, p3g1 -> g1, p3b1 -> r1
 };
 
+// mangle header bits to match board layout
+static const unsigned mapHeaderBits[8] = {
+        027, // D0 -> R7
+        023, // D1 -> R3
+        022, // D2 -> R2
+        024, // D3 -> R4
+        025, // D4 -> R5
+        021, // D5 -> R1
+        026, // D6 -> R6
+        020  // D7 -> R0
+};
+
 // number of scan rows for each panel type
 static const unsigned mapPanelScanRows[3] = {
         16,
         32,
         32
-};
-
-// mangle header bits to match R0-R7
-static const unsigned mapHeaderBits[8] = {
-        7 + 16,
-        3 + 16,
-        2 + 16,
-        4 + 16,
-        5 + 16,
-        1 + 16,
-        6 + 16,
-        0 + 16
 };
 
 static void setHeaderRowCode(uint32_t *header, unsigned srow, unsigned pwmRows, RowEncoding::Encoder encoder);

@@ -29,7 +29,7 @@
 #define HEADER_OFFSET (2)
 #define ROW_PADDING (32)
 
-// xmega to panel rgb bit mapping
+// DPI RGB to panel RGB bit mapping
 // bit offsets are in octal notation
 // 000 -> B0
 // 010 -> G0
@@ -47,15 +47,16 @@ static const uint8_t mapRGB[8][3] = {
 };
 
 // mangle header bits to match board layout
+// see mapRGB above for bit offset interpretation
 static const unsigned mapHeaderBits[8] = {
-        027, // D0 -> R7
-        023, // D1 -> R3
-        022, // D2 -> R2
-        024, // D3 -> R4
-        025, // D4 -> R5
-        021, // D5 -> R1
-        026, // D6 -> R6
-        020  // D7 -> R0
+        027, // PD0 -> R7
+        023, // PD1 -> R3
+        022, // PD2 -> R2
+        024, // PD3 -> R4
+        025, // PD4 -> R5
+        021, // PD5 -> R1
+        026, // PD6 -> R6
+        020  // PD7 -> R0
 };
 
 // number of scan rows for each panel type

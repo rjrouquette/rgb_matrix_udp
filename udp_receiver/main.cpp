@@ -288,7 +288,6 @@ void initPacketBuffer(unsigned framePixels) {
 
     if(madvise(packetBuffer, packetBufferSize, MADV_HUGEPAGE) != 0) {
         log("failed to advise use of huge pages");
-        abort();
     }
 
     bzero(packetBuffer, packetBufferSize);

@@ -85,7 +85,12 @@ int main(int argc, char **argv) {
 
     size_t frameSize = width * height * 3;
     pixelBuffer = mmap(nullptr, frameSize * 2, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if(madvise(pixelBuffer, frameSize * 2, MADV_HUGEPAGE) != 0) ::abort();
+    if(pixelBuffer == MAP_FAILED) {
+        log("failed to allocate pixel buffer");
+        abort();
+    }
+    if(madvise(pixelBuffer, frameSize * 2, MADV_HUGEPAGE) != 0)
+        log("transparent huge pages are not available");
     pixBuffAct = (uint8_t *) pixelBuffer;
     pixBuffNext = pixBuffAct + frameSize;
 

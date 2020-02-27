@@ -98,6 +98,7 @@ int main(int argc, char **argv) {
     matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::QIANGLI_Q3F32);
     createPwmLutLinear(PWM_BITS, brightness, matrix->getPwmMapping());
     log("instantiated matrix driver");
+    log("matrix canvas is %d x %d", matrix->getWidth(), matrix->getHeight());
 
     // initialize packet buffer
     initPacketBuffer(matrix->getWidth() * matrix->getHeight());

@@ -8,7 +8,7 @@
 #include "leds.h"
 #include "matrix.h"
 
-#define HSYNC_PORT PORTE
+#define HSYNC_PORT PORTC
 
 #define META_PORT PORTD
 

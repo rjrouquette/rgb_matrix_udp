@@ -10,12 +10,12 @@ void initGpio() {
     LED_PORT.DIRSET = LED_MASK;
     LED_PORT.PIN2CTRL = 0x07u;
 
-    // configure hsync input (PE1)
-    HSYNC_PORT.DIRCLR = 0x02u;
+    // configure hsync input (PC2)
+    HSYNC_PORT.DIRCLR = 0x04u;
     // rising edge interrupt end event
-    HSYNC_PORT.PIN1CTRL = 0x01u; // rising edge
-    HSYNC_PORT.INT0MASK = 0x02u; // interrupt on pin 1
-    EVSYS.CH0MUX = 0x71u; // event channel 0
+    HSYNC_PORT.PIN2CTRL = 0x01u; // rising edge
+    HSYNC_PORT.INT0MASK = 0x04u; // interrupt on pin 2
+    EVSYS.CH0MUX = 0x6au; // event channel 0
     // enable port interrupt
     HSYNC_PORT.INTCTRL = 0x03u; // port interrupt 0, high level
 
@@ -36,7 +36,6 @@ void initGpio() {
     PWM_TIMER.CCA = 0;       // start with zero width pulse
     PWM_TIMER.CTRLA = 0x01u; // no clock divisor
     PWM_TIMER.CTRLB = 0x13u; // CCA, single slope pwm
-    //PWM_TIMER.CTRLD = 0x89u; // restart on event channel 1
 
     // PWM output (PC0)
     // inverted, disable input sensing

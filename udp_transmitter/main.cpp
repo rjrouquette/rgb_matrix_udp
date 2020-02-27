@@ -89,8 +89,9 @@ int main(int argc, char **argv) {
         log("failed to allocate pixel buffer");
         abort();
     }
-    if(madvise(pixelBuffer, frameSize * 2, MADV_HUGEPAGE) != 0)
+    if(madvise(pixelBuffer, frameSize * 2, MADV_HUGEPAGE) != 0) {
         log("transparent huge pages are not available");
+    }
     pixBuffAct = (uint8_t *) pixelBuffer;
     pixBuffNext = pixBuffAct + frameSize;
 

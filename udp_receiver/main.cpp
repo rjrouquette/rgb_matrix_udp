@@ -26,8 +26,6 @@
 
 bool isRunning = true;
 int socketUdp = -1;
-unsigned width = 0;
-unsigned height = 0;
 
 struct frame_packet {
     uint32_t frameId;
@@ -101,18 +99,18 @@ int main(int argc, char **argv) {
     matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::QIANGLI_Q3F32);
     createPwmLutLinear(PWM_BITS, brightness, matrix->getPwmMapping());
     log("instantiated matrix driver");
+
+    // initialize packet buffer
+    initPacketBuffer(matrix->getWidth() * matrix->getHeight());
+    log("%d subframes per frame", matrixSubframes);
+    log("frame packet buffer is %ld bytes", (FRAME_MASK + 1) * (maskSubframes + 1) * sizeof(frame_packet));
+
     usleep(250000);
     matrix->flipBuffer();
 
     // display ethernet address on panel
     displayAddress(ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr));
     sleep(3);
-
-    width = matrix->getWidth();
-    height = matrix->getHeight();
-    initPacketBuffer(width * height);
-    log("%d subframes per frame", matrixSubframes);
-    log("frame packet buffer is %ld bytes", (FRAME_MASK + 1) * (maskSubframes + 1) * sizeof(frame_packet));
 
     // start udp rx thread
     log("start udp rx thread");

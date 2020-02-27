@@ -1,15 +1,12 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <netinet/in.h>
-#include <net/if.h>
 #include <arpa/inet.h>
-#include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sysexits.h>
 #include <pthread.h>
 #include <csignal>
-#include <cstring>
 #include <sys/time.h>
 #include <json-c/json.h>
 #include <sys/mman.h>
@@ -60,8 +57,8 @@ void sig_quit(UNUSED int sig) { isRunning = false; }
 bool loadConfiguration(const char *fileName);
 void labelPanels();
 void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b);
-void drawHex(int xoff, int yoff, uint8_t value);
-void drawHex2(int xoff, int yoff, uint8_t value);
+void drawHex(int xoff, int yoff, unsigned value);
+void drawHex2(int xoff, int yoff, unsigned value);
 void flipBuffer(uint8_t newBrightness = brightness);
 
 ssize_t readFully(int sockfd, void* buffer, size_t len, size_t block = 65536);
@@ -359,7 +356,7 @@ void setPixel(int x, int y, uint8_t r, uint8_t g, uint8_t b) {
     pixel[2] = b;
 }
 
-void drawHex2(int xoff, int yoff, uint8_t value) {
+void drawHex2(int xoff, int yoff, unsigned value) {
     uint8_t hi = (value >> 4u) & 0xfu;
     uint8_t lo = value & 0xfu;
 
@@ -643,7 +640,7 @@ char hexChars[16][16][11] = {
         }
 };
 
-void drawHex(int xoff, int yoff, uint8_t value) {
+void drawHex(int xoff, int yoff, unsigned value) {
     auto pattern = hexChars[value & 0xfu];
 
     int x = 0;

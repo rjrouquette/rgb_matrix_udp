@@ -8,6 +8,8 @@
 #include <csignal>
 #include <cstring>
 #include <sys/time.h>
+#include <sys/mman.h>
+#include <cstdlib>
 
 #include "logging.h"
 #include "MatrixDriver.h"
@@ -34,6 +36,7 @@ struct frame_packet {
 };
 
 frame_packet *packetBuffer;
+size_t packetBufferSize = 0;
 unsigned matrixSubframes = 0;
 unsigned maskSubframes = 0;
 frame_packet* getPacket(unsigned frame, unsigned subframe);
@@ -183,7 +186,7 @@ int main(int argc, char **argv) {
 
     // Finished. Shut down the RGB matrix.
     delete matrix;
-    delete[] packetBuffer;
+    munmap(packetBuffer, packetBufferSize);
     return 0;
 }
 
@@ -276,9 +279,19 @@ void initPacketBuffer(unsigned framePixels) {
         maskSubframes <<= 1u;
     maskSubframes--;
 
-    auto packetBufferSize = (FRAME_MASK + 1) * (maskSubframes + 1);
-    packetBuffer = new frame_packet[packetBufferSize];
-    bzero(packetBuffer, sizeof(frame_packet) * packetBufferSize);
+    packetBufferSize = (FRAME_MASK + 1) * (maskSubframes + 1) * sizeof(frame_packet);
+    packetBuffer = (frame_packet *) mmap(nullptr, packetBufferSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if(packetBuffer == MAP_FAILED) {
+        log("failed to allocate packet buffer");
+        abort();
+    }
+
+    if(madvise(packetBuffer, packetBufferSize, MADV_HUGEPAGE) != 0) {
+        log("failed to advise use of huge pages");
+        abort();
+    }
+
+    bzero(packetBuffer, packetBufferSize);
 }
 
 frame_packet* getPacket(unsigned frame, unsigned subframe) {

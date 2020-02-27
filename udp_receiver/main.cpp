@@ -15,9 +15,6 @@
 
 #define UNUSED __attribute__((unused))
 
-#define PANEL_COUNT (48)
-#define PANEL_WIDTH (64)
-#define PANEL_HEIGHT (64)
 #define PWM_BITS (11)
 
 #define UDP_PORT (1234)
@@ -25,14 +22,12 @@
 #define RECVMMSG_CNT (64)
 
 #define FRAME_MASK (0x0fu)      // 16 frame circular buffer
-#define SUBFRAME_MASK (0xffu)   // 256 sub-frames per frame
 #define SUBFRAME_PIXELS (400)   // 400 pixels per sub-frame
-#define SUBFRAME_MATRIX ((PANEL_COUNT * PANEL_WIDTH * PANEL_HEIGHT + SUBFRAME_PIXELS - 1) / SUBFRAME_PIXELS)
 
 bool isRunning = true;
 int socketUdp = -1;
-int height = 0;
-int width = 0;
+unsigned width = 0;
+unsigned height = 0;
 
 struct frame_packet {
     uint32_t frameId;
@@ -41,7 +36,11 @@ struct frame_packet {
     uint8_t pixelData[SUBFRAME_PIXELS * 3];
 };
 
-frame_packet packetBuffer[FRAME_MASK + 1][SUBFRAME_MASK + 1];
+frame_packet *packetBuffer;
+unsigned matrixSubframes = 0;
+unsigned maskSubframes = 0;
+frame_packet* getPacket(unsigned frame, unsigned subframe);
+
 pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
 uint8_t brightness = 100;
@@ -54,6 +53,7 @@ long microtime();
 void sig_ignore(UNUSED int sig) { }
 void sig_exit(UNUSED int sig) { isRunning = false; }
 void displayAddress(uint32_t addr);
+void initPacketBuffer(unsigned framePixels);
 
 int main(int argc, char **argv) {
     struct sigaction act = {};
@@ -71,13 +71,6 @@ int main(int argc, char **argv) {
     CPU_ZERO(&cpuset);
     CPU_SET(1, &cpuset);
     pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
-
-    const uint32_t fsize = height * width * 3;
-    const uint32_t fmax = ((fsize + sizeof(frame_packet::pixelData) - 1) / sizeof(frame_packet::pixelData));
-    if(fmax > (SUBFRAME_MASK + 1)) {
-        log("panel dimensions requires too many sub frames: %d x %d -> %d sub frames", height, width, fmax);
-        return EX_CONFIG;
-    }
 
     struct sockaddr_in serv_addr = {};
     bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -103,13 +96,6 @@ int main(int argc, char **argv) {
     }
     log("listening on port %d", UDP_PORT);
 
-    // clear packet buffer
-    bzero(packetBuffer, sizeof(packetBuffer));
-
-    // start udp rx thread
-    log("start udp rx thread");
-    pthread_create(&threadUdpRx, nullptr, doUdpRx, nullptr);
-
     // configure rgb matrix panel driver
     MatrixDriver::initGpio(MatrixDriver::gpio_rpi3);
     matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::QIANGLI_Q3F32);
@@ -122,6 +108,14 @@ int main(int argc, char **argv) {
     displayAddress(ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr));
     sleep(3);
 
+    width = matrix->getWidth();
+    height = matrix->getHeight();
+    initPacketBuffer(width * height);
+
+    // start udp rx thread
+    log("start udp rx thread");
+    pthread_create(&threadUdpRx, nullptr, doUdpRx, nullptr);
+
     log("waiting for frames");
     uint32_t startOffset = 0;
     // main processing loop
@@ -130,14 +124,14 @@ int main(int argc, char **argv) {
         uint64_t now = microtime();
         pthread_rwlock_wrlock(&rwlock);
         for(uint32_t f = 0; f <= FRAME_MASK; f++) {
-            auto frame = packetBuffer[(f + startOffset) & FRAME_MASK];
+            auto frame = getPacket(f + startOffset, 0);
 
             // look for pending frames
             if(frame[0].frameId == 0) continue;
 
             // verify that frame is complete
             uint32_t fid = frame[0].frameId;
-            for(uint32_t i = 1; i < fmax; i++) {
+            for(uint32_t i = 1; i < matrixSubframes; i++) {
                 if(frame[i].frameId != fid) {
                     fid = 0;
                     break;
@@ -165,7 +159,7 @@ int main(int argc, char **argv) {
 
             // concatenate packets
             unsigned x = 0, y = 0;
-            for(size_t sf = 0; sf <= SUBFRAME_MATRIX; sf++) {
+            for(size_t sf = 0; sf < matrixSubframes; sf++) {
                 matrix->setPixels(x, y, frame[sf].pixelData, SUBFRAME_PIXELS);
             }
             frame[0].frameId = 0;
@@ -189,6 +183,7 @@ int main(int argc, char **argv) {
 
     // Finished. Shut down the RGB matrix.
     delete matrix;
+    delete[] packetBuffer;
     return 0;
 }
 
@@ -239,7 +234,7 @@ void * doUdpRx(UNUSED void *obj) {
             if(dlen != sizeof(frame_packet)) continue;
 
             auto packet = (frame_packet*) data;
-            memcpy(&(packetBuffer[packet->frameId & FRAME_MASK][packet->subFrameId & SUBFRAME_MASK]), data, sizeof(frame_packet));
+            memcpy(getPacket(packet->frameId, packet->subFrameId), data, sizeof(frame_packet));
         }
         pthread_rwlock_unlock(&rwlock);
     }
@@ -270,4 +265,24 @@ void displayAddress(uint32_t addr) {
         x += 6;
     }
     matrix->flipBuffer();
+}
+
+void initPacketBuffer(unsigned framePixels) {
+    matrixSubframes = (framePixels + SUBFRAME_PIXELS - 1) / SUBFRAME_PIXELS;
+
+    // compute subframe mask
+    maskSubframes = 1;
+    while(maskSubframes < matrixSubframes)
+        maskSubframes <<= 1u;
+    maskSubframes--;
+
+    auto packetBufferSize = (FRAME_MASK + 1) * (maskSubframes + 1);
+    packetBuffer = new frame_packet[packetBufferSize];
+    bzero(packetBuffer, sizeof(frame_packet) * packetBufferSize);
+}
+
+frame_packet* getPacket(unsigned frame, unsigned subframe) {
+    frame &= FRAME_MASK;
+    subframe &= maskSubframes;
+    return packetBuffer + (frame * (maskSubframes + 1)) + subframe;
 }

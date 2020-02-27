@@ -663,6 +663,7 @@ static void selfTestHeader() {
     }
 }
 
+// print message and abort
 static void die(const char *format, ...) {
     va_list argptr;
     va_start(argptr, format);

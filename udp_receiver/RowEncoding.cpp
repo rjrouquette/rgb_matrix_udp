@@ -23,14 +23,13 @@ unsigned RowEncoding::Hub75e(unsigned pwmRows, unsigned srow, unsigned idx) {
 }
 
 /*
- * Qiangli Q3E
+ * Qiangli Q3E (shift register based)
  * A => CLK
  * B => DATA
  * C => BLANK
  * D => EN0
  * E => EN1
  */
-
 unsigned RowEncoding::Qiangli_Q3F32(unsigned pwmRows, unsigned srow, unsigned idx) {
     // skip dead row
     if(srow == 0)

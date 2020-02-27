@@ -176,12 +176,16 @@ MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowForma
     }
     delete[] mapPulseWidth;
 
+    printf("x res: %d\n", vinfo.xres);
+    printf("y res: %d\n", vinfo.yres);
     printf("pixels: %d\n", vinfo.yres * vinfo.xres);
     printf("frame size: %ld\n", driver->frameSize);
     printf("left margin: %d\n", vinfo.left_margin);
     printf("right margin: %d\n", vinfo.right_margin);
     printf("x offset: %d\n", vinfo.xoffset);
-    printf("x virt res: %d\n", vinfo.xres_virtual);
+    printf("y offset: %d\n", vinfo.yoffset);
+    printf("x vres: %d\n", vinfo.xres_virtual);
+    printf("y vres: %d\n", vinfo.yres_virtual);
     printf("row block: %ld\n", rowBlock);
     printf("pwm block: %ld\n", pwmBlock);
 

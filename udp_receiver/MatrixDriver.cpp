@@ -31,16 +31,19 @@
 
 // xmega to panel rgb bit mapping
 // bit offsets are in octal notation
+// 000 -> B0
+// 010 -> G0
+// 020 -> R0
 static const uint8_t mapRGB[8][3] = {
 //       RED  GRN  BLU
-        {027, 015, 016}, // p0r0 -> r7, p0g0 -> g5, p0b0 -> g6
-        {013, 000, 012}, // p0r1 -> g3, p0g1 -> b0, p0b1 -> g2
-        {005, 025, 006}, // p1r0 -> b5, p1g0 -> r5, p1b0 -> b6
-        {024, 022, 023}, // p1r1 -> r4, p1g1 -> r2, p1b1 -> r3
-        {011, 014, 017}, // p2r0 -> g1, p2g0 -> g4, p2b0 -> g7
-        {026, 020, 021}, // p2r1 -> r6, p2g1 -> r0, p2b1 -> r1
-        {007, 004, 003}, // p3r0 -> b7, p3g0 -> b4, p3b0 -> b3
-        {010, 001, 002}, // p3r1 -> g0, p3g1 -> b1, p3b1 -> b2
+        {016, 013, 027}, // p0r0 -> g6, p0g0 -> g3, p0b0 -> r7
+        {015, 012, 000}, // p0r1 -> g5, p0g1 -> g2, p0b1 -> b0
+        {025, 005, 006}, // p1r0 -> r5, p1g0 -> b5, p1b0 -> b6
+        {024, 023, 022}, // p1r1 -> r4, p1g1 -> r3, p1b1 -> r2
+        {004, 007, 003}, // p2r0 -> b4, p2g0 -> b7, p2b0 -> b3
+        {010, 001, 002}, // p2r1 -> g0, p2g1 -> b1, p2b1 -> b2
+        {020, 014, 017}, // p3r0 -> r0, p3g0 -> g4, p3b0 -> g7
+        {026, 011, 021}, // p3r1 -> r6, p3g1 -> g1, p3b1 -> r1
 };
 
 // number of scan rows for each panel type
@@ -50,12 +53,31 @@ static const unsigned mapPanelScanRows[3] = {
         32
 };
 
-static unsigned mangleRowBits(unsigned rowCode);
+// mangle header bits to match R0-R7
+static const unsigned mapHeaderBits[8] = {
+        7 + 16,
+        3 + 16,
+        2 + 16,
+        4 + 16,
+        5 + 16,
+        1 + 16,
+        6 + 16,
+        0 + 16
+};
+
 static void setHeaderRowCode(uint32_t *header, unsigned srow, unsigned pwmRows, RowEncoding::Encoder encoder);
 static void setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth);
+static void setHeaderByte(uint32_t &headerCell, unsigned byte);
 static bool createPwmMap(unsigned pwmBits, unsigned pwmRows, unsigned *&mapPulseWidth, unsigned *&mapPwmBit);
 
+static void selfTestRGB();
+static void selfTestHeader();
+static void die(const char *format, ...) __attribute__ ((__format__ (__printf__, 1, 2)));
+
 MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowFormat) {
+    selfTestRGB();
+    selfTestHeader();
+
     unsigned *mapPulseWidth = nullptr, *mapPwmBit = nullptr;
     fb_fix_screeninfo finfo = {};
     fb_var_screeninfo vinfo = {};
@@ -335,16 +357,6 @@ void* MatrixDriver::doRefresh(void *obj) {
     return nullptr;
 }
 
-void MatrixDriver::die(const char *format, ...) {
-    va_list argptr;
-    va_start(argptr, format);
-    vfprintf(stderr, format, argptr);
-    fwrite("\n", 1, 1, stderr);
-    fflush(stderr);
-    va_end(argptr);
-    abort();
-}
-
 
 
 static uint16_t pwmMappingCie1931(uint8_t bits, int level, float intensity) {
@@ -552,21 +564,17 @@ void MatrixDriver::initGpio(PeripheralBase peripheralBase) {
     munmap(gpio, REGISTER_BLOCK_SIZE);
 }
 
-static unsigned mangleRowBits(unsigned rowCode) {
-    return ((rowCode & 0xfu) << 1u) | ((rowCode >> 4u) & 0x1u);
-}
-
 static void setHeaderRowCode(uint32_t *header, unsigned srow, unsigned pwmRows, RowEncoding::Encoder encoder) {
-    header[0] |= mangleRowBits((*encoder)(pwmRows, srow, 0)) << 19u;
+    setHeaderByte(header[0], (*encoder)(pwmRows, srow, 0));
     header[1] = header[0];
-    header[2] |= mangleRowBits((*encoder)(pwmRows, srow, 1)) << 19u;
+    setHeaderByte(header[2], (*encoder)(pwmRows, srow, 1));
     header[3] = header[2];
 }
 
 static void setHeaderPulseWidth(uint32_t *header, unsigned pulseWidth) {
-    header[0] |= (pulseWidth & 0xffu) << 16u;
+    setHeaderByte(header[0], pulseWidth & 0xffu);
     header[1] = header[0];
-    header[2] |= (pulseWidth >> 8u) << 16u;
+    setHeaderByte(header[2], pulseWidth >> 8u);
     header[3] = header[2];
 }
 
@@ -618,4 +626,51 @@ static bool createPwmMap(unsigned pwmBits, unsigned pwmRows, unsigned *&mapPulse
     }
 
     return true;
+}
+
+static void setHeaderByte(uint32_t &headerCell, unsigned byte) {
+    for(auto offset : mapHeaderBits) {
+        headerCell |= (byte & 1u) << offset;
+        byte >>= 1u;
+    }
+}
+
+static void selfTestRGB() {
+    unsigned maskRGB = 0;
+    for(const auto &p : mapRGB) {
+        for(auto b : p) {
+            auto mask = 1u << b;
+            if(maskRGB & mask)
+                die("DPI output bit %03o mapped more than once.", b);
+            maskRGB |= mask;
+        }
+    }
+
+    if(maskRGB != 0xffffffu) {
+        die("RGB bitmap contains invalid bit offsets: 0x%08x", maskRGB);
+    }
+}
+
+static void selfTestHeader() {
+    unsigned headerMask = 0;
+    for(auto b : mapHeaderBits) {
+        auto mask = 1u << b;
+        if(headerMask & mask)
+            die("header output bit %03o mapped more than once.", b);
+        headerMask |= mask;
+    }
+
+    if(headerMask != 0xff0000u) {
+        die("header bitmap contains invalid bit offsets: 0x%08x", headerMask);
+    }
+}
+
+static void die(const char *format, ...) {
+    va_list argptr;
+    va_start(argptr, format);
+    vfprintf(stderr, format, argptr);
+    fwrite("\n", 1, 1, stderr);
+    fflush(stderr);
+    va_end(argptr);
+    abort();
 }

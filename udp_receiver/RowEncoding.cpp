@@ -13,13 +13,13 @@ RowEncoding::Encoder RowEncoding::encoder[3] = {
 // HUB75 4-bit row select address
 unsigned RowEncoding::Hub75(unsigned pwmRows, unsigned srow, unsigned idx) {
     auto row = (srow - 1) / pwmRows;
-    return (row) & 0x0fu;
+    return (row & 0x0fu) << 3u;
 }
 
 // HUB75E 5-bit row select address
 unsigned RowEncoding::Hub75e(unsigned pwmRows, unsigned srow, unsigned idx) {
     auto row = (srow - 1) / pwmRows;
-    return (row) & 0x1fu;
+    return (row & 0x1fu) << 3u;
 }
 
 /*
@@ -53,5 +53,5 @@ unsigned RowEncoding::Qiangli_Q3F32(unsigned pwmRows, unsigned srow, unsigned id
 
     // chip select
     code |= (row & 0x18u);
-    return code;
+    return code << 3u;
 }

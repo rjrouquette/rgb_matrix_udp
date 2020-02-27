@@ -73,8 +73,6 @@ private:
     void stop();
     static void* doRefresh(void *obj);
 
-    static void die(const char *format, ...) __attribute__ ((__format__ (__printf__, 1, 2)));
-
 public:
     unsigned getWidth() { return matrixWidth; }
     unsigned getHeight() { return matrixHeight; }

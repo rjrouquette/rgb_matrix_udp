@@ -55,6 +55,17 @@ void sig_exit(UNUSED int sig) { isRunning = false; }
 void displayAddress(uint32_t addr);
 void initPacketBuffer(unsigned framePixels);
 
+class PixelMapDoubleWide : public PixelMapping {
+private:
+    const MatrixDriver &matrix;
+
+public:
+    explicit PixelMapDoubleWide(const MatrixDriver &matrix);
+    ~PixelMapDoubleWide() override = default;
+
+    void remap(unsigned int &x, unsigned int &y) override;
+};
+
 int main(int argc, char **argv) {
     struct sigaction act = {};
     memset(&act, 0, sizeof(act));
@@ -103,13 +114,17 @@ int main(int argc, char **argv) {
     log("instantiated matrix driver");
     log("matrix canvas is %d x %d", matrix->getWidth(), matrix->getHeight());
 
+    // set panel remapping
+    PixelMapDoubleWide pixMap(*matrix);
+    matrix->setPixelMapping(&pixMap);
+    log("matrix canvas remapped as %d x %d", matrix->getWidth() * 2, matrix->getHeight() / 2);
+
     // initialize packet buffer
     initPacketBuffer(matrix->getWidth() * matrix->getHeight());
     log("%d subframes per frame", matrixSubframes);
     log("frame packet buffer is %ld bytes", (FRAME_MASK + 1) * (maskSubframes + 1) * sizeof(frame_packet));
 
     usleep(250000);
-    matrix->flipBuffer();
 
     // display ethernet address on panel
     displayAddress(ntohl(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr));
@@ -297,4 +312,21 @@ frame_packet* getPacket(unsigned frame, unsigned subframe) {
     frame &= FRAME_MASK;
     subframe &= maskSubframes;
     return packetBuffer + (frame * (maskSubframes + 1)) + subframe;
+}
+
+PixelMapDoubleWide::PixelMapDoubleWide(const MatrixDriver &_matrix) :
+    matrix(_matrix)
+{}
+
+// remaps panel chains as
+// ---------------------
+// | chain 0 | chain 3 |
+// ---------------------
+// | chain 1 | chain 2 |
+// ---------------------
+void PixelMapDoubleWide::remap(unsigned int &x, unsigned int &y) {
+    if(x >= matrix.getWidth()) {
+        x = 2 * matrix.getWidth() - x - 1;
+        y = matrix.getHeight() - y - 1;
+    }
 }

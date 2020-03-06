@@ -30,12 +30,12 @@ public:
     ~MatrixDriver() override;
 
     void flipBuffer();
-    void clearFrame();
+    void clearFrame() const;
 
-    void setPixel(unsigned x, unsigned y, uint8_t r, uint8_t g, uint8_t b);
-    void setPixel(unsigned x, unsigned y, uint8_t *rgb);
-    void setPixels(unsigned &x, unsigned &y, uint8_t *rgb, size_t pixelCount);
-    void drawHex(unsigned xoff, unsigned yoff, uint8_t hexValue, uint32_t rgbFore, uint32_t rgbBack);
+    void setPixel(unsigned x, unsigned y, uint8_t r, uint8_t g, uint8_t b) const;
+    void setPixel(unsigned x, unsigned y, uint8_t *rgb) const;
+    void setPixels(unsigned &x, unsigned &y, uint8_t *rgb, size_t pixelCount) const;
+    void drawHex(unsigned xoff, unsigned yoff, uint8_t hexValue, uint32_t rgbFore, uint32_t rgbBack) const;
 
     typedef uint16_t pwm_lut[256];
     pwm_lut& getPwmMapping() { return pwmMapping; }
@@ -83,8 +83,8 @@ private:
     static void* doRefresh(void *obj);
 
 public:
-    unsigned getWidth() { return matrixWidth; }
-    unsigned getHeight() { return matrixHeight; }
+    unsigned getWidth() const { return matrixWidth; }
+    unsigned getHeight() const { return matrixHeight; }
 
     // allows for custom arrangement of panels
     void setPixelMapping(PixelMapping *pixelMap) { pixelMapping = pixelMap; }

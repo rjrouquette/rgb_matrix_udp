@@ -262,7 +262,7 @@ void MatrixDriver::flipBuffer() {
     pthread_mutex_unlock(&mutexBuffer);
 }
 
-void MatrixDriver::clearFrame() {
+void MatrixDriver::clearFrame() const {
     for(size_t i = 0; i < frameSize; i++) {
         nextFrame[i] = 0xff000000u;
     }
@@ -278,7 +278,7 @@ void MatrixDriver::clearFrame() {
     }
 }
 
-void MatrixDriver::setPixel(unsigned x, unsigned y, uint8_t r, uint8_t g, uint8_t b) {
+void MatrixDriver::setPixel(unsigned x, unsigned y, uint8_t r, uint8_t g, uint8_t b) const {
     // apply pixel coordinate remapping
     pixelMapping->remap(x, y);
 
@@ -326,11 +326,11 @@ void MatrixDriver::setPixel(unsigned x, unsigned y, uint8_t r, uint8_t g, uint8_
     }
 }
 
-void MatrixDriver::setPixel(unsigned x, unsigned y, uint8_t *rgb) {
+void MatrixDriver::setPixel(unsigned x, unsigned y, uint8_t *rgb) const {
     setPixel(x, y, rgb[0], rgb[1], rgb[2]);
 }
 
-void MatrixDriver::setPixels(unsigned &x, unsigned &y, uint8_t *rgb, size_t pixelCount) {
+void MatrixDriver::setPixels(unsigned &x, unsigned &y, uint8_t *rgb, size_t pixelCount) const {
     for(size_t i = 0; i < pixelCount; i++) {
         setPixel(x, y, rgb);
         rgb += 3;
@@ -530,7 +530,7 @@ char hexChars[16][7][6] = {
         }
 };
 
-void MatrixDriver::drawHex(unsigned xoff, unsigned yoff, uint8_t hexValue, uint32_t fore, uint32_t back) {
+void MatrixDriver::drawHex(unsigned xoff, unsigned yoff, uint8_t hexValue, uint32_t fore, uint32_t back) const {
     auto pattern = hexChars[hexValue & 0xfu];
 
     for(int y = 0; y < 7; y++) {

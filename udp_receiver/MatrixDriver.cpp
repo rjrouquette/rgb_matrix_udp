@@ -75,6 +75,9 @@ static void selfTestRGB();
 static void selfTestHeader();
 static void die(const char *format, ...) __attribute__ ((__format__ (__printf__, 1, 2))) __attribute__((noreturn));
 
+// default pixel mapping does nothing
+void PixelMapping::remap(unsigned int &x, unsigned int &y) {}
+
 MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowFormat) {
     selfTestRGB();
     selfTestHeader();
@@ -219,6 +222,7 @@ MatrixDriver::MatrixDriver(
     frameHeader = nullptr;
     currFrame = nullptr;
     nextFrame = nullptr;
+    pixelMapping = this;
 
     // display off by default
     bzero(pwmMapping, sizeof(pwmMapping));
@@ -275,6 +279,10 @@ void MatrixDriver::clearFrame() {
 }
 
 void MatrixDriver::setPixel(unsigned x, unsigned y, uint8_t r, uint8_t g, uint8_t b) {
+    // apply pixel coordinate remapping
+    pixelMapping->remap(x, y);
+
+    // verify coordinate bounds
     if(x >= matrixWidth || y >= matrixHeight) return;
 
     // compute pixel offset

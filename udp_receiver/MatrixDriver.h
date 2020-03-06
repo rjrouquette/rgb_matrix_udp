@@ -10,7 +10,15 @@
 #include <pthread.h>
 #include <linux/fb.h>
 
-class MatrixDriver {
+class PixelMapping {
+public:
+    PixelMapping() = default;
+    virtual ~PixelMapping() = default;
+
+    virtual void remap(unsigned &x, unsigned &y);
+};
+
+class MatrixDriver : public PixelMapping {
 public:
     enum RowFormat {
         HUB75,          // standard HUB75 4-bit row address
@@ -19,7 +27,7 @@ public:
     };
 
     static MatrixDriver * createInstance(unsigned pwmBits, RowFormat rowFormat);
-    ~MatrixDriver();
+    ~MatrixDriver() override;
 
     void flipBuffer();
     void clearFrame();
@@ -51,6 +59,7 @@ private:
 
     const unsigned matrixWidth, matrixHeight, scanRowCnt, pwmRows, *mapPwmBit;
     const size_t rowBlock, pwmBlock;
+    PixelMapping *pixelMapping;
     bool isRunning;
 
     size_t frameSize;
@@ -76,6 +85,10 @@ private:
 public:
     unsigned getWidth() { return matrixWidth; }
     unsigned getHeight() { return matrixHeight; }
+
+    // allows for custom arrangement of panels
+    void setPixelMapping(PixelMapping *pixelMap) { pixelMapping = pixelMap; }
+
 };
 
 void createPwmLutCie1931(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);

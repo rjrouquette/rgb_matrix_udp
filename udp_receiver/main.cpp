@@ -318,12 +318,12 @@ PixelMapDoubleWide::PixelMapDoubleWide(const MatrixDriver &_matrix) :
     matrix(_matrix)
 {}
 
-// remaps panel chains as
-// ---------------------
-// | chain 0 | chain 3 |
-// ---------------------
-// | chain 1 | chain 2 |
-// ---------------------
+// double wide panel arrangement
+// ---------------------------
+// | <- chain 0 | chain 3 -> |
+// ---------------------------
+// | <- chain 1 | chain 2 -> |
+// ---------------------------
 void PixelMapDoubleWide::remap(unsigned int &x, unsigned int &y) {
     if(x >= matrix.getWidth()) {
         x = 2 * matrix.getWidth() - x - 1;

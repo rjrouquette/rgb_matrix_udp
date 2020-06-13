@@ -10,18 +10,18 @@ display_default_lcd=1
 # standard polarity on timing signals, invert pixel clock and data enable
 dpi_output_format=0x40217
 
-# 4 chains with four 64x64 panels each
+# 2 chains with four 32x64 panels each
 # use custom DPI mode
-# 1632 x 241 x 24
-# 1632 = 32 header + 1600 pixels per row
+# 288 x 241 x 24
+# 288 = 32 header + 256 pixels per row
 # 241 = 16 scan rows x 15 pwm planes + 1 dead scan
 # 24-bit depth = 4 panels
 dpi_group=2
 dpi_mode=87
-dpi_timings=1632 0 0 8 0 241 0 0 1 0 0 0 0 83 0 32000000 3
+dpi_timings=288 0 0 8 0 241 0 0 1 0 0 0 0 460 0 32000000 3
 
 # linux framebuffer
-framebuffer_width=1632
+framebuffer_width=288
 framebuffer_height=241
 framebuffer_depth=32
 framebuffer_ignore_alpha=1

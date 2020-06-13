@@ -54,7 +54,7 @@ void sig_ignore(UNUSED int sig) { }
 void sig_exit(UNUSED int sig) { isRunning = false; }
 void displayAddress(uint32_t addr);
 void initPacketBuffer(unsigned framePixels);
-
+/*
 class PixelMapDoubleWide : public PixelMapping {
 private:
     const MatrixDriver &matrix;
@@ -65,7 +65,7 @@ public:
 
     void remap(unsigned int &x, unsigned int &y) override;
 };
-
+*/
 int main(int argc, char **argv) {
     struct sigaction act = {};
     memset(&act, 0, sizeof(act));
@@ -109,15 +109,15 @@ int main(int argc, char **argv) {
 
     // configure rgb matrix panel driver
     MatrixDriver::initGpio(MatrixDriver::gpio_rpi3);
-    matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::QIANGLI_Q3F32);
+    matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::HUB75);
     createPwmLutLinear(PWM_BITS, brightness, matrix->getPwmMapping());
     log("instantiated matrix driver");
     log("matrix canvas is %d x %d", matrix->getWidth(), matrix->getHeight());
 
     // set panel remapping
-    PixelMapDoubleWide pixMap(*matrix);
-    matrix->setPixelMapping(&pixMap);
-    log("matrix canvas remapped as %d x %d", matrix->getWidth() * 2, matrix->getHeight() / 2);
+    //PixelMapDoubleWide pixMap(*matrix);
+    //matrix->setPixelMapping(&pixMap);
+    //log("matrix canvas remapped as %d x %d", matrix->getWidth() * 2, matrix->getHeight() / 2);
 
     // initialize packet buffer
     initPacketBuffer(matrix->getWidth() * matrix->getHeight());

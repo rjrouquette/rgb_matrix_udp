@@ -313,7 +313,7 @@ frame_packet* getPacket(unsigned frame, unsigned subframe) {
     subframe &= maskSubframes;
     return packetBuffer + (frame * (maskSubframes + 1)) + subframe;
 }
-
+/*
 PixelMapDoubleWide::PixelMapDoubleWide(const MatrixDriver &_matrix) :
     matrix(_matrix)
 {}
@@ -330,3 +330,4 @@ void PixelMapDoubleWide::remap(unsigned int &x, unsigned int &y) {
         y = matrix.getHeight() - y - 1;
     }
 }
+*/

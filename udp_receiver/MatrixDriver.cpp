@@ -279,6 +279,32 @@ void MatrixDriver::clearFrame() const {
     }
 }
 
+unsigned MatrixDriver::measureMappedWidth() const {
+    unsigned w = 0;
+    while(w < -1u) {
+        auto x = w;
+        unsigned y = 0;
+        pixelMapping->remap(x, y);
+        if(x > matrixWidth) break;
+        if(y > matrixHeight) break;
+        ++w;
+    }
+    return w;
+}
+
+unsigned MatrixDriver::measureMappedHeight() const {
+    unsigned h = 0;
+    while(h < -1u) {
+        auto y = h;
+        unsigned x = 0;
+        pixelMapping->remap(x, y);
+        if(x > matrixWidth) break;
+        if(y > matrixHeight) break;
+        ++h;
+    }
+    return h;
+}
+
 void MatrixDriver::setPixel(unsigned x, unsigned y, uint8_t r, uint8_t g, uint8_t b) const {
     // apply pixel coordinate remapping
     pixelMapping->remap(x, y);

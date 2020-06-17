@@ -90,6 +90,9 @@ public:
     // allows for custom arrangement of panels
     void setPixelMapping(PixelMapping *pixelMap) { pixelMapping = pixelMap; }
 
+    // estimate new canvas dimensions after remapping
+    unsigned measureMappedWidth() const;
+    unsigned measureMappedHeight() const;
 };
 
 void createPwmLutCie1931(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);

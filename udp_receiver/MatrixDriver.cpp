@@ -60,10 +60,11 @@ static const unsigned mapHeaderBits[8] = {
 };
 
 // number of scan rows for each panel type
-static const unsigned mapPanelScanRows[3] = {
+static const unsigned mapPanelScanRows[4] = {
         16,
         32,
-        32
+        32,
+        8
 };
 
 static void setHeaderRowCode(uint32_t *header, unsigned srow, unsigned pwmRows, RowEncoding::Encoder encoder);

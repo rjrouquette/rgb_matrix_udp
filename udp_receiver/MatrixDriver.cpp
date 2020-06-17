@@ -285,8 +285,8 @@ unsigned MatrixDriver::measureMappedWidth() const {
         auto x = w;
         unsigned y = 0;
         pixelMapping->remap(x, y);
-        if(x > matrixWidth) break;
-        if(y > matrixHeight) break;
+        if(x >= matrixWidth) break;
+        if(y >= matrixHeight) break;
         ++w;
     }
     return w;
@@ -298,8 +298,8 @@ unsigned MatrixDriver::measureMappedHeight() const {
         auto y = h;
         unsigned x = 0;
         pixelMapping->remap(x, y);
-        if(x > matrixWidth) break;
-        if(y > matrixHeight) break;
+        if(x >= matrixWidth) break;
+        if(y >= matrixHeight) break;
         ++h;
     }
     return h;

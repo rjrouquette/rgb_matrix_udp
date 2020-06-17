@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
     // set panel remapping
     //PixelMapDoubleWide pixMap(*matrix);
     //matrix->setPixelMapping(&pixMap);
-    //log("matrix canvas remapped as %d x %d", matrix->getWidth() * 2, matrix->getHeight() / 2);
+    log("matrix canvas remapped as %d x %d", matrix->measureMappedWidth(), matrix->measureMappedHeight());
 
     // initialize packet buffer
     initPacketBuffer(matrix->getWidth() * matrix->getHeight());

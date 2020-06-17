@@ -23,7 +23,8 @@ public:
     enum RowFormat {
         HUB75,          // standard HUB75 4-bit row address
         HUB75E,         // extended HUB75 5-bit row address
-        QIANGLI_Q3F32   // shift register row selection
+        QIANGLI_Q3F32,  // shift register row selection
+        HUB75R,         // reduced HUB75 3-bit row address
     };
 
     static MatrixDriver * createInstance(unsigned pwmBits, RowFormat rowFormat);
@@ -93,5 +94,14 @@ public:
 
 void createPwmLutCie1931(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);
 void createPwmLutLinear(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);
+
+// perform row interleaving for 32 pixel wide panels
+class RemapInterleaved32A  : public PixelMapping {
+public:
+    RemapInterleaved32A() = default;
+    ~RemapInterleaved32A() override = default;
+
+    void remap(unsigned &x, unsigned &y) override;
+};
 
 #endif //UDP_RECEIVER_MATRIXDRIVER_H

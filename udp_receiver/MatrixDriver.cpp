@@ -685,3 +685,13 @@ static void die(const char *format, ...) {
     va_end(argptr);
     abort();
 }
+
+// interleaved 32 pixel wide panels
+void RemapInterleaved32A::remap(unsigned &x, unsigned &y) {
+    // determine interleaving offset
+    auto offset = y & 1u;
+    // truncate y-coordinate
+    y >>= 1u;
+    // interleave x-coordinate: leave lower 5 bits intact, shift upper bits, and add offset
+    x = (x & 0x1fu) | ((x & 0x7fffffe0u) << 1u) | (offset << 5u);
+}

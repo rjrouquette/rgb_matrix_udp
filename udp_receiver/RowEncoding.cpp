@@ -4,10 +4,11 @@
 
 #include "RowEncoding.h"
 
-RowEncoding::Encoder RowEncoding::encoder[3] = {
+RowEncoding::Encoder RowEncoding::encoder[4] = {
         RowEncoding::Hub75,
         RowEncoding::Hub75e,
-        RowEncoding::Qiangli_Q3F32
+        RowEncoding::Qiangli_Q3F32,
+        RowEncoding::Hub75r
 };
 
 // HUB75 4-bit row select address
@@ -20,6 +21,12 @@ unsigned RowEncoding::Hub75(unsigned pwmRows, unsigned srow, unsigned idx) {
 unsigned RowEncoding::Hub75e(unsigned pwmRows, unsigned srow, unsigned idx) {
     auto row = (srow - 1) / pwmRows;
     return (row & 0x1fu) << 3u;
+}
+
+// HUB75R 3-bit row select address
+unsigned RowEncoding::Hub75r(unsigned pwmRows, unsigned srow, unsigned idx) {
+    auto row = (srow - 1) / pwmRows;
+    return (row & 0x07u) << 3u;
 }
 
 /*

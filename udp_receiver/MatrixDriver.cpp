@@ -716,7 +716,7 @@ static void die(const char *format, ...) {
 // interleaved 32 pixel wide panels
 void RemapInterleaved32A::remap(unsigned &x, unsigned &y) {
     // determine interleaving offset
-    auto offset = (y & 8u) ^ 1u;
+    auto offset = (y & 8u) ^ 8u;
     // interleave y-coordinate
     y = (y & 0x7u) | ((y & 0xfffffff0u) >> 1u);
     // interleave x-coordinate: leave lower 5 bits intact, shift upper bits, and add offset

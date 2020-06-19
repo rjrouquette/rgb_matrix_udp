@@ -24,7 +24,8 @@ public:
         HUB75,          // standard HUB75 4-bit row address
         HUB75E,         // extended HUB75 5-bit row address
         QIANGLI_Q3F32,  // shift register row selection
-        HUB75R,         // reduced HUB75 3-bit row address
+        HUB75ABC,       // reduced standard HUB75 3-bit row address
+       	HUB75AB,	// reduced HUB75 2-bit row address
     };
 
     static MatrixDriver * createInstance(unsigned pwmBits, RowFormat rowFormat);

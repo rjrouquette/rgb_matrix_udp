@@ -65,7 +65,7 @@ static const unsigned mapPanelScanRows[5] = {
         32,
         32,
         8,
-	4
+        4
 };
 
 static void setHeaderRowCode(uint32_t *header, unsigned srow, unsigned pwmRows, RowEncoding::Encoder encoder);

@@ -21,10 +21,10 @@ namespace Interleavers {
     void Z08AB(unsigned &x, unsigned &y);
 
     // functions for interleaved panel raster dimension translation
-    void dimNoInterleaving(unsigned &x, unsigned &y);
-    void dimZ32ABC(unsigned &x, unsigned &y);
-    void dimZ16AB(unsigned &x, unsigned &y);
-    void dimZ08AB(unsigned &x, unsigned &y);
+    void dimNoInterleaving(unsigned &width, unsigned &height);
+    void dimZ32ABC(unsigned &width, unsigned &height);
+    void dimZ16AB(unsigned &width, unsigned &height);
+    void dimZ08AB(unsigned &width, unsigned &height);
 }
 
 #endif //UDP_RECEIVER_INTERLEAVING_H

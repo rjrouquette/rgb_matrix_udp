@@ -4,6 +4,7 @@
 
 #include "Interleaving.h"
 
+// array of all interleaver functions in order of MatrixDriver enum
 Interleavers::Interleaver Interleavers::interleaver[4] = {
         Interleavers::NoInterleaving,
         Interleavers::Z32ABC,
@@ -47,6 +48,8 @@ void Interleavers::Z08AB(unsigned &x, unsigned &y) {
 }
 
 
+
+// array of all dimension translation functions in order of MatrixDriver enum
 Interleavers::Interleaver Interleavers::dimensions[4] = {
         Interleavers::dimNoInterleaving,
         Interleavers::dimZ32ABC,

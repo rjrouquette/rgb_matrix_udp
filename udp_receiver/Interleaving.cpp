@@ -30,7 +30,7 @@ void Interleavers::Z32ABC(unsigned &x, unsigned &y) {
 // Z-striped 2-bit address 16-pixel stripe
 void Interleavers::Z16AB(unsigned &x, unsigned &y) {
     // determine interleaving offset
-    auto offset = (y & 4u) ^ 4u;
+    auto offset = (y & 4u) ^ 0u;
     // interleave y-coordinate
     y = (y & 0x3u) | ((y & 0xfffffff8u) >> 1u);
     // interleave x-coordinate: leave lower 4 bits intact, shift upper bits, and add offset
@@ -40,7 +40,7 @@ void Interleavers::Z16AB(unsigned &x, unsigned &y) {
 // Z-striped 2-bit address 8-pixel stripe
 void Interleavers::Z08AB(unsigned &x, unsigned &y) {
     // determine interleaving offset
-    auto offset = (y & 4u) ^ 4u;
+    auto offset = (y & 4u) ^ 0u;
     // interleave y-coordinate
     y = (y & 0x3u) | ((y & 0xfffffff8u) >> 1u);
     // interleave x-coordinate: leave lower 4 bits intact, shift upper bits, and add offset

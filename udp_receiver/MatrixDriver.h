@@ -117,4 +117,13 @@ public:
     void remap(unsigned &x, unsigned &y) override;
 };
 
+// perform row interleaving for 2-bit Z-stripe panels
+class RemapInterleavedZ8AB  : public PixelMapping {
+public:
+    RemapInterleavedZ8AB() = default;
+    ~RemapInterleavedZ8AB() override = default;
+
+    void remap(unsigned &x, unsigned &y) override;
+};
+
 #endif //UDP_RECEIVER_MATRIXDRIVER_H

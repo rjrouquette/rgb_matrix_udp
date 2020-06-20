@@ -4,6 +4,7 @@
 
 #include "MatrixDriver.h"
 #include "RowEncoding.h"
+#include "Interleaving.h"
 
 #include <cerrno>
 #include <cstring>
@@ -80,7 +81,7 @@ static void die(const char *format, ...) __attribute__ ((__format__ (__printf__,
 // default pixel mapping does nothing
 void PixelMapping::remap(unsigned int &x, unsigned int &y) {}
 
-MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowFormat) {
+MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, const RowFormat rowFormat, const Interleaving interleaving) {
     selfTestRGB();
     selfTestHeader();
 
@@ -145,7 +146,8 @@ MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, RowFormat rowForma
             pwmRows,
             mapPwmBit,
             rowBlock,
-            pwmBlock
+            pwmBlock,
+            interleaving
     );
     driver->ttyfd = ttyfd;
     driver->fbfd = fbfd;
@@ -210,10 +212,12 @@ MatrixDriver::MatrixDriver(
         unsigned _pwmRows,
         const unsigned *_mapPwmBit,
         size_t _rowBlock,
-        size_t _pwmBlock
+        size_t _pwmBlock,
+        Interleaving interleaving
 ) :
     matrixWidth(_rowBlock - ROW_PADDING), matrixHeight(_scanRowCnt * 8), scanRowCnt(_scanRowCnt), pwmRows(_pwmRows),
-    mapPwmBit(_mapPwmBit), rowBlock(_rowBlock), pwmBlock(_pwmBlock), threadOutput{},
+    mapPwmBit(_mapPwmBit), rowBlock(_rowBlock), pwmBlock(_pwmBlock),
+    interleaver(Interleavers::interleaver[interleaving]), threadOutput{},
     mutexBuffer(PTHREAD_MUTEX_INITIALIZER), pwmMapping{}, finfo{}, vinfo{}
 {
     isRunning = false;
@@ -225,6 +229,15 @@ MatrixDriver::MatrixDriver(
     currFrame = nullptr;
     nextFrame = nullptr;
     pixelMapping = this;
+
+    // compute raster dimensions
+    rasterWidth = matrixWidth;
+    rasterHeight = matrixHeight;
+    (*(Interleavers::dimensions[interleaving]))(rasterWidth, rasterHeight);
+
+    // set canvas dimensions
+    canvasWidth = rasterWidth;
+    canvasHeight = rasterHeight;
 
     // display off by default
     bzero(pwmMapping, sizeof(pwmMapping));
@@ -286,8 +299,8 @@ unsigned MatrixDriver::measureMappedWidth() const {
         auto x = w;
         unsigned y = 0;
         pixelMapping->remap(x, y);
-        if(x >= matrixWidth) break;
-        if(y >= matrixHeight) break;
+        if(x >= rasterWidth) break;
+        if(y >= rasterHeight) break;
         ++w;
     }
     return w;
@@ -299,17 +312,30 @@ unsigned MatrixDriver::measureMappedHeight() const {
         auto y = h;
         unsigned x = 0;
         pixelMapping->remap(x, y);
-        if(x >= matrixWidth) break;
-        if(y >= matrixHeight) break;
+        if(x >= rasterWidth) break;
+        if(y >= rasterHeight) break;
         ++h;
     }
     return h;
 }
 
+void MatrixDriver::setPixelMapping(PixelMapping *pixelMap) {
+    pixelMapping = pixelMap;
+    canvasWidth = measureMappedWidth();
+    canvasHeight = measureMappedHeight();
+}
+
 void MatrixDriver::setPixel(unsigned x, unsigned y, uint8_t r, uint8_t g, uint8_t b) const {
+    // verify coordinate bounds
+    if(x >= canvasWidth || y >= canvasHeight) return;
+
     // apply pixel coordinate remapping
     pixelMapping->remap(x, y);
+    // verify coordinate bounds
+    if(x >= rasterWidth || y >= rasterHeight) return;
 
+    // apply interleaving
+    (*interleaver)(x, y);
     // verify coordinate bounds
     if(x >= matrixWidth || y >= matrixHeight) return;
 
@@ -362,7 +388,7 @@ void MatrixDriver::setPixels(unsigned &x, unsigned &y, uint8_t *rgb, size_t pixe
     for(size_t i = 0; i < pixelCount; i++) {
         setPixel(x, y, rgb);
         rgb += 3;
-        if(++x >= matrixWidth) {
+        if(++x >= canvasWidth) {
             x = 0;
             ++y;
         }
@@ -712,34 +738,4 @@ static void die(const char *format, ...) {
     fflush(stderr);
     va_end(argptr);
     abort();
-}
-
-// interleaved 32 pixel wide panels
-void RemapInterleaved32A::remap(unsigned &x, unsigned &y) {
-    // determine interleaving offset
-    auto offset = (y & 8u) ^ 8u;
-    // interleave y-coordinate
-    y = (y & 0x7u) | ((y & 0xfffffff0u) >> 1u);
-    // interleave x-coordinate: leave lower 5 bits intact, shift upper bits, and add offset
-    x = (x & 0x1fu) | ((x & 0x7fffffe0u) << 1u) | (offset << 2u);
-}
-
-// Z-striped 2-bit address 16-pixel stripe
-void RemapInterleavedZ16AB::remap(unsigned &x, unsigned &y) {
-    // determine interleaving offset
-    auto offset = (y & 4u) ^ 4u;
-    // interleave y-coordinate
-    y = (y & 0x3u) | ((y & 0xfffffff8u) >> 1u);
-    // interleave x-coordinate: leave lower 4 bits intact, shift upper bits, and add offset
-    x = (x & 0xfu) | ((x & 0x7ffffff0u) << 1u) | (offset << 2u);
-}
-
-// Z-striped 2-bit address 8-pixel stripe
-void RemapInterleavedZ8AB::remap(unsigned &x, unsigned &y) {
-    // determine interleaving offset
-    auto offset = (y & 4u) ^ 4u;
-    // interleave y-coordinate
-    y = (y & 0x3u) | ((y & 0xfffffff8u) >> 1u);
-    // interleave x-coordinate: leave lower 4 bits intact, shift upper bits, and add offset
-    x = (x & 0x7u) | ((x & 0x7ffffff8u) << 1u) | (offset << 1u);
 }

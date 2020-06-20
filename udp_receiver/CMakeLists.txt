@@ -17,6 +17,6 @@ add_executable(
         MatrixDriver.h
         RowEncoding.cpp
         RowEncoding.h
-)
+        Interleaving.cpp Interleaving.h)
 
 target_link_libraries(udp_receiver -pthread)

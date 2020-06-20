@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
 
     // configure rgb matrix panel driver
     MatrixDriver::initGpio(MatrixDriver::gpio_rpi3);
-    matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::HUB75AB);
+    matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::HUB75AB, MatrixDriver::Z08AB);
     createPwmLutLinear(PWM_BITS, brightness, matrix->getPwmMapping());
     log("instantiated matrix driver");
     log("matrix canvas is %d x %d", matrix->getWidth(), matrix->getHeight());
@@ -117,7 +117,7 @@ int main(int argc, char **argv) {
     // set panel remapping
     //PixelMapDoubleWide pixMap(*matrix);
     //matrix->setPixelMapping(&pixMap);
-    log("matrix canvas remapped as %d x %d", matrix->measureMappedWidth(), matrix->measureMappedHeight());
+    log("matrix canvas remapped as %d x %d", matrix->getCanvasWidth(), matrix->getCanvasHeight());
 
     // initialize packet buffer
     initPacketBuffer(matrix->getWidth() * matrix->getHeight());

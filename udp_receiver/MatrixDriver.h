@@ -28,7 +28,14 @@ public:
        	HUB75AB,        // reduced HUB75 2-bit row address
     };
 
-    static MatrixDriver * createInstance(unsigned pwmBits, RowFormat rowFormat);
+    enum Interleaving {
+        NO_INTERLEAVING,    // normal HUB75 operation
+        Z32ABC,             // Z-striped: 3-bit address, 32-pixel strips
+        Z16AB,              // Z-striped: 2-bit address, 16-pixel strips
+        Z08AB,              // Z-striped: 2-bit address, 8-pixel strips
+    };
+
+    static MatrixDriver * createInstance(unsigned pwmBits, RowFormat rowFormat, Interleaving interleaving = NO_INTERLEAVING);
     ~MatrixDriver() override;
 
     void flipBuffer();
@@ -51,17 +58,22 @@ public:
     static void initGpio(PeripheralBase peripheralBase);
 
 private:
+    typedef void (*Interleaver) (unsigned &x, unsigned &y);
+
     MatrixDriver(
             unsigned scanRowCnt,
             unsigned pwmRows,
             const unsigned *mapPwmBit,
             size_t rowBlock,
-            size_t pwmBlock
+            size_t pwmBlock,
+            Interleaving interleaving
     );
 
     const unsigned matrixWidth, matrixHeight, scanRowCnt, pwmRows, *mapPwmBit;
     const size_t rowBlock, pwmBlock;
+    const Interleaver interleaver;
     PixelMapping *pixelMapping;
+    unsigned rasterWidth, rasterHeight, canvasWidth, canvasHeight;
     bool isRunning;
 
     size_t frameSize;
@@ -84,46 +96,23 @@ private:
     void stop();
     static void* doRefresh(void *obj);
 
-public:
-    unsigned getWidth() const { return matrixWidth; }
-    unsigned getHeight() const { return matrixHeight; }
-
-    // allows for custom arrangement of panels
-    void setPixelMapping(PixelMapping *pixelMap) { pixelMapping = pixelMap; }
-
     // estimate new canvas dimensions after remapping
     unsigned measureMappedWidth() const;
     unsigned measureMappedHeight() const;
+
+public:
+    unsigned getWidth() const { return rasterWidth; }
+    unsigned getHeight() const { return rasterHeight; }
+
+    unsigned getCanvasWidth() const { return canvasWidth; }
+    unsigned getCanvasHeight() const { return canvasHeight; }
+
+    // allows for custom arrangement of panels
+    void setPixelMapping(PixelMapping *pixelMap);
+
 };
 
 void createPwmLutCie1931(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);
 void createPwmLutLinear(uint8_t bits, float brightness, MatrixDriver::pwm_lut &pwmLut);
-
-// perform row interleaving for 32 pixel wide panels
-class RemapInterleaved32A  : public PixelMapping {
-public:
-    RemapInterleaved32A() = default;
-    ~RemapInterleaved32A() override = default;
-
-    void remap(unsigned &x, unsigned &y) override;
-};
-
-// perform row interleaving for 2-bit Z-stripe panels
-class RemapInterleavedZ16AB  : public PixelMapping {
-public:
-    RemapInterleavedZ16AB() = default;
-    ~RemapInterleavedZ16AB() override = default;
-
-    void remap(unsigned &x, unsigned &y) override;
-};
-
-// perform row interleaving for 2-bit Z-stripe panels
-class RemapInterleavedZ8AB  : public PixelMapping {
-public:
-    RemapInterleavedZ8AB() = default;
-    ~RemapInterleavedZ8AB() override = default;
-
-    void remap(unsigned &x, unsigned &y) override;
-};
 
 #endif //UDP_RECEIVER_MATRIXDRIVER_H

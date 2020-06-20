@@ -11,7 +11,8 @@ namespace RowEncoding {
     unsigned Qiangli_Q3F32(unsigned pwmRows, unsigned srow, unsigned idx);
     unsigned Hub75(unsigned pwmRows, unsigned srow, unsigned idx);
     unsigned Hub75e(unsigned pwmRows, unsigned srow, unsigned idx);
-    unsigned Hub75r(unsigned pwmRows, unsigned srow, unsigned idx);
+    unsigned Hub75abc(unsigned pwmRows, unsigned srow, unsigned idx);
+    unsigned Hub75ab(unsigned pwmRows, unsigned srow, unsigned idx);
 
     extern Encoder encoder[];
 }

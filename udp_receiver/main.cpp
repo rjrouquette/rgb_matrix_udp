@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
 
     // configure rgb matrix panel driver
     MatrixDriver::initGpio(MatrixDriver::gpio_rpi3);
-    matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::HUB75);
+    matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::HUB75AB);
     createPwmLutLinear(PWM_BITS, brightness, matrix->getPwmMapping());
     log("instantiated matrix driver");
     log("matrix canvas is %d x %d", matrix->getWidth(), matrix->getHeight());

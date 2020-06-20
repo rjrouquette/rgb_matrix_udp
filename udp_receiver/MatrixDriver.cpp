@@ -723,3 +723,13 @@ void RemapInterleaved32A::remap(unsigned &x, unsigned &y) {
     // interleave x-coordinate: leave lower 5 bits intact, shift upper bits, and add offset
     x = (x & 0x1fu) | ((x & 0x7fffffe0u) << 1u) | (offset << 2u);
 }
+
+// Z-striped 2-bit address 16-pixel stripe
+void RemapInterleavedZ16AB::remap(unsigned &x, unsigned &y) {
+    // determine interleaving offset
+    auto offset = (y & 4u) ^ 4u;
+    // interleave y-coordinate
+    y = (y & 0x3u) | ((y & 0xfffffff8u) >> 1u);
+    // interleave x-coordinate: leave lower 4 bits intact, shift upper bits, and add offset
+    x = (x & 0xfu) | ((x & 0x7ffffff0u) << 1u) | (offset << 2u);
+}

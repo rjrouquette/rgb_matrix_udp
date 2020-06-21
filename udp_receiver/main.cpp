@@ -109,14 +109,14 @@ int main(int argc, char **argv) {
 
     // configure rgb matrix panel driver
     MatrixDriver::initGpio(MatrixDriver::gpio_rpi3);
-    matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::HUB75AB, MatrixDriver::Z08AB);
+    matrix = MatrixDriver::createInstance(PWM_BITS, MatrixDriver::HUB75AB, MatrixDriver::Z08AB, MatrixDriver::MIRRORH);
     createPwmLutLinear(PWM_BITS, brightness, matrix->getPwmMapping());
     log("instantiated matrix driver");
     log("matrix canvas is %d x %d", matrix->getWidth(), matrix->getHeight());
 
     // set panel remapping
-    //PixelMapDoubleWide pixMap(*matrix);
-    //matrix->setPixelMapping(&pixMap);
+  //  PixelMapDoubleWide pixMap(*matrix);
+   // matrix->setPixelMapping(&pixMap);
     log("matrix canvas remapped as %d x %d", matrix->getCanvasWidth(), matrix->getCanvasHeight());
 
     // initialize packet buffer
@@ -269,7 +269,8 @@ long microtime() {
 void displayAddress(uint32_t addr) {
     // display ethernet address
     matrix->clearFrame();
-    auto x = matrix->getWidth() - 90;
+  //  auto x = matrix->getWidth() - 90;
+   auto x = 0;
     for(int i = 0; i < 4; i++) {
         auto octet = (addr >> ((3u - i) * 8u)) & 0xffu;
         unsigned pow = 100;
@@ -317,7 +318,6 @@ frame_packet* getPacket(unsigned frame, unsigned subframe) {
 PixelMapDoubleWide::PixelMapDoubleWide(const MatrixDriver &_matrix) :
     matrix(_matrix)
 {}
-
 // double wide panel arrangement
 // ---------------------------
 // | <- chain 0 | chain 3 -> |

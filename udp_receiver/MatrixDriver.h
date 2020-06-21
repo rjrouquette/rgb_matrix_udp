@@ -35,7 +35,14 @@ public:
         Z08AB,              // Z-striped: 2-bit address, 8-pixel strips
     };
 
-    static MatrixDriver * createInstance(unsigned pwmBits, RowFormat rowFormat, Interleaving interleaving = NO_INTERLEAVING);
+    enum Transforming {
+        NO_TRANSFORMING,    // normal pixel mapping
+        MIRRORH,            // mirror transfor,er, horizontal
+        MIRRORV,            // mirror transfor,er, horizontal
+        ROTATE,             // rotation transformer
+    };
+
+    static MatrixDriver * createInstance(unsigned pwmBits, RowFormat rowFormat, Interleaving interleaving = NO_INTERLEAVING, Transforming transforming = NO_TRANSFORMING);
     ~MatrixDriver() override;
 
     void flipBuffer();
@@ -59,6 +66,7 @@ public:
 
 private:
     typedef void (*Interleaver) (unsigned &x, unsigned &y);
+    typedef void (*Transformer) (unsigned &x, unsigned &y, unsigned &matrixWidth, unsigned &matrixHeight);
 
     MatrixDriver(
             unsigned scanRowCnt,
@@ -66,12 +74,14 @@ private:
             const unsigned *mapPwmBit,
             size_t rowBlock,
             size_t pwmBlock,
-            Interleaving interleaving
+            Interleaving interleaving,
+	    Transforming transforming
     );
 
     const unsigned matrixWidth, matrixHeight, scanRowCnt, pwmRows, *mapPwmBit;
     const size_t rowBlock, pwmBlock;
     const Interleaver interleaver;
+    const Transformer transformer;
     PixelMapping *pixelMapping;
     unsigned rasterWidth, rasterHeight, canvasWidth, canvasHeight;
     bool isRunning;

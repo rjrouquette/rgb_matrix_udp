@@ -5,6 +5,7 @@
 #include "MatrixDriver.h"
 #include "RowEncoding.h"
 #include "Interleaving.h"
+#include "Transforming.h"
 
 #include <cerrno>
 #include <cstring>
@@ -81,7 +82,7 @@ static void die(const char *format, ...) __attribute__ ((__format__ (__printf__,
 // default pixel mapping does nothing
 void PixelMapping::remap(unsigned int &x, unsigned int &y) {}
 
-MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, const RowFormat rowFormat, const Interleaving interleaving) {
+MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, const RowFormat rowFormat, const Interleaving interleaving, const Transforming transforming) {
     selfTestRGB();
     selfTestHeader();
 
@@ -147,7 +148,8 @@ MatrixDriver * MatrixDriver::createInstance(unsigned pwmBits, const RowFormat ro
             mapPwmBit,
             rowBlock,
             pwmBlock,
-            interleaving
+            interleaving,
+	    transforming
     );
     driver->ttyfd = ttyfd;
     driver->fbfd = fbfd;
@@ -213,11 +215,13 @@ MatrixDriver::MatrixDriver(
         const unsigned *_mapPwmBit,
         size_t _rowBlock,
         size_t _pwmBlock,
-        Interleaving interleaving
+        Interleaving interleaving,
+	Transforming transforming
 ) :
     matrixWidth(_rowBlock - ROW_PADDING), matrixHeight(_scanRowCnt * 8), scanRowCnt(_scanRowCnt), pwmRows(_pwmRows),
     mapPwmBit(_mapPwmBit), rowBlock(_rowBlock), pwmBlock(_pwmBlock),
     interleaver(Interleavers::interleaver[interleaving]), threadOutput{},
+    transformer(Transformers::transformer[transforming]),
     mutexBuffer(PTHREAD_MUTEX_INITIALIZER), pwmMapping{}, finfo{}, vinfo{}
 {
     isRunning = false;
@@ -334,8 +338,14 @@ void MatrixDriver::setPixel(unsigned x, unsigned y, uint8_t r, uint8_t g, uint8_
     // verify coordinate bounds
     if(x >= rasterWidth || y >= rasterHeight) return;
 
+
     // apply interleaving
     (*interleaver)(x, y);
+
+   unsigned int ab = matrixWidth;
+    unsigned int bc = matrixHeight;
+    (*transformer)(x, y, ab, bc );
+
     // verify coordinate bounds
     if(x >= matrixWidth || y >= matrixHeight) return;
 

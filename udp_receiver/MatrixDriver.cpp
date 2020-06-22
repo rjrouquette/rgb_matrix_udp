@@ -342,9 +342,9 @@ void MatrixDriver::setPixel(unsigned x, unsigned y, uint8_t r, uint8_t g, uint8_
     // apply interleaving
     (*interleaver)(x, y);
 
-   unsigned int ab = matrixWidth;
-    unsigned int bc = matrixHeight;
-    (*transformer)(x, y, ab, bc );
+   unsigned int mWidth = matrixWidth;
+    unsigned int mHeight = matrixHeight;
+    (*transformer)(x, y, mWidth, mHeight);
 
     // verify coordinate bounds
     if(x >= matrixWidth || y >= matrixHeight) return;

@@ -77,5 +77,5 @@ void Interleavers::dimZ16AB(unsigned &width, unsigned &height) {
 // Z-striped 2-bit address 8-pixel stripe
 void Interleavers::dimZ08AB(unsigned &width, unsigned &height) {
     width /= 2;
-//    height *= 2;
+    height *= 2;
 }

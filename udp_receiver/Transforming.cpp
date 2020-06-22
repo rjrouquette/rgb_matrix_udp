@@ -20,11 +20,11 @@ void Transformers::NoTransforming(unsigned int &x, unsigned int &y, unsigned &ma
 // horizontal mirror transformer
 void Transformers::MIRRORH(unsigned &x, unsigned &y, unsigned &matrixWidth, unsigned &matrixHeight) {
 	x = matrixWidth - 1 - x;
-	y = y ;
 }
 
 // vertical mirror transformer
 void Transformers::MIRRORV(unsigned &x, unsigned &y, unsigned &matrixWidth, unsigned &matrixHeight) {
+        y = matrixHeight - 1 - y;
 }
 
 // rotational transformer

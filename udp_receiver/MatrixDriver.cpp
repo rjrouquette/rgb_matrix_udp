@@ -418,7 +418,7 @@ void* MatrixDriver::doRefresh(void *obj) {
         pthread_mutex_unlock(&ctx.mutexBuffer);
 
         // allow window for frame flip
-        usleep(1000);
+        usleep(10);
     }
 
     return nullptr;

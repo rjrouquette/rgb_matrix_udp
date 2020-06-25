@@ -1,39 +1,18 @@
 {
   "socket": "/var/run/rgb-matrix.sock",
-  "brightness": 25,
+  "brightness": 100,
   "width": 256,
   "height": 64,
   "propagationDelay": 100000,
   "updateInterval": 20000,
   "panels": [
     {
-      "address": "10.1.8.100",
+      "address": "192.168.3.228",
       "port": 1234,
       "horizontalOffset": 0,
       "verticalOffset": 0,
-      "width": 128,
-      "height": 32
-    },{
-      "address": "10.1.8.101",
-      "port": 1234,
-      "horizontalOffset": 128,
-      "verticalOffset": 0,
-      "width": 128,
-      "height": 32
-    },{
-      "address": "10.1.8.102",
-      "port": 1234,
-      "horizontalOffset": 0,
-      "verticalOffset": 32,
-      "width": 128,
-      "height": 32
-    },{
-      "address": "10.1.8.103",
-      "port": 1234,
-      "horizontalOffset": 128,
-      "verticalOffset": 32,
-      "width": 128,
-      "height": 32
+      "width": 256,
+      "height": 128
     }
   ]
 }

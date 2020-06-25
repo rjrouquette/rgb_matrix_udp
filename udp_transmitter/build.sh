@@ -15,6 +15,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 #make VERBOSE=1
 make -j$CORES
 mv udp_transmitter ../dist
+mv testing ../dist
 
 cd ..
 rm -rf build

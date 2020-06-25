@@ -13,3 +13,14 @@ add_executable(
 )
 
 target_link_libraries(udp_transmitter -pthread -ljson-c)
+
+
+add_executable(
+        testing
+
+        testing.cpp
+        logging.cpp
+        logging.h
+)
+
+target_link_libraries(udp_transmitter -pthread)

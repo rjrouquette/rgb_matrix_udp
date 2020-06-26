@@ -27,7 +27,7 @@
 
 // do not sleep for more than 1 second
 // prevents hangs on NTP adjustments
-#define MAX_SLEEP (1000000ul)
+#define MAX_SLEEP (1000000l)
 
 bool isRunning = true;
 int socketUdp = -1;

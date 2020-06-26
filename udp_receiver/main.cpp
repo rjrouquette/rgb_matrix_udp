@@ -25,6 +25,10 @@
 #define FRAME_MASK (0x0fu)      // 16 frame circular buffer
 #define SUBFRAME_PIXELS (400)   // 400 pixels per sub-frame
 
+// do not sleep for more than 1 second
+// prevents hangs on NTP adjustments
+#define MAX_SLEEP (1000000ul)
+
 bool isRunning = true;
 int socketUdp = -1;
 
@@ -184,6 +188,7 @@ int main(int argc, char **argv) {
 
             // wait for scheduled frame boundary
             diff = frame->targetEpochUs - microtime();
+            if(diff > MAX_SLEEP) diff = MAX_SLEEP;
             if(diff > 0) {
                 usleep(diff);
             }
